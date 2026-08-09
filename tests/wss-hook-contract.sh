@@ -3150,6 +3150,155 @@ else
     || bad "the multilingual shell lost a language folder or its navbar (rc=$rc)"
 fi
 
+# ------------------------------------------------------------ the lane-mode gate
+
+head_ "Worktree-lane paragraphs are injected only where lane mode is on"
+
+# lanes_named_() gates the worktree-lane paragraphs of an injected block. What it
+# saves is small; what it could BREAK is not, which is why the OR is tested in
+# both directions. A checkout carrying a selector while the manifest stays silent
+# is a real lane — a worktree made by hand, or a manifest not yet amended — and
+# the skills key their lane paths on the SELECTOR. Gating on the manifest alone
+# would withhold the lane instructions from the one tree that actually needs them.
+lg=$(mktemp -d)
+mklane() { # dir, manifest-json, [selector]
+  mkdir -p "$lg/$1/.claude/skills/wss-plan" "$lg/$1/.claude/skills/wss-wrap"
+  : > "$lg/$1/.claude/skills/wss-plan/SKILL.md"
+  : > "$lg/$1/.claude/skills/wss-wrap/SKILL.md"
+  printf '%s\n' "$2" > "$lg/$1/.claude/WSS.WORKFLOW.json"
+  [ -n "${3:-}" ] && printf '%s\n' "$3" > "$lg/$1/.claude/WSS.LANE"
+  return 0
+}
+_named='{"WSS":{"branch":{"integration":"dev"},"lanes":{"named":{"api":{"scope":["api/**"]}}}}}'
+_bare='{"WSS":{"branch":{"integration":"dev"}}}'
+mklane off      "$_bare"
+mklane named    "$_named"
+mklane selector "$_bare"  api
+mklane both     "$_named" api
+mklane empty    '{"WSS":{"lanes":{"named":{},"exclusive":["a/**"]}}}'
+mklane broken   'not json at all'
+
+lanebullet() { run --wss-plan "$lg/$1" | grep -q 'WSS.LANE` FIRST'; }
+
+lanebullet off \
+  && bad "the lane paragraph was injected into a project with no lanes at all" \
+  || ok "no lanes: the worktree-lane paragraph is not injected"
+lanebullet named \
+  && ok "a declared WSS.lanes.named injects the paragraph" \
+  || bad "a project declaring named lanes lost its lane paragraph"
+lanebullet selector \
+  && ok "a selector alone injects it, even with the manifest silent" \
+  || bad "a .claude/WSS.LANE checkout lost its lane paragraph — the OR is broken"
+lanebullet both \
+  && ok "both signals present injects it" \
+  || bad "a fully declared lane lost its lane paragraph"
+
+# `"named": {}` is what a project that has retired its lanes is left with, so
+# length>0 rather than mere presence is what makes that read as off.
+lanebullet empty \
+  && bad "an empty named map read as lane mode ON" \
+  || ok "an empty named map is off, not on"
+
+# A gate that crashes on bad data would take every flag with it.
+run --wss-plan "$lg/broken" | grep -q 'included the `--wss-plan` flag' \
+  && ok "a malformed manifest still fires the flag" \
+  || bad "a malformed manifest broke the flag through the lane gate"
+
+# The gate must never reach --wss-wrap's landing rules. Since the worktree
+# machinery moved into skills/wss-wrap/references/WSS.LANES.md — read only under
+# lane mode — this block is the ONLY unconditional statement of the no-force
+# refspec left anywhere in wrap's path. Gating it would leave a force-push guard
+# that appears exactly where it is least needed.
+for _m in off named; do
+  run --wss-wrap "$lg/$_m" | grep -q 'NO leading `+`' \
+    && ok "[$_m] --wss-wrap states the no-leading-plus rule unconditionally" \
+    || bad "[$_m] --wss-wrap lost the no-force rule to the lane gate"
+done
+rm -rf "$lg"
+
+# -------------------------------------------------------- wss-remove-lanes.sh
+
+head_ "wss-remove-lanes.sh removes signals, never a record"
+
+RL="$_root/wss-remove-lanes.sh"
+if [ ! -x "$RL" ]; then
+  bad "wss-remove-lanes.sh missing or not executable at $RL"
+else
+  rl=$(mktemp -d)
+  mkrl() {
+    rm -rf "$rl/proj"; mkdir -p "$rl/proj/.claude" "$rl/proj/docs"
+    git -C "$rl/proj" init -q .
+    git -C "$rl/proj" config user.email t@t
+    git -C "$rl/proj" config user.name t
+    printf '%s\n' '{"WSS":{"lanes":{"exclusive":["db/schema.prisma"],"serialize":["src/lib/**"],
+      "generated":["src/gen/**"],"conflicts":"WSS.LANE.CONFLICTS.md",
+      "named":{"api":{"records":{"todo":"WSS.TODO.api.md"},"transfer":"docs/WSS.TRANSFER.api.md"}}}}}' \
+      > "$rl/proj/.claude/WSS.WORKFLOW.json"
+    printf 'api\n' > "$rl/proj/.claude/WSS.LANE"
+    printf '# Backlog\n\n- [ ] a real unfinished task\n' > "$rl/proj/WSS.TODO.api.md"
+    : > "$rl/proj/docs/WSS.TRANSFER.api.md"
+    git -C "$rl/proj" add -A >/dev/null 2>&1
+    git -C "$rl/proj" commit -qm init >/dev/null 2>&1
+  }
+  MF="$rl/proj/.claude/WSS.WORKFLOW.json"
+
+  mkrl
+  bash "$RL" --dir "$rl/proj" >/dev/null 2>&1
+  [ -f "$rl/proj/.claude/WSS.LANE" ] && jq -e '.WSS.lanes.named' "$MF" >/dev/null 2>&1 \
+    && ok "dry run changes nothing" \
+    || bad "wss-remove-lanes.sh wrote without --write"
+
+  # Turning the mode off orphans rather than deletes, so a lane file still
+  # holding a backlog item is the one thing that must stop the write: nothing
+  # would ever read it again.
+  bash "$RL" --write --dir "$rl/proj" >/dev/null 2>&1
+  [ $? -ne 0 ] && [ -f "$rl/proj/.claude/WSS.LANE" ] \
+    && ok "--write refuses while a lane file still holds content" \
+    || bad "--write proceeded over a lane record with content"
+
+  bash "$RL" --write --allow-orphans --dir "$rl/proj" >/dev/null 2>&1
+  [ -f "$rl/proj/.claude/WSS.LANE" ] \
+    && bad "the selector survived --allow-orphans" \
+    || ok "--allow-orphans removes the .claude/WSS.LANE selector"
+  jq -e '.WSS.lanes.named' "$MF" >/dev/null 2>&1 \
+    && bad "WSS.lanes.named survived the write" \
+    || ok "WSS.lanes.named is dropped from the manifest"
+  jq -e '.WSS.lanes.conflicts' "$MF" >/dev/null 2>&1 \
+    && bad "WSS.lanes.conflicts survived the write" \
+    || ok "WSS.lanes.conflicts is dropped from the manifest"
+
+  # THE reason this script exists. exclusive/serialize/generated share a prefix
+  # with the worktree machinery and are not it: they drive --wss-start's batch
+  # partitioning inside ONE checkout and work with no worktrees at all. Deleting
+  # the lanes block wholesale reads as tidying while removing the guard that
+  # stops two parallel agents writing one schema.
+  jq -e '(.WSS.lanes.exclusive|length)==1 and (.WSS.lanes.serialize|length)==1
+         and (.WSS.lanes.generated|length)==1' "$MF" >/dev/null 2>&1 \
+    && ok "the collision paths survive — they are not worktree machinery" \
+    || bad "wss-remove-lanes.sh deleted the in-checkout collision paths"
+
+  [ -f "$rl/proj/WSS.TODO.api.md" ] && grep -q 'a real unfinished task' "$rl/proj/WSS.TODO.api.md" \
+    && ok "the lane record is left on disk, content intact, under every flag" \
+    || bad "a lane record was deleted or truncated"
+
+  # git is the only route back from the rewrite, so a manifest git could not
+  # restore is refused rather than backed up to a .bak nobody prunes.
+  mkrl
+  jq '.WSS.branch={"integration":"dev"}' "$MF" > "$MF.tmp" && mv "$MF.tmp" "$MF"
+  bash "$RL" --write --allow-orphans --dir "$rl/proj" >/dev/null 2>&1
+  [ $? -ne 0 ] && jq -e '.WSS.lanes.named' "$MF" >/dev/null 2>&1 \
+    && ok "an uncommitted manifest is refused, so the rewrite stays revertible" \
+    || bad "rewrote a manifest whose previous state git could not restore"
+
+  mkdir -p "$rl/already/.claude"
+  printf '%s\n' '{"WSS":{"lanes":{"exclusive":["a/**"]}}}' > "$rl/already/.claude/WSS.WORKFLOW.json"
+  bash "$RL" --dir "$rl/already" >/dev/null 2>&1 \
+    && ok "a project already off exits 0 rather than erroring" \
+    || bad "a project with no lanes exited non-zero"
+  rm -rf "$rl"
+fi
+
+
 head_ "Result"
 if [ $fail -gt 0 ]; then
   printf '  \033[31m%d failed\033[0m, %d passed\n\n' "$fail" "$pass"; exit 1

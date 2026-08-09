@@ -41,6 +41,9 @@
         "workflow": "Verify"
       }
     },
-    "sweeps": ".claude/WSS.SWEEPS.json"
+    "sweeps": ".claude/WSS.SWEEPS.json",
+    "agents": {
+      "release": "wss-release-prep"
+    }
   }
 }

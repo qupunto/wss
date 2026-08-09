@@ -203,6 +203,33 @@ skill_disabled() {
   return 1
 }
 
+# Worktree-lane mode. `WSS.lanes.named` in the project manifest is the switch: a
+# non-empty map means this project is worked from several git worktrees at once,
+# so the paragraphs describing transfer queues, sync-forward and lane landing
+# apply. Absent or empty means that machinery cannot fire at all, and the blocks
+# describing it are not injected rather than injected and ignored.
+#
+# This gates ONLY the named-worktree machinery. The collision paths —
+# `WSS.lanes.exclusive`, `.serialize`, `.generated` — drive --wss-start's batch
+# partitioning INSIDE one checkout and are useful with no worktrees at all, so
+# they are never gated. Gating `WSS.lanes` wholesale would take Phase 3 with it.
+#
+# Absence is the off state; there is no separate mode file. A second source of
+# truth could disagree with the manifest every skill already resolves against.
+#
+# The selector is ORed in, and the direction is deliberate. A checkout can carry
+# `.claude/WSS.LANE` while the manifest says nothing — a worktree made by hand,
+# or a manifest not yet amended — and the skills key their lane paths on the
+# SELECTOR, not on this. Gating on the manifest alone would then withhold the
+# lane instructions from the one tree that is actually a lane. Err toward
+# injecting: a project with neither loses nothing it could have used.
+lanes_named_() {
+  [ -f "$PWD/.claude/WSS.LANE" ] && return 0
+  local mf="$PWD/.claude/WSS.WORKFLOW.json"
+  [ -f "$mf" ] || return 1
+  jq -e '(.WSS.lanes.named // {}) | length > 0' "$mf" >/dev/null 2>&1
+}
+
 # `-` means "served by this hook itself, not by a skill" — `--wss-flags` and
 # `--wss-alerts`. It is a real mapping rather than a missing arm on purpose:
 # wss-doctor.sh and the contract suite both FAIL on a flag whose skill_for() arm is
@@ -375,11 +402,15 @@ Irreversible, in force before the skill loads:
   `WSS.record.releases` holds the milestones, the version each ships as, and the
   completion marks, and NEVER splits. NO ROADMAP CARRIES A VERSION OR A MARK —
   wss-doctor.sh FAILS one that does.
+EOF
+    lanes_named_ && cat <<'EOF'
 - READ `.claude/WSS.LANE` FIRST. Where it names a lane this invocation is
   goal-setting on that lane's roadmap and NOTHING ELSE: do not ask whether a
   milestone is done, do not name a version, do not write a mark, do not open
   `WSS.record.releases`. A mark is a checkpoint for the whole project and a lane
   session sees one lane of it.
+EOF
+    cat <<'EOF'
 - COMPLETING A MILESTONE IS THE USER'S CALL, NEVER YOURS, and only from the main
   checkout. Never mark one on the strength of your own reading or an agent's
   report. Say what the milestone claimed, what landed, and what is still open
