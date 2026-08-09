@@ -8,6 +8,52 @@ reasoning behind each change, is `WSS.CHANGELOG.md`. This file is deliberately
 free of that: if an entry here only makes sense to someone editing the suite, it
 belongs in the other one.
 
+## 0.9.1 — 2026-08-09
+
+**Moving a project onto the newest conventions is one command now.**
+`--wss-update` updates your suite install, then works out which conventions
+your project actually carries and migrates it forward. It detects rather than
+assumes, so a tree adopted months ago and one adopted last week both end up
+current — and `--wss-adopt` routes you there when it finds a project that has
+already been adopted once.
+
+**A project adopted before the renames stops looking unadopted.** The health
+check, the export and the retire script all used to report "nothing to find"
+over a legacy project with its records sitting on disk. They now recognise it
+and tell you what it needs. Silence was the worse failure, because it looked
+exactly like a clean bill of health.
+
+**Lane synchronisation finishes what it starts.** It brings each lane's
+committed work in before it reads anything — so it reconciles the current
+records rather than last week's — sends the reconciled result back out to every
+lane once the run is done, and then closes the session out instead of leaving
+what it wrote uncommitted for you to notice later. It asks before committing,
+and it never pushes.
+
+**Wrapping up inside a lane worktree reads the current state first.** A report
+written from a stale base described a lane that no longer existed, and recorded
+obligations as outstanding that another lane had already executed.
+
+**Skills you asked to stay quiet stay quiet.** The editor changed which spelling
+of the hide-this setting it honours; the affected skills now carry both, so the
+next reversal cannot silently un-hide them.
+
+**Releases choose their own version number by rule.** Major only when you ask
+for it, in words. Minor when a milestone you set *in advance* is completed — or
+when the release carries work your own project must apply to keep working,
+whether or not anyone planned it. Everything else is a patch, and the unit is a
+release rather than a pull request.
+
+**The suite no longer pins a model.** Sessions use whichever one you are
+running.
+
+**Corrections you would otherwise have tripped over.** The flag list on the
+landing page was missing `--wss-update`. The lane-synchronisation page described
+a shorter process than the one that runs. And one page said a health check
+*fails* when two copies of a permission disagree — it warns, which means a
+local run still ends in "all checks passed" and only continuous integration
+treats it as fatal.
+
 ## 0.9.0 — 2026-08-08
 
 **Your handoff gets read even without a manifest.** If your project keeps a

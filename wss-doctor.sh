@@ -1556,7 +1556,30 @@ head_ "Project workflow manifest"
 
 manifest="$PWD/.claude/WSS.WORKFLOW.json"
 SUPPORTED="workflow/v2"
+
+# The PRE-RENAME manifest filename is its own case, checked before the current
+# one — and independently of it. A `.claude/workflow.json` tree is not an
+# unadopted tree: nothing reads that filename any more, so without this check a
+# five-lane pre-rename project reports "all checks passed … project is unsplit"
+# while every section below runs against fallbacks (issue #16's first bite —
+# the old *schema* under the new filename was already rejected; the old
+# *filename* was simply never looked for).
+if [ -f "$PWD/.claude/workflow.json" ]; then
+  if [ -f "$manifest" ]; then
+    fail "both .claude/WSS.WORKFLOW.json and the pre-rename .claude/workflow.json
+        exist. The legacy file is dead to every reader, so this reads as a
+        migration that never finished — finish it with --wss-update, or remove
+        the legacy file if the migration is in fact complete."
+  else
+    fail "pre-rename manifest found: .claude/workflow.json. No current reader
+        looks for that filename, so this project's records, lanes and commands
+        all silently fall back to defaults. Snapshot first (wss-export-records.sh
+        --all reads the legacy manifest), then migrate with --wss-update."
+  fi
+fi
+
 if [ ! -f "$manifest" ]; then
+  [ -f "$PWD/.claude/workflow.json" ] || \
   pass "no .claude/WSS.WORKFLOW.json — skills fall back to conventional filenames"
 elif ! jq -e . "$manifest" >/dev/null 2>&1; then
   fail "WSS.WORKFLOW.json is not valid JSON"
@@ -1583,6 +1606,7 @@ else
   # audit.invalidates, WSS.lanes.named — are deliberately not descended into.
   KNOWN_KEYS='WSS.manifest WSS.branch WSS.record WSS.commands WSS.gate WSS.agents WSS.lanes WSS.audit
 WSS.onSchemaChange WSS.hazards WSS.commitTrailer WSS.sweeps WSS.localCI
+WSS.suite WSS.suite.version WSS.suite.commit
 WSS.branch.integration WSS.branch.publish WSS.branch.mergeMethod
 WSS.record.todo WSS.record.roadmap WSS.record.releases WSS.record.changelog WSS.record.handoff WSS.record.decisions
 WSS.record.decisionsIndex WSS.record.openDecisions WSS.record.behaviour WSS.record.reference
@@ -1612,7 +1636,7 @@ WSS.gate.coverage'
     unknown=$((unknown + 1))
   done < <(jq -r '
       (.WSS // empty | keys[] | "WSS.\(.)"),
-      (["branch","record","commands","agents","lanes","audit"][] as $k
+      (["branch","record","commands","agents","lanes","audit","suite"][] as $k
          | (.WSS[$k] // empty | keys[]? | "WSS.\($k).\(.)")),
       (.WSS.record.tooling // empty | keys[]? | "WSS.record.tooling.\(.)")
     ' "$manifest" 2>/dev/null | sort -u)
@@ -1621,6 +1645,22 @@ WSS.gate.coverage'
         JSON and declares a version. Nothing was checked against WSS.MANIFEST.md."
   elif [ $unknown -eq 0 ]; then
     pass "every key is one WSS.MANIFEST.md documents ($keys_seen checked)"
+  fi
+
+  # The migration stamp. Detection overrides a wrong stamp, so a malformed one
+  # cannot corrupt a migration — but it silently buys nothing: wss-update
+  # ignores it and re-derives everything from the tree. Warn, not fail.
+  if jq -e '.WSS.suite != null' "$manifest" >/dev/null 2>&1; then
+    if jq -e '.WSS.suite | (type == "object")
+                and (.version | type == "string" and length > 0)
+                and (.commit  | type == "string" and length > 0)' \
+          "$manifest" >/dev/null 2>&1; then
+      pass "WSS.suite stamp carries a version and a commit"
+    else
+      warn "WSS.suite is declared but is not an object with non-empty string
+        \"version\" and \"commit\". wss-update ignores a malformed stamp and
+        detects from the tree — the stamp as written buys nothing."
+    fi
   fi
 
   while IFS= read -r p; do

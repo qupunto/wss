@@ -2627,6 +2627,100 @@ else
     || bad "wss-retire-workflow.sh ran against the suite itself"
 fi
 
+# ------------------------------------------------------- the pre-rename tree
+
+head_ "A pre-rename tree is detected, never read as cleanly absent"
+
+# Issue #16's first two bites, measured on a real workflow/v1→v2 migration: the
+# legacy FILENAME (.claude/workflow.json) was simply never looked for — the
+# doctor called a five-lane pre-rename project "unsplit" and green — and the
+# exit path (retire, export) refused exactly the trees that need migrating.
+# Every assertion here defends the loud path: legacy is a state with a name and
+# a route (--wss-update), not an absence.
+pre="$TMP/pre-rename"
+drun_pre() { (cd "$pre" && CLAUDE_CONFIG_DIR="$TMP/bare" CLAUDE_DIR="$TMP/bare" \
+                bash "$DOCTOR" 2>&1 | sed 's/\x1b\[[0-9;]*m//g'); }
+rm -rf "$pre"; mkdir -p "$pre/.claude" "$pre/docs"
+cat > "$pre/.claude/workflow.json" <<'JSON'
+{ "manifest": "workflow/v1",
+  "record": { "todo": "TODO.md", "audits": "docs/audits.md" },
+  "lanes": { "named": { "design": { "scope": ["d/**"],
+                                    "records": { "todo": "TODO.design.md" } } } } }
+JSON
+printf 'x\n' > "$pre/TODO.md"; printf 'x\n' > "$pre/docs/audits.md"
+printf 'x\n' > "$pre/TODO.design.md"; printf 'design\n' > "$pre/.claude/lane"
+
+out=$(drun_pre)
+case $out in
+  *"pre-rename manifest found"*)
+    ok "the legacy filename alone is a FAILURE, not a fallback pass" ;;
+  *) bad "a .claude/workflow.json tree read as cleanly absent — the silent case issue #16 measured" ;;
+esac
+printf '%s' "$out" | grep -q 'fall back to conventional filenames' \
+  && bad "the legacy tree ALSO printed the no-manifest pass line — two verdicts on one fact" \
+  || ok "the no-manifest pass line stays silent when the legacy file exists"
+
+# Both files at once: a migration that never finished, not a healthy v2 tree.
+printf '{"WSS":{"manifest":"workflow/v2"}}\n' > "$pre/.claude/WSS.WORKFLOW.json"
+out=$(drun_pre)
+case $out in
+  *"migration that never finished"*)
+    ok "legacy beside current is a FAILURE naming the unfinished migration" ;;
+  *) bad "a half-migrated tree (both manifests) passed" ;;
+esac
+rm -f "$pre/.claude/WSS.WORKFLOW.json"
+
+# Retire refuses the legacy tree LOUDLY, naming the route — not "nothing to
+# retire", which reads as an unadopted project.
+if [ -x "$RW" ]; then
+  err=$(bash "$RW" --dir "$pre" 2>&1); rc=$?
+  [ "$rc" -ne 0 ] && printf '%s' "$err" | grep -q 'PRE-RENAME' \
+    && ok "retire refuses a legacy tree by name, with the migration route" \
+    || bad "retire's refusal did not name the pre-rename manifest: $err"
+fi
+
+# Export READS the legacy manifest — the snapshot must be takeable BEFORE the
+# migration that could lose it, which is the one moment that audience exists.
+if [ -x "$ER" ]; then
+  (cd "$pre" && bash "$ER" -o pre.tar.gz >/dev/null 2>&1)
+  if [ -f "$pre/pre.tar.gz" ]; then
+    miss=""
+    for f in TODO.md docs/audits.md TODO.design.md .claude/lane; do
+      tar tzf "$pre/pre.tar.gz" | grep -qx "$f" || miss="$miss $f"
+    done
+    [ -z "$miss" ] \
+      && ok "export reads the legacy manifest: records, lane records and the old selector travel" \
+      || bad "export missed from the legacy tree:$miss"
+    (cd "$pre" && bash "$ER" -o note.tar.gz 2>&1 | grep -q 'PRE-RENAME') \
+      && ok "and says which manifest it read, with the migration route" \
+      || bad "a legacy export looks identical to a current one — nothing says migrate"
+  else
+    bad "export produced no archive from a legacy tree — the snapshot path is still closed"
+  fi
+fi
+
+# The migration stamp: a well-formed WSS.suite is a documented key that passes;
+# a malformed one warns rather than fails (detection overrides it anyway).
+st="$TMP/stamp-proj"
+rm -rf "$st"; mkdir -p "$st/.claude"
+printf '{"WSS":{"manifest":"workflow/v2","suite":{"version":"0.9.0","commit":"abc1234"}}}\n' \
+  > "$st/.claude/WSS.WORKFLOW.json"
+out=$(cd "$st" && CLAUDE_CONFIG_DIR="$TMP/bare" CLAUDE_DIR="$TMP/bare" \
+        bash "$DOCTOR" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
+printf '%s' "$out" | grep -q 'stamp carries a version and a commit' \
+  && ok "a well-formed WSS.suite stamp passes" \
+  || bad "a well-formed stamp did not get its pass line"
+printf '%s' "$out" | grep -q "sets 'WSS.suite'" \
+  && bad "WSS.suite warned as a key nothing reads — KNOWN_KEYS missed it" \
+  || ok "WSS.suite is a documented key, not an unknown one"
+printf '{"WSS":{"manifest":"workflow/v2","suite":{"version":"0.9.0"}}}\n' \
+  > "$st/.claude/WSS.WORKFLOW.json"
+out=$(cd "$st" && CLAUDE_CONFIG_DIR="$TMP/bare" CLAUDE_DIR="$TMP/bare" \
+        bash "$DOCTOR" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
+printf '%s' "$out" | grep -q 'buys nothing' \
+  && ok "a stamp missing its commit WARNS — it anchors nothing" \
+  || bad "a malformed stamp passed silently"
+
 head_ "The alert hook cues only when asked to"
 
 ALERT="$(dirname "$HOOK")/wss-alert.sh"

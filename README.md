@@ -372,6 +372,7 @@ behind.
 | Settling what the project *is* — stack, data model, a convention | `--wss-reference` | the reference record is what a later reader trusts instead of checking, so write it while the claim is still checkable; where the manifest maps `README.md` into it, this reaches the landing page and the writer's consent rules apply |
 | Finishing a unit of work, or before `/clear` | `--wss-wrap` | the handoff is what the next session inherits |
 | Every week or so, or after a refactor | `--wss-check` | cheap, incremental, and catches the records the code just falsified |
+| The suite moved under an adopted project — or the doctor names a pre-rename manifest | `--wss-update` | updates the install, then detects what conventions the tree actually carries and migrates it behind its own gate; the `WSS.suite` stamp only accelerates, detection decides |
 | Before a release, or when you stop trusting the record | `--wss-full-check` | the expensive one; earns its cost when the answer might be "no" |
 | Every month or so, or when picking a project back up | `--wss-stocktake` | rebuilds the backlog around where things actually are |
 | After editing any skill or agent file | `--wss-tools` | immediately, before ending the turn — it is the one with a deadline |
@@ -420,6 +421,7 @@ Current flags:
 | Flag | Skill | Tier |
 |---|---|---|
 | `--wss-adopt` | `wss-adopt` | orchestrator |
+| `--wss-update` | `wss-update` | orchestrator — updates the install, then migrates the adopted tree to the newest conventions; detection decides what needs migrating, the `WSS.suite` stamp only accelerates |
 | `--wss-track` | `wss-track` | primitive |
 | `--wss-todo` | `wss-record` | primitive |
 | `--wss-log` | `wss-record` | primitive |

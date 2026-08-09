@@ -24,6 +24,10 @@
 # The archive is a snapshot, not a record: do not commit it, and treat one from
 # another machine as stale the moment either side writes.
 #
+# A PRE-RENAME tree (legacy .claude/workflow.json, schema workflow/v1) is read
+# too, export-only, so the snapshot can be taken BEFORE a migration rather than
+# only after it. Import needs no such support: the archive carries paths.
+#
 # --all IS A DIFFERENT QUESTION: not "what would a clone lose" but "what would
 # a deletion lose". It keeps tracked records IN and adds the docs tree, because
 # its audience is a project about to retire the workflow (wss-retire-workflow.sh
@@ -53,6 +57,17 @@ done
 
 CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 MANIFEST="$PWD/.claude/WSS.WORKFLOW.json"
+
+# A PRE-RENAME tree (.claude/workflow.json, flat keys, no WSS root) is exactly
+# the tree whose snapshot matters most: the migration that fixes it is also
+# what could lose its records, and requiring migration before export closes
+# the snapshot path to the only audience that needs it (issue #16's second
+# bite). The jq below reads both shapes; nothing else changes.
+LEGACY=0
+if [ ! -f "$MANIFEST" ] && [ -f "$PWD/.claude/workflow.json" ]; then
+  MANIFEST="$PWD/.claude/workflow.json"
+  LEGACY=1
+fi
 
 # ---------------------------------------------------------------------- import
 if [ "$MODE" = import ]; then
@@ -96,27 +111,35 @@ candidates() {
     # Strings and arrays under WSS.record.*; provider objects have no file and
     # WSS.record.tooling contributes only its catalog. Lane records are record
     # paths like any other. `WSS.sweeps` is deliberately absent — see the header.
+    # `(.WSS // .)` is the two-shape read: the v2 root when it exists, the
+    # whole flat document on a legacy workflow/v1 manifest. Key names inside
+    # are enumerated by value, so v1's renamed roles (record.audits) travel
+    # the same as v2's.
     jq -r '
       def hazards_sibling:
         if contains("/") then (split("/")[:-1] | join("/")) + "/WSS.HAZARDS.md"
         else "WSS.HAZARDS.md" end;
-      [ (.WSS.record // {} | to_entries[] | .value
+      (.WSS // .) as $w |
+      [ ($w.record // {} | to_entries[] | .value
           | if type == "string" then .
             elif type == "array" then .[]
             else empty end),
-        (.WSS.record.tooling // {} | .catalog // empty),
-        (.WSS.lanes.named // {} | .[]? | (.records // {}) | .[]?),
-        (.WSS.lanes.named // {} | .[]? | .transfer // empty),
-        (.WSS.lanes.conflicts // empty),
+        ($w.record.tooling // {} | .catalog // empty),
+        ($w.lanes.named // {} | .[]? | (.records // {}) | .[]?),
+        ($w.lanes.named // {} | .[]? | .transfer // empty),
+        ($w.lanes.conflicts // empty),
         # A handoff overflow sibling is part of the handoff record — the retire
         # and reset scripts both treat it that way, so an archive that misses
         # it loses one file the deletion takes.
-        (.WSS.record.handoff // empty | select(type == "string") | hazards_sibling),
-        (.WSS.lanes.named // {} | .[]? | (.records.handoff // empty)
+        ($w.record.handoff // empty | select(type == "string") | hazards_sibling),
+        ($w.lanes.named // {} | .[]? | (.records.handoff // empty)
           | select(type == "string") | hazards_sibling)
       ] | .[] | select(type == "string")' "$MANIFEST" 2>/dev/null
   fi
   echo ".claude/WSS.LANE"
+  # The pre-rename selector name, so a legacy worktree's lane identity makes
+  # the snapshot too. Absent files are filtered below either way.
+  [ "$LEGACY" -eq 1 ] && echo ".claude/lane"
   # The inbox is config-directory state, included only when this IS the config
   # directory — from any other project it belongs to a different export.
   if [ "$PWD" -ef "$CONFIG_DIR" ] && [ -f "$PWD/WSS.BUG-REPORTS.md" ]; then
@@ -153,3 +176,7 @@ fi
 tar czf "$ARCHIVE" -C "$PWD" -T "$list" || exit 1
 echo "exported to $ARCHIVE:"
 sed 's/^/  /' "$list"
+if [ "$LEGACY" -eq 1 ]; then
+  echo "note: read the PRE-RENAME manifest .claude/workflow.json — this is a"
+  echo "snapshot only; migrate the tree with --wss-update."
+fi

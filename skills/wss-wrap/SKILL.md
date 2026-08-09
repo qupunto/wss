@@ -51,19 +51,28 @@ copies `wss-doctor.sh` compares, never restated per skill.
 
 ## When another skill invokes this one
 
-`--wss-stocktake` calls the whole ritual to close out an audit. That is the one
-sanctioned case, and it changes three things:
+**A caller reaches this skill to close out its own procedure, and the catalog's
+who-invokes-whom table is where the current set of them is recorded** — not a
+list here, which would be a second copy going stale against the first. What is
+*this* file's is the rule: a dispatched wrap differs from a typed one in three
+ways, and **the caller states each of them when it invokes.**
 
-- **The grant is the caller's, at the caller's scope.** `--wss-stocktake` grants
-  commit and push **for the audit's own record only** — so the commit covers the
-  audits entry, the rebuilt backlog and the records the review touched, and
-  never remediation code written in the same session. Do not widen it because
-  the tree contains more.
-- **Do not declare the session safe to `/clear`.** Step 7 is written for a user
-  who typed the flag and is finished. A dispatched wrap is a step inside someone
-  else's procedure — `--wss-stocktake` routes its Fix-now dispositions *after* this
-  runs — and telling the user to clear mid-audit throws away the context the
-  rest of that procedure needs.
+- **The grant is the caller's, at the caller's scope, and never wider than the
+  tree happens to contain.** `--wss-stocktake` grants commit and push **for the
+  audit's own record only** — the audits entry, the rebuilt backlog and the
+  records the review touched, never remediation code written in the same
+  session. **A flagless caller has no grant to pass on at all**
+  ([`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md)'s *authorization comes
+  from the flag*), so a wrap dispatched from one asks the user for the commit in
+  that turn, at the scope the caller names, and treats a refusal as an ordinary
+  outcome rather than a failure.
+- **Declare the session safe to `/clear` only where the caller says it is
+  finished.** Step 8 is written for a user who typed the flag and has nothing
+  left. A caller that routes more work *after* this — `--wss-stocktake` places
+  its Fix-now dispositions there — is mid-procedure, and telling the user to
+  clear throws away the context the rest of it needs. A caller whose close-out
+  is genuinely its last step is not, and the framing is honest. **The caller
+  says which; do not infer it from how finished the tree looks.**
 - **Skip step 6.** Whether the caller's work closed a milestone is the caller's
   question to raise, not a second opinion offered from inside its close-out.
 
@@ -73,6 +82,35 @@ commit calls `git-writer`. Running the whole closing pass for either would end a
 session that is not over.
 
 ## What to do, in order
+
+**Step 0 — in a lane worktree, sync forward before anything is read or
+reported.** Only where a `.claude/WSS.LANE` selector is present; a main checkout
+skips this entirely and there is nothing to say about it. `git fetch`, then
+`git merge --ff-only` `WSS.branch.integration` into the worktree's branch,
+through `git-writer` under this skill's grant. It is the same move
+`--wss-start`'s Phase 0 makes at the other end of a batch, for the same reason
+one step later: **a report written from a stale base describes a lane that no
+longer exists.** A sibling lane's work landing on the integration branch while
+this session ran is ordinary, and a handoff written without it records
+obligations as outstanding that were executed elsewhere — the copy that bites,
+exactly as it does at start.
+
+**The refusal rule is the ordinary one, with one difference: it does not stop
+the wrap.** Where the branch has genuinely diverged, report it plainly, say the
+report below is written against a base the integration branch has moved past,
+and **carry on**. A wrap's first duty is pushing the lane's own branch so the
+work is not stranded, and that must still happen when everything else is
+refused. Never force it, and never resolve the divergence here — a wrap is the
+worst moment to take a merge decision, because the context that would explain it
+is about to be cleared.
+
+> **Syncing forward does not widen what the report may claim.** After the
+> fast-forward this branch contains other lanes' commits, and the closing
+> summary and handoff must still describe **this session's own work only**.
+> Derive the range from this session's commits — the `WSS.commitTrailer` stamp
+> is what distinguishes them — never from "everything new on this branch", which
+> silently attributes every sibling lane's landing to this one and reads as a
+> session that did four times what it did.
 
 1. **Reconcile the task list.** Run `TaskList`. Mark anything genuinely
    finished as `completed` via `TaskUpdate`; delete anything stale,

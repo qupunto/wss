@@ -22,7 +22,13 @@ afterwards is [`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md).
 
 **Not a rewrite.** If a manifest already exists this is an *amendment*: read it,
 report what it declares, fill only the gaps, and never overwrite a key the
-project already chose.
+project already chose. **The one exception is a key or filename matching a
+previous suite convention** — the pre-rename `.claude/workflow.json`, a flat
+`workflow/v1` schema, an old record name. That is stale *machinery*, not a
+project's choice, and amending around it builds on the wrong facts. It routes
+to the migration procedure — the `wss-update` skill's Job 2 — behind **its own
+consent gate**, distinct from amendment's: the plan of mends is shown and OK'd
+before anything is corrected, and it is never folded silently into adoption.
 
 **Not a documentation pass.** It creates record files *empty*, with their
 heading and nothing else. Content is the owning skill's, always — an adopted
@@ -40,6 +46,16 @@ misdirects every skill that reads it, silently.
 in the request → worktree setup for a declared lane, which skips to its own
 section below. Say which in one line before doing anything, because the modes
 have different blast radii.
+
+**Before either verdict, check for a stale-convention tree — it masquerades as
+both.** A pre-rename `.claude/workflow.json` (with the current filename absent,
+this reads as *adoption* and would write a second manifest over an adopted
+project; with both present, as a half-finished migration), or a current
+filename holding a flat `workflow/v1` schema (reads as amendment; the doctor
+rejects it). Any of these → **migration mode**: dispatch to the `wss-update`
+skill's Job 2, whose consent gate and snapshot rule apply, and return here only
+for what genuinely was never declared. `wss-doctor.sh` fails on all three shapes
+now, so run it when unsure which tree this is.
 
 **Then the wizard's first question, before anything else it does — y/N,
 default no: "An archive to restore first?"** A `wss-export-records.sh` export
@@ -280,6 +296,14 @@ every later skill trusts the manifest without re-verifying it. A failure in the
 manifest itself goes back to `manifest-writer` — this skill does not correct that
 file directly, however obviously right the one-line fix looks.
 
+**On a passing doctor, stamp the tree** — through `manifest-writer`, never by
+hand: `WSS.suite` takes the installed suite's version
+(`.claude-plugin/plugin.json`) and its commit, resolved from the install root's
+git tree. A fresh adoption is current by construction, and the stamp is what
+lets a later `wss-update` start from here instead of from detection alone.
+Where no commit is resolvable, leave the stamp unwritten and say so — a guessed
+commit is worse than no stamp (`workflow/WSS.MANIFEST.md`'s `WSS.suite` row).
+
 ## 11. A project with no documentation gets handed to `--wss-docs`
 
 Step 3 already searched for what exists. If it found no documentation — no
@@ -322,6 +346,7 @@ Say, briefly:
 | Settling what the project *is* — stack, data model, a convention | `--wss-reference` |
 | Finishing a unit of work, or before `/clear` | `--wss-wrap` |
 | Weekly, or after a refactor | `--wss-check` |
+| The suite moved under this project, or the doctor names a pre-rename manifest | `--wss-update` |
 | Before a release, or when you stop trusting the record | `--wss-full-check` |
 | Monthly, or when picking the project back up | `--wss-stocktake` |
 | After editing any skill or agent file | `--wss-tools` |

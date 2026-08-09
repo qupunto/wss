@@ -171,5 +171,13 @@ fetched it, deleting it locally changes nothing.
   handed back, never forced and never resolved here**, which is the ordinary
   rejected-push rule and not a special case: the divergence it reports is a
   merge decision, and the caller is a session that is about to be cleared.
+
+  **The same landing has a main-checkout twin**, handed by
+  `/wss-lane-record-sync`'s step 0: `git merge --ff-only <lane-branch>` with
+  `WSS.branch.integration` checked out, one lane at a time, fetch first where the
+  lanes ride a remote. Local instead of remote, otherwise identical — it moves
+  the ref onto commits that already exist, writes no merge commit, pushes
+  nothing, and **a branch that cannot fast-forward is refused and handed back**,
+  never resolved with a real merge here whatever `WSS.branch.mergeMethod` says.
 - **It does not clean the tree.** No `git stash`, no `git checkout --` over
   someone's changes, no deleting untracked files.

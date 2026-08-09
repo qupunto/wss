@@ -63,7 +63,7 @@ prompt=$(printf '%s' "$payload" | jq -r '.prompt // ""' 2>/dev/null)
 # below does not matter. `--wss-stocktake` and `--wss-full-stocktake` look like they collide and
 # do not — the latter has its own leading dashes. wss-doctor.sh checks the invariant
 # rather than trusting this comment; add a flag that violates it and it fails.
-FLAGS=(--wss-full-stocktake --wss-pr --wss-full-check --wss-release --wss-stocktake --wss-report --wss-adopt --wss-flags --wss-start --wss-track --wss-docs --wss-check --wss-tools --wss-todo --wss-wrap --wss-plan --wss-help --wss-log --wss-alerts --wss-overview --wss-scout --wss-describe --wss-reference --wss-diagram)
+FLAGS=(--wss-full-stocktake --wss-pr --wss-full-check --wss-release --wss-stocktake --wss-report --wss-adopt --wss-flags --wss-start --wss-track --wss-docs --wss-check --wss-tools --wss-todo --wss-wrap --wss-plan --wss-help --wss-log --wss-alerts --wss-overview --wss-scout --wss-describe --wss-reference --wss-diagram --wss-update)
 
 # Split into whitespace-separated tokens. `set -f` because an unquoted
 # expansion would otherwise glob `*` in the prompt against the filesystem.
@@ -220,6 +220,7 @@ skill_for() {
     --wss-pr) echo wss-pr ;;
     --wss-stocktake | --wss-full-stocktake) echo wss-stocktake ;;
     --wss-adopt) echo wss-adopt ;;
+    --wss-update) echo wss-update ;;
     --wss-docs | --wss-diagram) echo wss-docs ;;
     --wss-tools) echo wss-tools ;;
     --wss-check) echo wss-check ;;
@@ -405,7 +406,11 @@ Authorization: COMMIT what it creates. Not push.
 
 Irreversible, in force before the skill loads:
 - If a manifest already exists this is an AMENDMENT, not a rewrite. Fill gaps
-  only; never overwrite a key the project already chose.
+  only; never overwrite a key the project already chose. THE ONE EXCEPTION is a
+  key or filename matching a PREVIOUS suite convention — that is stale
+  machinery, not a project's choice, and it routes to the migration procedure
+  behind its own consent gate (the `wss-update` skill's Job 2), never mended
+  silently as part of adoption.
 - NEVER INVENT A PATH OR A COMMAND. Every value must be verified to exist or to
   be declared by the project's own tooling. A key you cannot resolve is LEFT
   OUT: a missing key degrades gracefully and says so; a wrong one misdirects
@@ -414,6 +419,30 @@ Irreversible, in force before the skill loads:
   owning skill writes the first real line.
 - Finish by running ~/.claude/wss-doctor.sh and showing its output. Adoption is not
   complete on a failing doctor; never report success over one.
+EOF
+    ;;
+  --wss-update)
+    cat <<'EOF'
+The user included the `--wss-update` flag. That is an explicit, unconditional
+instruction to run the `wss-update` skill now — update the suite install, then
+detect what conventions this tree actually carries and migrate it to the
+newest.
+
+Authorization: COMMIT what the migration changes. Not push.
+
+Irreversible, in force before the skill loads:
+- DETECTION IS THE AUTHORITY. The stamp (`WSS.suite`) and the release list's
+  migration lines only accelerate; every claim is re-verified against the
+  tree's own files before anything is mended.
+- SNAPSHOT BEFORE THE FIRST WRITE: wss-export-records.sh --all (it reads
+  legacy manifests). Tell the user where the archive landed.
+- The migration plan is shown and gets an explicit OK in that turn before any
+  mend. A mend the plan did not name waits; it is never slipped in.
+- A PARTIAL MIGRATION NEVER EXITS CLEAN, and the stamp is written only after
+  a passing doctor — through manifest-writer, never by hand. No resolvable
+  commit means NO stamp, not a guessed one.
+- Append-only records are NEVER rewritten; old names inside historical text
+  stay as written.
 EOF
     ;;
   --wss-check)

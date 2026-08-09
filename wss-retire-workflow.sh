@@ -47,7 +47,21 @@ while [ $# -gt 0 ]; do
 done
 
 MANIFEST="$DIR/.claude/WSS.WORKFLOW.json"
-[ -f "$MANIFEST" ] || { echo "no .claude/WSS.WORKFLOW.json in $DIR — nothing to retire" >&2; exit 1; }
+if [ ! -f "$MANIFEST" ]; then
+  # A pre-rename tree is the one audience this refusal must not mislead:
+  # "nothing to retire" over a legacy .claude/workflow.json reads as an
+  # unadopted project, and retiring from the legacy schema would miss what it
+  # declares. Name the route instead (issue #16's second bite).
+  if [ -f "$DIR/.claude/workflow.json" ]; then
+    echo "no .claude/WSS.WORKFLOW.json in $DIR, but a PRE-RENAME .claude/workflow.json exists." >&2
+    echo "This tree predates the wss- renames, and retiring from the legacy manifest would" >&2
+    echo "miss what it declares. Snapshot first (wss-export-records.sh --all reads the legacy" >&2
+    echo "manifest), migrate with --wss-update, then retire." >&2
+  else
+    echo "no .claude/WSS.WORKFLOW.json in $DIR — nothing to retire" >&2
+  fi
+  exit 1
+fi
 command -v jq >/dev/null 2>&1 || { echo "wss-retire-workflow.sh needs jq" >&2; exit 1; }
 
 # Refuse the suite's own tree. Retiring the workflow FROM the workflow deletes

@@ -78,8 +78,9 @@ what the lanes are for.
    executed there, the lane handoff being the copy that bites. Where the two
    branches have genuinely diverged, stop and report: reconciling them is a
    merge decision, not a batch's first step. The wrap-side twin lives in
-   `--wss-wrap`'s worktree section: a lane wrap pushes its branch, lands it on
-   `WSS.branch.integration` by fast-forward, then syncs back. **This sync-forward is
+   `--wss-wrap`: it opens with the same sync-forward, before it reports
+   anything, then pushes its branch, lands it on `WSS.branch.integration` by
+   fast-forward, and syncs back. **This sync-forward is
    what keeps that landing possible** — a lane that never catches up diverges,
    and the landing push is then refused rather than merged.
 
@@ -297,6 +298,11 @@ integration costs more than the saving — when unsure, inherit. State tiers
 relative to the session ("session model", "a cheaper tier"), never as model
 names, which rot; and name every downgrade when stating the batch, so an
 economy stays a visible decision rather than a silent one.
+
+**Then recut the task list to the partition.** Step 4's lane tasks were foreseen
+before any lane existed; replace them with one task per actual lane, named with
+its wave and its tier, the moment the batch is stated. The list is where a tier
+downgrade stays visible after the batch statement scrolls away.
 
 ## Phase 4 — Run the wave
 
