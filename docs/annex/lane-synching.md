@@ -141,8 +141,18 @@ It runs from the **main checkout only**. A lane worktree sees a sibling only as
 `WSS.branch.integration` last delivered it, so a run from there reads a stale
 partial picture while producing findings that look complete.
 
-Four steps:
+Seven steps. Steps 0 and 5 are a pair — the lanes' work comes **in** before
+anything is read, the merged result goes back **out** once the run has finished
+producing it — and step 6 closes out what all of them wrote:
 
+0. **Land what the lanes have delivered.** Each named lane's branch is brought
+   into `WSS.branch.integration` first — fast-forward only, locally, through
+   `git-writer` — so the run reads every lane at its latest delivered state
+   rather than at last week's. A branch that cannot fast-forward is a merge
+   decision for its own lane's session: it is reported, read stale, and never
+   resolved or forced here. Nothing is pushed — the landings are local, and
+   step 6's close-out does not offer the push either, so they reach a remote
+   only by a later act of the user's.
 1. **Analyze** every lane's `todo`, `openDecisions` and `roadmap` together,
    separating **conflicts** (two records that cannot both be right, now) from
    **dependencies** (one lane's plan implying work in another, later).
@@ -154,6 +164,26 @@ Four steps:
    it is this lane's work.
 4. **Record the run** through `audit-writer`, and the declines through
    `--wss-log`.
+5. **Return the merged state to every lane** — each lane worktree brought
+   forward onto `WSS.branch.integration`, fast-forward only, locally, nothing
+   pushed. It is last rather than folded into step 0 because steps 2–4 are
+   still *writing* into lane queues: a lane updated at the start would be stale
+   again by the end, and stale after a visible update is worse than never
+   updated at all. A lane whose worktree is **dirty** is skipped — uncommitted
+   work there belongs to whoever is sitting in it — as is one that has
+   diverged, on the same refusal rule as every other landing. Skipped lanes are
+   named; each simply waits for its own next `--wss-start`, which is where it
+   would have been anyway.
+6. **Close the run out through `--wss-wrap`**, which is what makes the run's
+   writes survive the session — the queue entries, the deletions from
+   `WSS.lanes.conflicts` and the audit entry otherwise die in the working tree
+   when it clears. The skill has no flag and so has no grant to pass down: the
+   wrap it dispatches **asks the user for the commit in that turn**, naming
+   what it would cover, and a refusal just leaves the tree as it was. The
+   **push is never offered** — step 0's local landings would otherwise reach
+   the remote as a side effect of tidying up. This step runs even where step 5
+   skipped every lane, because everything worth making durable was written
+   before it.
 
 ### The four rulings
 

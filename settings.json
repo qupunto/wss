@@ -38,7 +38,8 @@
     "wss-lane-record-sync": "name-only",
     "wss-retire": "name-only",
     "wss-stocktake": "user-invocable-only",
-    "wss-toggle": "user-invocable-only"
+    "wss-toggle": "user-invocable-only",
+    "wss-track": "name-only"
   },
   "hooks": {
     "UserPromptSubmit": [
@@ -92,6 +93,5 @@
         ]
       }
     ]
-  },
-  "model": "fable"
+  }
 }

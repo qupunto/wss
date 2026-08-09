@@ -78,6 +78,11 @@ That is not a reason to stop. It is a different gate:
   the thing to read.
 - **§2 and §5 are unchanged and matter more here**, because no milestone review
   happened. The full health check and the explicit in-turn OK are the whole gate.
+- **It is a patch, unless this version owes a `- migrate:` line.** No milestone
+  means minor's first trigger cannot fire, so §4's default applies — and its
+  compatibility floor is the one thing that still promotes a maintenance
+  release to minor. Ask whether an adopted tree must change, per §4; a
+  migration shipping as a patch is the failure that floor exists to prevent.
 
 **Say which case this is, every time.** A maintenance release that does not name
 itself as one is indistinguishable from a milestone release whose precondition
@@ -140,12 +145,62 @@ Semantic versioning. Below `1.0.0` the leading zero is doing real work:
 **deployed** is not **stable**, and a pre-1.0 project may still change its data
 model or API incompatibly.
 
-- Completed milestone → **minor** (`0.1.0` → `0.2.0`). `WSS.record.releases` already
-  names the version the milestone intended to ship as — **confirm that number
-  rather than deriving a new one**, and if you disagree with it, say so and ask.
-- Fix or small adjustment on an already-tagged version → **patch**. No milestone
-  needed; this is the one release that does not come from the release list.
-- `1.0.0` is an explicit decision by the user, never inertia.
+**Decide the tier from the triggers below, never from how big the range feels.**
+A diff's size is not a compatibility claim. Momentum is the failure mode here:
+absent a rule, a maintenance release drifts into a minor bump because the last
+one took one, and the field that is supposed to tell an adopter something stops
+telling them anything.
+
+| Tier | Fires when |
+|---|---|
+| **major** | the user asks for it, in words, in this turn |
+| **minor** | a milestone **set beforehand** in `WSS.record.releases` is marked completed — **or** *this version's own entry* in `WSS.record.releases` carries a `- migrate:` line |
+| **patch** | everything else. This is the default, not a category |
+
+**Major never fires by inference.** Not from a large range, not from a
+structural change, not from a milestone that felt significant. `1.0.0` is a
+claim about *stability* rather than about size — that the data model and the
+interface will not change incompatibly without another major — and only the
+user can make it.
+
+**Minor's first trigger is a mark, and *beforehand* is the load-bearing word.**
+The milestone must have existed before the work closed it, which is what stops
+one being written after the fact to justify a bigger number. `WSS.record.releases`
+already names the version that milestone intended to ship as — **confirm that
+number rather than deriving a new one**, and if you disagree with it, say so
+and ask.
+
+**Minor's second trigger is a compatibility floor, and it overrides the
+absence of a milestone.** A `- migrate:` line is work an *adopted* tree must
+apply, per
+[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s releases row.
+Where this version owes one, the release is a compatibility event whether or
+not anyone planned it, and pre-1.0 the minor field is the channel that says so.
+Ask it of the work, not of the diff: does an adopted tree have to change to
+keep working? Do not assume a maintenance release owes nothing — `0.7.0` and
+`0.8.0` both did, with no milestone between them, and `0.8.0`'s renamed every
+adopted tree's manifest.
+
+**And read the entry, never the diff.** `git log -S'- migrate:'` over the range
+answers a different question. Those lines are written *retroactively* — a
+version's entry can gain them long after its tag, so that `wss-update` can mend
+a tree stamped before it — which means a range can add a pile of them that all
+belong to versions already shipped. That is documentation catching up with its
+reader, not a migration going out now. The floor fires on **this version's own
+entry** owing one.
+
+**Patch is what a release is unless one of the two above fires.** Stating it as
+the default rather than as "a fix or small adjustment" is deliberate: work
+enters a maintenance project on *evidence* — an inbox entry, a `--wss-report`
+issue, a defect a check surfaced — and none of that need touch a roadmap or a
+milestone. A tier defined by what it is not can never leave a release
+untierable.
+
+**The unit is a release, not a pull request.** Whatever has accumulated since
+the last tag is bundled into one patch. A change split across two PRs for
+review reasons is one thing shipping, and burning two version numbers on it
+tells an adopter about this project's branch hygiene rather than about their
+upgrade.
 
 Unsure? Ask. A wrong version number is permanent in a way a wrong commit
 message is not.

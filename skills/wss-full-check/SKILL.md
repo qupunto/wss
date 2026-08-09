@@ -72,6 +72,11 @@ Then state, in three or four lines: which files are in scope, that every checkpo
 is being ignored, and roughly how much there is. This is the expensive run; the
 user should be able to stop it before it starts.
 
+Then build the task list via `--wss-track`: one task per step below — the
+gauntlet, the three readers, the inbox, verification, dispatch, prune and
+catalog, the re-run, the stamps — so the user can see where the expensive run
+got to without reading the transcript.
+
 ### 2. The mechanical half, first
 
 **The method is

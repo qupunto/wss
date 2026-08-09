@@ -45,6 +45,13 @@ manifest — keys at top level, no root — is **rejected** by `wss-doctor.sh`, 
 misread: the nesting arrived with `workflow/v2` and is what the version gate
 exists to catch.
 
+The pre-rename **filename** — `.claude/workflow.json` — is the counterpart
+case, and the more dangerous one: no current reader looks for it, so without
+its own check it reads as *cleanly absent* rather than as legacy, and every
+skill falls back to defaults over an adopted tree. `wss-doctor.sh` fails on that
+filename too and routes to `wss-update`; `wss-export-records.sh` alone still
+reads it, export-only, so the snapshot can be taken before the migration.
+
 ## Keys
 
 Every key below is written as its full path from the root — `WSS.record.todo`
@@ -374,6 +381,7 @@ not about which key resolves.
 | `onSchemaChange` | **skill name** | The project's mandatory post-schema-edit sequence, and the guard rails around it. A skill rather than a command, because the order matters and because the dangerous operations need prose next to them |
 | `WSS.localCI` | path | The project's local-CI runbook script — prepare-never-perform. Presence says integration-branch pushes run the suite on a self-hosted runner; `wss-adopt` reads it, raising the key only when the user asks and confirming the path resolves |
 | `WSS.hazards.*` | `file#anchor` | Map of phase name → where that phase's known traps are written. Conventional names: `testing`, `lanes`, `migrations`, `generated` |
+| `WSS.suite` | object | `{"version": "0.9.0", "commit": "<sha>"}` — the migration stamp: which suite version, at which suite commit, this tree was last migrated to. Written **only** by `wss-update` and `--wss-adopt`; read by `wss-update` as an accelerator. **Detection from the tree is the authority** — a wrong or stale stamp is overridden by what the tree actually is, and its absence means "detect unaided", which both pre-stamp customers require anyway. The commit is what anchors a tree migrated from a checkout between releases |
 
 **`WSS.sweeps` is deliberately not under `WSS.record.*`.** Every `WSS.record.*` path is
 expected to exist, and `wss-doctor.sh` fails on one that does not. The checkpoint is

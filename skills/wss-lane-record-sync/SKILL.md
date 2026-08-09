@@ -2,6 +2,7 @@
 name: wss-lane-record-sync
 description: "Reconcile every lane's records at once — conflicts between them, and work one lane's plans imply for another. Every finding needs an explicit ruling: accept, accept as critical, defer or decline. What is accepted goes to the addressed lane's transfer queue, never its records. Invoke only as /wss-lane-record-sync; it has no flag."
 disableModelInvocation: true
+disable-model-invocation: true
 ---
 
 # Synchronising the lanes
@@ -46,6 +47,41 @@ and that every finding will need a decision from the user. Then run.
 This is the run the user should be able to stop before it starts. It reads every
 lane's `todo`, `openDecisions` and `roadmap`, and the cross-lane comparison is
 quadratic in the lane count.
+
+Name in the same statement which lane branches step 0 will attempt to land,
+so the one part of the run that moves a ref is visible before it happens.
+
+## Step 0 — Land what the lanes have delivered
+
+A reconciliation over stale lanes reconciles the wrong records: this skill
+reads every lane **at the integration branch's state**, and a lane whose
+branch carries committed work the integration branch has not taken yet is a
+lane whose plans are invisible to the run — the findings then look complete
+and are derived from last week.
+
+So, before anything is read, bring each named lane's branch into
+`WSS.branch.integration` — **by fast-forward only, through `git-writer`**, the
+main-checkout twin of `--wss-wrap`'s landing (git-writer's lane-landing rule;
+same constraints, local instead of remote). Per lane, in one pass:
+
+- **Already contained** — the ordinary steady state; nothing to do.
+- **Fast-forwards** — land it and say so. A landing can make the next lane's
+  branch land too or stop it; take the lanes in whatever order maximises what
+  lands, and re-try the refused ones once after every success.
+- **Diverged** — **report it and read that lane at what integration last
+  took.** A merge with real deltas is a merge decision for that lane's own
+  session, never resolved here and never forced — the same refusal rule as
+  every landing. Say plainly in step 4's entry that the lane was read stale
+  and by how many commits.
+
+Fetch first where the lanes ride a remote; a branch that only looks behind is
+the failure the sync-forward rules exist to catch. **No push.** What landed
+locally is published by the user's ordinary close-out, not by this run.
+
+**This step is half of a pair.** It brings the lanes' work *in*; step 5 sends
+the merged result back *out*, once the run has finished producing it. Landing
+without redistributing leaves every lane holding its own slice and none of the
+others', which is the state this skill is invoked to end.
 
 ## Step 1 — Analyze
 
@@ -257,6 +293,80 @@ re-derive it —
 [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule).
 Where the *mechanism* itself changed, that is `--wss-docs`' page to update.
 
+## Step 5 — Return the merged state to every lane
+
+Step 0 brought every lane's work **into** the integration branch. This step
+sends the result back out, so the lanes end the run holding what the run
+produced instead of each holding its own slice of it.
+
+**It is last, and that placement is the whole of its correctness.** Step 3's
+rulings are written into lane transfer queues and step 4's declines into the
+decision log — so a lane brought forward at step 0 would be stale again by the
+time the run ended, and stale in the most misleading way: updated once, visibly,
+and therefore trusted. Bringing every lane forward here means each one starts
+its next `--wss-start` already holding the mediations, the approvals and the
+queue entries this run filed for it.
+
+Per lane, in its own worktree, `git merge --ff-only` the integration branch,
+through `git-writer`. **This is `--wss-wrap`'s step-0 sync-forward, fanned out
+from the main checkout** — the same move that skill makes for the one lane it
+is sitting in, made here for every lane at once, which is the part no wrap can
+do from where this skill runs. Its constraints and its refusals are that rule
+and `git-writer`'s lane-landing rule, and they are **not restated here**: a
+second copy is a second thing to keep true.
+
+Name the lane and the distance moved for each one that lands.
+
+**One state is this step's own, because no wrap ever meets it: a dirty
+worktree.** Skip it and say so. Uncommitted work in a lane worktree belongs to
+whoever is sitting in it, and this run does not know what it is — a wrap is
+invoked *by* that person and can commit it, and this run is not and cannot.
+Merging over it is the one thing here that could destroy work rather than
+merely confuse it.
+
+**Never move a branch under a live session.** A lane worktree with a session
+running in it is mid-batch, and a batch whose `HEAD` and working tree change
+underneath it produces diffs that describe nothing. A dirty worktree is the
+cheap signal and the one to act on; there is no reliable clean-worktree
+liveness check today — lane session state is designed and unbuilt — so
+**say which lanes were skipped and why, and treat a clean-but-live lane as a
+known gap rather than an impossibility.**
+
+**A skipped lane is not a failed run.** Steps 0–4 have already done the work
+this skill exists for; this step is redistribution, and a lane that has to wait
+for its own next batch is exactly where it would have been before this step
+existed.
+
+## Step 6 — Close the run out through `--wss-wrap`
+
+**Invoke `wss-wrap` and let it run its whole ritual.** A run that has written
+into every lane's inbox, drained the conflict queue and filed an audit entry is
+a run whose output dies in the working tree if the session clears. The close-out
+has an owner; this skill calls it rather than describing what the user ought to
+do next.
+
+**Ask for the commit, in that turn.** This skill has no flag, so it has no grant
+to pass on — [`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md)'s *authorization
+comes from the flag* rule, and a skill that granted itself one by writing it here
+would be the exact move that rule forbids. Say what the commit would cover and
+ask. The user is present for the whole run — every conflict was mediated and
+every dependency ruled on by them — so one more question is cheap, and a refusal
+just leaves the tree as it was.
+
+**Never offer the push.** Step 0 landed sibling lanes' branches onto
+`WSS.branch.integration` locally and ruled there that publishing them is not this
+run's act. A push here would carry those landings to the remote as a side effect
+of tidying up. Ask for the commit; name what is unpushed; stop.
+
+Everything else is `wss-wrap`'s — the task list, the memory check,
+`handoff-writer`'s currency pass, the closing counts. None of it is restated
+here, and a change to any of it belongs in that file.
+
+**Step 6 runs even when step 5 skipped every lane.** The queues, the deletions
+from `WSS.lanes.conflicts` and the audit entry are already written by then, and
+those are the writes a close-out exists to make durable. A run that reconciled
+nothing still changed the tree.
+
 ## What this skill does not do
 
 - **It does not write any lane's records.** Every finding goes to a queue, and
@@ -270,6 +380,11 @@ Where the *mechanism* itself changed, that is `--wss-docs`' page to update.
 - **It does not trust the conflict inbox.** An entry there is evidence from a
   session that is long gone, and it is re-verified against the records before
   anything is done with it.
-- **It does not commit or push.** It has no grant. The queues it wrote are left
-  in the working tree for the session's ordinary close-out.
+- **It does not commit by hand, it confers no grant, and it never pushes.**
+  Step 6 hands the close-out to `--wss-wrap`, which asks the user for the
+  commit in that turn; the commit itself is `git-writer`'s as everywhere else.
+  Nothing this run does reaches a remote: step 0's landing and step 5's
+  redistribution both move a ref onto commits that already exist — authoring
+  nothing, publishing nothing — and anything more than a fast-forward is
+  refused and reported.
 - **It does not run from a lane**, and does not degrade to a partial run there.

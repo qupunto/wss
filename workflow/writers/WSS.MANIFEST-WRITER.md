@@ -23,6 +23,11 @@ Two callers want different amounts of work, which is
   searching and a round of questions.
 - **`--wss-adopt`, amending** — one key added or corrected in a manifest that
   already exists. No detection phase, nothing to ask.
+- **`wss-update` (and `--wss-adopt` at its finish) — the `WSS.suite` stamp**: the
+  version-and-commit object written after a passing doctor, and the manifest
+  key renames a migration lands. Same rules as any amendment, with one
+  addition: a stamp with an unresolvable commit is not written at all —
+  [`WSS.MANIFEST.md`](../WSS.MANIFEST.md)'s `WSS.suite` row carries why.
 
 A one-key amendment should not have to run an adoption to get written. The
 detection and the asking stay with `--wss-adopt` because **a primitive has no channel

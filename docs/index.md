@@ -19,6 +19,7 @@ directory is the working tree.
 | File | Description |
 |---|---|
 | [WSS.OVERVIEW.md](WSS.OVERVIEW.md) | Repository layout, what a session loads and when, what can be switched off and what cannot, the scripts, and the verification commands |
+| [domain/workflows.md](domain/workflows.md) | End-to-end journeys through the suite. Currently one: a batch from `--wss-start` to `--wss-wrap`, its ten stages, its three human gates, and the three places the obvious narration is wrong |
 
 ## Annex
 

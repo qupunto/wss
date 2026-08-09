@@ -2,6 +2,7 @@
 name: wss-retire
 description: "Retire the workflow from the project in $PWD — the reverse of adoption. One checkbox dialog: a full snapshot (WSS.RETIREMENT-PLAN.tar.gz) asked first, then the actions — delete machinery, delete records, wipe records, uninstall the plugin — run in dependency order. Invoke only as /wss-retire; it has no flag and is never inferred from a phrase."
 disableModelInvocation: true
+disable-model-invocation: true
 ---
 
 # Retiring a project
