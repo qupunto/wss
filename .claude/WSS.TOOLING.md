@@ -255,9 +255,13 @@ Everything here is global.
 
 ## Agents
 
-None. Every `agents.*` role in the manifest schema is something an *adopting*
-project declares, and this repo's own manifest declares none — so a skill that
-would route a lane to an agent does that work inline and says so.
+| Agent | What it does |
+|---|---|
+| `wss-release-prep` | Prepares a release's material for `--wss-release`: the version tier it proposes and which trigger fired, the changelog entry text in the voice of the entries above it, and any drift between what the release list and changelog claim shipped and what a tag actually resolves. Reads the release list, the roadmaps the milestone cites, the changelog, the backlog, the audit log and the git history — several thousand tokens that stay out of the caller's context. It writes nothing, tags nothing and publishes nothing. Declared as `WSS.agents.release`. **This one travels** |
+
+The remaining `agents.*` roles in the schema stay something an *adopting* project
+declares, and this repo declares none of them — so a skill that would route to
+one does that work inline and says so.
 
 ## Scripts
 
@@ -272,6 +276,7 @@ would route a lane to an agent does that work inline and says so.
 | `wss-reset-records.sh` | Blanks every record the manifest declares back to its canonical heading — a fresh start with the structure kept and the content gone. Dry-run unless given `--write`. Skips a `WSS.record.todo` that names a provider rather than a file, and never touches `WSS.record.reference` or `WSS.record.tooling.catalog`, which describe the tooling rather than the project. **This one travels**, and `wss-publish.sh` runs the copy of it rather than keeping a second list |
 | `wss-export-records.sh` | Moves machine-local workflow state between machines — untracked record files, the lane selector, and the config directory's bug-reports inbox. Skips tracked records and the sweep checkpoint — except under `--all`, the retirement snapshot `/wss-retire` takes before deleting, which keeps tracked records in and adds the docs tree. Import is all-or-nothing, refuses escaping entries, and refuses non-empty collisions without `--force`. **This one travels** |
 | `wss-retire-workflow.sh` | The tidy exit: removes the suite's machinery from a project — manifest, sweep cache, lane selector — and, only behind `--write --records`, the workflow-shaped records. Never touches the reference, changelog or tooling files, a CLAUDE.md handoff, or the suite's own tree. Dry-run by default. `/wss-retire` is the walkthrough around it. **This one travels** |
+| `wss-remove-lanes.sh` | Turns worktree-lane mode off for one checkout: deletes `.claude/WSS.LANE` and drops `WSS.lanes.named` and `.conflicts` from the manifest. Keeps `WSS.lanes.exclusive`, `.serialize` and `.generated`, which drive `--wss-start`'s Phase 3 inside a single checkout and are not worktree machinery. Deletes no record under any flag — a lane file holding content refuses the write until `--allow-orphans`. Dry-run by default; refuses an untracked or uncommitted manifest so the rewrite stays revertible. **This one travels** |
 | `wss-publish.sh` | Assembles the public tree from `HEAD` and gates it — copies only what it admits, empties the records on the copy, then asserts no ancestry, no private identifier, a whitelist of tracked paths, the credential rules, and the doctor and tests from inside the result. Never pushes. Does not travel with what it copies |
 | `.claude-plugin/marketplace.json` | Makes the same directory its own marketplace, listing one plugin whose `source` is `"./"` — so there is no second repository to keep in step. Handed a directory holding both, `claude plugin validate` checks this one and not the other; name the file to check the other |
 | `skills/wss-docs/assets/wss-scaffold.sh` | Creates a docsify site shell and only the shell, never content. Refuses to touch an existing directory, and prints the steps it deliberately leaves to its caller. Invoked by `--wss-docs` in Scaffold mode |
@@ -305,6 +310,6 @@ Worth naming, because they are most of what a reader will otherwise open:
 | File | What it is |
 |---|---|
 | `workflow/*.md` | The contracts every skill links to instead of carrying its own copy — ownership, record contract, manifest keys, sweep checkpoint, audit coverage, project shape |
-| `CLAUDE.md` | Loaded into every session in every project — the checkout form only, because a plugin root's is never read as project context. The three contract paths, the doctor line and a pointer: what each contract governs is `wss-contracts`', which owns it |
+| `CLAUDE.md` | Loaded into every session in every project — the checkout form only, because a plugin root's is never read as project context. Routing and machine-wide rules, kept short because they are paid for in every session; what each contract governs is `wss-contracts`', which owns it |
 | `README.md` | How the repo is adopted on a new machine, and how the flags work |
 | `WSS.BUG-REPORTS.md` | Gitignored inbox for defects found in these files by sessions working in other projects |

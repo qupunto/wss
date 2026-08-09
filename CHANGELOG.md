@@ -8,6 +8,40 @@ reasoning behind each change, is `WSS.CHANGELOG.md`. This file is deliberately
 free of that: if an entry here only makes sense to someone editing the suite, it
 belongs in the other one.
 
+## 0.9.2 — 2026-08-09
+
+**A project that doesn't use worktree lanes stops paying for them.** The lane
+machinery — landing a lane's branch, syncing a worktree forward, the lane
+selector — moved out of the two skills that carried it, and is now read only
+when your project actually runs lanes: when a lane selector is present, or your
+manifest names lanes. Sessions in a single-checkout project no longer load that
+material and no longer get lane instructions injected. Nothing changes for a
+project that does run lanes, beyond one extra read.
+
+**Turning lanes off is a command now, and it never removes a record.**
+`wss-remove-lanes.sh` drops the lane selector and the named-lane declarations
+while keeping the collision settings a single checkout still needs, and refuses
+to touch a lane record that still holds content unless you say so explicitly. It
+shows you the change before making it, and refuses to run against a manifest you
+have not committed, so git can always undo it.
+
+**Cutting a release costs your session less.** `--wss-release` now hands the
+reading — the release list, the changelog, the backlog, the whole range since
+the last tag — to a dedicated agent whose context is discarded when it returns,
+so only the proposed version, the entry and anything that looks wrong come back.
+The confirmation, the tagging and the pushing stay exactly where they were.
+
+**Sessions spend their context on the work.** The suite's guidance now tells a
+session to bound what it reads, edit a file rather than rewrite it, and send
+read-heavy checks out to a subagent instead of doing them inline. Measured
+rather than assumed: what a session says is a few percent of its context, and
+what its tools return is nearly all of it.
+
+**Documentation corrections.** The overview page drew five suite scripts where
+six exist, the tooling annex was a row short of its source, and both described a
+flag's injected block as depending only on how you phrase the flag — its content
+depends on your project too.
+
 ## 0.9.1 — 2026-08-09
 
 **Moving a project onto the newest conventions is one command now.**

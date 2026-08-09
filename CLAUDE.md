@@ -30,6 +30,28 @@ routing itself costs no lookup. `~/.claude/README.md` covers the `--flag`
 shorthands; what each one authorizes is `~/.claude/workflow/WSS.OWNERSHIP.md`'s
 matrix.
 
+## Tool traffic is the context, not the conversation
+
+Prose is a few percent of the window; tool calls are nearly all of it. Optimise
+the calls, not the wording.
+
+- **A script that runs twice gets written once.** Put it in the scratchpad and
+  re-run it with arguments; a re-pasted heredoc costs its full length every time.
+- **Bound every command's output** — `head`, `wc -l`, `--stat` — rather than
+  dumping a file or a full diff and reading past it.
+- **Read narrowly and once.** Reach for `offset`/`limit` or a grep over the
+  section; never re-read what is already in the window.
+- **`Edit` over `Write` on a file that exists**, which re-sends the whole body.
+
+**Delegate the reading, keep the deciding.** A subagent's context is discarded
+when it returns, so its reading costs this session nothing and only its report
+arrives. Send out anything read-heavy that comes back as a verdict — a check, an
+audit, a survey, a skill invoked only to look. Keep anything that needs what this
+session lived through: the handoff, the wrap, a decision being logged, a commit.
+A fresh context would reconstruct those from diffs, badly. **Brief every agent to
+return a verdict with `file:line` citations and no file dumps** — an unbounded
+report is where the saving leaks back out.
+
 ## Run the doctor rather than trusting an inventory
 
 ```bash

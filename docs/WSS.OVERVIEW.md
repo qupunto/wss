@@ -30,6 +30,7 @@ before a single skill runs.
 ├── wss-reset-records.sh       blanks the records to their headings — what makes a fork yours
 ├── wss-export-records.sh      moves machine-local state between machines by archive
 ├── wss-retire-workflow.sh     the tidy exit — removes the machinery, and only on request the records
+├── wss-remove-lanes.sh        turns worktree-lane mode off for one checkout — never touches a record
 ├── wss-publish.sh             assembles and gates the public tree; deliberately never pushes
 │
 ├── hooks/                 the hook scripts, and the hooks.json a plugin needs
@@ -87,7 +88,7 @@ is paid for far more often than a byte in another.
 | Each skill's frontmatter `description` | every session | it is what decides whether the skill is ever invoked |
 | A skill's **body** | only when that skill is invoked | length here is cheap by comparison |
 | `skills/wss-docs/references/*.md` | only when the `wss-docs` skill reads one | reference detail belongs here, not in a body |
-| A `wss-shorthand-flags.sh` block | when its flag fires | injected into the prompt |
+| A `wss-shorthand-flags.sh` block | when its flag fires — minus the worktree-lane paragraphs, unless the checkout is in lane mode | injected into the prompt |
 | The project's `WSS.record.handoff` — or just its **card**, where the file carries a `<!-- handoff:card-ends -->` marker | every session in **any** project whose resolved handoff — declared, or the `WSS.HANDOFF.md` fallback when the key or the manifest is absent — is an existing file other than `CLAUDE.md`, via `wss-session-check.sh` | so *card* length is the permanent per-session cost of adopting, not file length. Without the marker the whole file is injected, which is what the split exists to escape |
 
 Two rules follow. **A description must carry every case that should trigger the
@@ -204,7 +205,11 @@ replacing them, so an adopter's own hooks keep firing.
   being matched from a skill description, which is reliable in practice but not
   guaranteed. A flag counts anywhere in the message; what gates it is exact
   decomposition — a token must split entirely into flags, so a pasted
-  `git branch --track origin/dev` or a `--wss-wrapper` fires nothing.
+  `git branch --track origin/dev` or a `--wss-wrapper` fires nothing. What a
+  block *contains* is gated a second time: `lanes_named_()` withholds the
+  worktree-lane paragraphs (today, `--wss-plan`'s) unless `.claude/WSS.LANE`
+  exists or the manifest declares a non-empty `WSS.lanes.named`, so a project
+  with no worktrees never pays for instructions that cannot fire there.
 - **`SessionStart` → `hooks/wss-session-check.sh`.** Silent when there is nothing worth a
   session's attention, because its output is injected into every session's
   context — a chatty version would be both a permanent token cost and a warning

@@ -83,34 +83,14 @@ session that is not over.
 
 ## What to do, in order
 
-**Step 0 — in a lane worktree, sync forward before anything is read or
-reported.** Only where a `.claude/WSS.LANE` selector is present; a main checkout
-skips this entirely and there is nothing to say about it. `git fetch`, then
-`git merge --ff-only` `WSS.branch.integration` into the worktree's branch,
-through `git-writer` under this skill's grant. It is the same move
-`--wss-start`'s Phase 0 makes at the other end of a batch, for the same reason
-one step later: **a report written from a stale base describes a lane that no
-longer exists.** A sibling lane's work landing on the integration branch while
-this session ran is ordinary, and a handoff written without it records
-obligations as outstanding that were executed elsewhere — the copy that bites,
-exactly as it does at start.
-
-**The refusal rule is the ordinary one, with one difference: it does not stop
-the wrap.** Where the branch has genuinely diverged, report it plainly, say the
-report below is written against a base the integration branch has moved past,
-and **carry on**. A wrap's first duty is pushing the lane's own branch so the
-work is not stranded, and that must still happen when everything else is
-refused. Never force it, and never resolve the divergence here — a wrap is the
-worst moment to take a merge decision, because the context that would explain it
-is about to be cleared.
-
-> **Syncing forward does not widen what the report may claim.** After the
-> fast-forward this branch contains other lanes' commits, and the closing
-> summary and handoff must still describe **this session's own work only**.
-> Derive the range from this session's commits — the `WSS.commitTrailer` stamp
-> is what distinguishes them — never from "everything new on this branch", which
-> silently attributes every sibling lane's landing to this one and reads as a
-> session that did four times what it did.
+**Step 0 — decide whether this is a lane worktree, before anything is read or
+reported.** Lane mode is on where a `.claude/WSS.LANE` selector is present in
+this checkout, or the manifest declares `WSS.lanes.named`. Where it is,
+**read [`references/WSS.LANES.md`](references/WSS.LANES.md) now and follow it** —
+it holds the sync-forward this step performs, the landing procedure step 5 ends
+in, and why the milestone question in step 6 is never asked from a lane. Where
+it is off there is no lane branch, no sibling to sync from and nothing to land,
+so skip the file entirely and say nothing about it.
 
 1. **Reconcile the task list.** Run `TaskList`. Mark anything genuinely
    finished as `completed` via `TaskUpdate`; delete anything stale,
@@ -236,9 +216,9 @@ need the session's own knowledge:
 If a push is rejected, `git-writer` stops and hands back. Report it rather than
 resolving it: a rejection usually means another session pushed first, and that
 is a merge decision, not a wrap-up step. **This holds for the lane's landing
-push in the worktree section below too** — that one is refused rather than
-forced by design, and a rejection there is the same fact wearing a different
-shape.
+push in [`references/WSS.LANES.md`](references/WSS.LANES.md) too** — that one is
+refused rather than forced by design, and a rejection there is the same fact
+wearing a different shape.
 
 **Where the pushed branch is now ahead of `WSS.branch.publish`, name `--wss-pr`
 and stop.** Do not open one: a session ending and work being ready to merge are
@@ -248,11 +228,11 @@ If the tree is clean and nothing is unpushed, say so in one line and move on.
 
 ## One worktree per session
 
-Every session wraps before it finishes, and a wrap pushes. With two sessions
-sharing one checkout that is unavoidable collateral: they share a working tree,
-an index and a `HEAD`, so per-session *branches* do not help either.
-
-The isolation has to be at the worktree level:
+**This applies whether or not the project uses lanes** — it is ordinary hygiene
+for a shared checkout, and the case it addresses is a project with no lanes at
+all. Every session wraps before it finishes, and a wrap pushes, so two sessions
+sharing one checkout collide: they share a working tree, an index and a `HEAD`,
+which per-session *branches* do not fix. Isolate at the worktree level:
 
 ```bash
 git worktree add ../<project>-<topic> -b <topic>   # from the main checkout
@@ -264,60 +244,10 @@ instead of duplicating hundreds of megabytes or needing a fresh install. Where
 it does not, a worktree is expensive and may arrive unable to run anything —
 confirm before treating one as cheap.
 
-Then a wrap pushes that session's branch, which is what makes "only my commits"
-achievable at all. The integration branch stays the integration branch;
-worktree branches are short-lived.
-
-**Wrapping inside a worktree, in order.** All three steps go through
-`git-writer` under this skill's grant:
-
-1. **Push the worktree's own WSS.branch.** Unchanged, and it happens first: it is
-   the step that must succeed even when everything below is refused.
-2. **Land it on `WSS.branch.integration`.** `git fetch origin`, then
-
-   ```bash
-   git push origin <worktree-branch>:<WSS.branch.integration>
-   ```
-
-   **No leading `+`, ever.** That is the entire safety property, and it is why
-   this is not a merge: git resolves the push as a fast-forward or **refuses it
-   server-side**. There is no working tree involved, no conflict to hit, and
-   nothing half-applied to clean up. The lane normally *is* the integration
-   branch plus this session's commits — `--wss-start`'s Phase 0 syncs forward
-   before a batch reads anything — so the fast-forward is the ordinary case.
-
-   **On a rejected push, report and stop. Never force, never resolve it here.**
-   A rejection means the integration branch moved: another lane landed while
-   this session ran. Say which branch is behind and that the lane needs syncing
-   forward before it can land — the next `--wss-start` does exactly that. A wrap
-   is the worst moment to resolve a divergence, because it is the moment the
-   context that would explain it is about to be cleared.
-
-   **`WSS.branch.mergeMethod` does not apply.** It governs the one merge
-   `--wss-pr` hands `git-writer`, integration onto `WSS.branch.publish`. A
-   fast-forward writes no merge commit, so there is no method to choose, and
-   wiring one in here would create the merge commit this step exists to avoid.
-
-3. **Sync the worktree back**, as before: `git merge --ff-only` the integration
-   branch into the worktree's branch. In the happy path step 2 already made
-   the two identical and this costs nothing. Where it cannot fast-forward,
-   **report the divergence plainly and stop**; a merge with real deltas is a
-   decision, not a wrap step. The lane records are why: an at-merge obligation
-   already executed on the integration branch but surviving in the lane's copy
-   reads as an instruction to execute it again. The start-side twin lives in
-   `--wss-start`'s Phase 0: a lane worktree also syncs forward before a batch
-   runs.
-
-**Step 2 does not fire on an unfinished-work wrap.** Where this ran because the
-session is ending rather than because the work was approved — the third trigger
-above — push the lane branch and **say plainly that it was deliberately not
-landed**. Half-done work on a branch only this session reads is safe; the same
-work on the branch every other lane syncs forward from is not, and it arrives
-there looking finished.
-
-**Why the push refspec rather than checking out the integration branch and
-merging**: `WSS.branch.integration` is checked out in the main checkout, and git
-refuses to check out a branch that another worktree holds.
+Worktree branches are short-lived; the integration branch stays the integration
+branch. Landing a **declared lane** onto that branch is a different act with its
+own refusal rules, and it lives in
+[`references/WSS.LANES.md`](references/WSS.LANES.md).
 
 ## What this skill does not do
 
