@@ -129,7 +129,7 @@ if [ -n "${seen[--wss-full-check]:-}" ]; then
   unset 'seen[--wss-check]'
 fi
 
-# Either stocktake flag absorbs `--wss-check`. wss-stocktake runs --wss-check's
+# Either stocktake flag absorbs `--wss-check`. stocktake runs --wss-check's
 # method over --wss-check's files as its record dimension and says so — "invoke one
 # or the other, never both" — so firing both sweeps the record twice, and the
 # second sweep reports the first one's writes as fresh drift.
@@ -239,25 +239,25 @@ lanes_named_() {
 skill_for() {
   case $1 in
     --wss-flags | --wss-help | --wss-alerts) echo - ;;
-    --wss-track) echo wss-track ;;
-    --wss-todo | --wss-log) echo wss-record ;;
-    --wss-wrap) echo wss-wrap ;;
-    --wss-start) echo wss-start ;;
-    --wss-release) echo wss-release ;;
-    --wss-pr) echo wss-pr ;;
-    --wss-stocktake | --wss-full-stocktake) echo wss-stocktake ;;
-    --wss-adopt) echo wss-adopt ;;
-    --wss-update) echo wss-update ;;
-    --wss-docs | --wss-diagram) echo wss-docs ;;
-    --wss-tools) echo wss-tools ;;
-    --wss-check) echo wss-check ;;
-    --wss-report) echo wss-report ;;
-    --wss-full-check) echo wss-full-check ;;
-    --wss-plan) echo wss-plan ;;
-    --wss-overview) echo wss-overview ;;
-    --wss-scout) echo wss-scout ;;
-    --wss-describe) echo wss-describe ;;
-    --wss-reference) echo wss-reference ;;
+    --wss-track) echo track ;;
+    --wss-todo | --wss-log) echo record ;;
+    --wss-wrap) echo wrap ;;
+    --wss-start) echo start ;;
+    --wss-release) echo release ;;
+    --wss-pr) echo pr ;;
+    --wss-stocktake | --wss-full-stocktake) echo stocktake ;;
+    --wss-adopt) echo adopt ;;
+    --wss-update) echo update ;;
+    --wss-docs | --wss-diagram) echo docs ;;
+    --wss-tools) echo tools ;;
+    --wss-check) echo check ;;
+    --wss-report) echo report ;;
+    --wss-full-check) echo full-check ;;
+    --wss-plan) echo plan ;;
+    --wss-overview) echo overview ;;
+    --wss-scout) echo scout ;;
+    --wss-describe) echo describe ;;
+    --wss-reference) echo reference ;;
   esac
 }
 
@@ -290,7 +290,7 @@ skill_gist_() {
       if (match($0, / SHORTHAND:| Also trigger| Invoke on| Trigger on| Use whenever/))
         $0 = substr($0, 1, RSTART - 1)
       # Cut to the first sentence, but only while that still says something.
-      # wss-record opens with one short line about the record, and puts the
+      # record opens with one short line about the record, and puts the
       # --wss-todo / --wss-log split in the sentence AFTER it, so cutting
       # unconditionally described both flags with the same nine words.
       # NOTE: no apostrophes in this comment. The whole program is inside a
@@ -363,7 +363,7 @@ EOF
   --wss-track)
     cat <<'EOF'
 The user included the `--wss-track` flag. That is an explicit, unconditional
-instruction to invoke the `wss-track` skill now. The usual complexity
+instruction to invoke the `track` skill now. The usual complexity
 threshold does NOT apply — do not skip the list because the work looks small.
 
 Authorization: none.
@@ -372,7 +372,7 @@ EOF
   --wss-todo)
     cat <<'EOF'
 The user included the `--wss-todo` flag. That is an explicit, unconditional
-instruction to park an idea rather than build it, using the `wss-record`
+instruction to park an idea rather than build it, using the `record`
 skill — invoke it now, without asking for confirmation first.
 
 The rest of the message is the idea to defer, not a question to answer.
@@ -391,7 +391,7 @@ EOF
   --wss-plan)
     cat <<'EOF'
 The user included the `--wss-plan` flag. That is an explicit, unconditional
-instruction to invoke the `wss-plan` skill now — what the next GOAL is, how a
+instruction to invoke the `plan` skill now — what the next GOAL is, how a
 roadmap's blocks are ordered, or whether a milestone is finished. The rest of
 the message is scope, not a question to answer first.
 
@@ -430,7 +430,7 @@ EOF
   --wss-adopt)
     cat <<'EOF'
 The user included the `--wss-adopt` flag. That is an explicit, unconditional
-instruction to run the `wss-adopt` skill now — bring this project under the
+instruction to run the `adopt` skill now — bring this project under the
 workflow by writing `.claude/WSS.WORKFLOW.json`.
 
 Authorization: COMMIT what it creates. Not push.
@@ -440,7 +440,7 @@ Irreversible, in force before the skill loads:
   only; never overwrite a key the project already chose. THE ONE EXCEPTION is a
   key or filename matching a PREVIOUS suite convention — that is stale
   machinery, not a project's choice, and it routes to the migration procedure
-  behind its own consent gate (the `wss-update` skill's Job 2), never mended
+  behind its own consent gate (the `update` skill's Job 2), never mended
   silently as part of adoption.
 - NEVER INVENT A PATH OR A COMMAND. Every value must be verified to exist or to
   be declared by the project's own tooling. A key you cannot resolve is LEFT
@@ -455,7 +455,7 @@ EOF
   --wss-update)
     cat <<'EOF'
 The user included the `--wss-update` flag. That is an explicit, unconditional
-instruction to run the `wss-update` skill now — update the suite install, then
+instruction to run the `update` skill now — update the suite install, then
 detect what conventions this tree actually carries and migrate it to the
 newest.
 
@@ -479,7 +479,7 @@ EOF
   --wss-check)
     cat <<'EOF'
 The user included the `--wss-check` flag. That is an explicit, unconditional
-instruction to invoke the `wss-check` skill now and health-check the
+instruction to invoke the `check` skill now and health-check the
 project's record for claims that no longer match reality and for updates the code
 owes but never got.
 
@@ -498,7 +498,7 @@ EOF
   --wss-full-check)
     cat <<'EOF'
 The user included the `--wss-full-check` flag. That is an explicit, unconditional
-instruction to invoke the `wss-full-check` skill now — re-verify every file
+instruction to invoke the `full-check` skill now — re-verify every file
 the project keeps for its functional value, at FULL scope: the records, the docs
 site, and the tooling files.
 
@@ -534,7 +534,7 @@ EOF
   --wss-tools)
     cat <<'EOF'
 The user included the `--wss-tools` flag. That is an explicit, unconditional
-instruction to invoke the `wss-tools` skill now — keep the tooling
+instruction to invoke the `tools` skill now — keep the tooling
 catalog in step with what skills and agents actually exist, fix stale claims
 inside those files, and run the prose prune when that is what was asked.
 
@@ -581,7 +581,7 @@ EOF
   --wss-report)
     cat <<'EOF'
 The user included the `--wss-report` flag. That is an explicit, unconditional
-instruction to invoke the `wss-report` skill now — file the finding the rest of
+instruction to invoke the `report` skill now — file the finding the rest of
 the message describes: append it to the machine-local bug-reports inbox, then
 offer to open an issue on the suite's public upstream repository. The rest of
 the message is the finding, not a question to answer first.
@@ -607,7 +607,7 @@ EOF
   --wss-log)
     cat <<'EOF'
 The user included the `--wss-log` flag. That is an explicit, unconditional
-instruction to invoke the `wss-record` skill now and record a decision that
+instruction to invoke the `record` skill now and record a decision that
 has already been made. The rest of the message is the decision, not a question
 to answer first — and it is not a request to re-open it.
 
@@ -625,7 +625,7 @@ EOF
   --wss-describe)
     cat <<'EOF'
 The user included the `--wss-describe` flag. That is an explicit, unconditional
-instruction to invoke the `wss-describe` skill now and record what the system
+instruction to invoke the `describe` skill now and record what the system
 does at runtime. The rest of the message is the rule, not a question to answer
 first.
 
@@ -647,7 +647,7 @@ EOF
   --wss-reference)
     cat <<'EOF'
 The user included the `--wss-reference` flag. That is an explicit, unconditional
-instruction to invoke the `wss-reference` skill now and record what the project
+instruction to invoke the `reference` skill now and record what the project
 is — stack, architecture, data model, conventions — in the reference record.
 The rest of the message is the material, not a question to answer first.
 
@@ -669,7 +669,7 @@ EOF
   --wss-wrap)
     cat <<'EOF'
 The user included the `--wss-wrap` flag. Treat it exactly as "wrap this up, I am
-about to clear the session" — invoke the `wss-wrap` skill immediately and
+about to clear the session" — invoke the `wrap` skill immediately and
 unconditionally, with no further confirmation, even mid-task.
 
 The rest of the message is context about what to record, not a question to
@@ -707,7 +707,7 @@ EOF
   --wss-start)
     cat <<'EOF'
 The user included the `--wss-start` flag. That is an explicit, unconditional
-instruction to run the `wss-start` skill — invoke it now, without asking
+instruction to run the `start` skill — invoke it now, without asking
 what to work on or whether to begin.
 
 The rest of the message is scope or emphasis ("--wss-start, stick to the social
@@ -717,7 +717,7 @@ Authorization: COMMIT as the work lands, so a compaction cannot lose a finished
 lane. NOT push. Wait for the user to say so, or for the user to type --wss-wrap.
 Nothing this skill INVOKES may push on its behalf: an invoked skill inherits this
 grant, never its own flag's, so closing out goes through handoff-writer for the
-handoff, not through wss-wrap for the ritual, and the commits go through
+handoff, not through wrap for the ritual, and the commits go through
 git-writer, which may commit here but not push.
 
 Irreversible, in force before the skill loads:
@@ -740,7 +740,7 @@ EOF
   --wss-release)
     cat <<'EOF'
 The user included the `--wss-release` flag. That is an explicit, unconditional
-instruction to run the `wss-release` skill — invoke it now, without asking whether
+instruction to run the `release` skill — invoke it now, without asking whether
 to start.
 
 The rest of the message is context about what is being released, not a question
@@ -773,7 +773,7 @@ EOF
   --wss-pr)
     cat <<'EOF'
 The user included the `--wss-pr` flag. That is an explicit, unconditional
-instruction to run the `wss-pr` skill — invoke it now, without asking whether
+instruction to run the `pr` skill — invoke it now, without asking whether
 to open one.
 
 The rest of the message is context about what is being merged, not a question
@@ -808,7 +808,7 @@ EOF
   --wss-full-stocktake)
     cat <<'EOF'
 The user included the `--wss-full-stocktake` flag. That is an explicit,
-unconditional instruction to run the `wss-stocktake` skill at FULL scope —
+unconditional instruction to run the `stocktake` skill at FULL scope —
 invoke it now, without asking for confirmation first.
 
 The rest of the message is scope or emphasis, not a question to answer first.
@@ -826,7 +826,7 @@ Irreversible, in force before the skill loads:
   was examined.
 - The push grant does NOT extend to remediation code written afterwards. That is
   ordinary work: commit it and ask.
-- Close out through the `wss-wrap` skill rather than pushing by hand, so its
+- Close out through the `wrap` skill rather than pushing by hand, so its
   rails apply — a push publishes a ref, so check what rides along, and never
   force-push or resolve a rejection by force.
 EOF
@@ -834,7 +834,7 @@ EOF
   --wss-docs)
     cat <<'EOF'
 The user included the `--wss-docs` flag. That is an explicit, unconditional
-instruction to invoke the `wss-docs` skill now — do not ask whether to start. Bare,
+instruction to invoke the `docs` skill now — do not ask whether to start. Bare,
 it means "document what we just worked on": infer the target from the
 conversation and say what you picked before writing. With an argument, that is
 the target. The rest of the message is scope, not a question to answer first.
@@ -857,7 +857,7 @@ EOF
     cat <<'EOF'
 The user included the `--wss-diagram` flag. That is an explicit, unconditional
 instruction to draw ONE diagram of what the message names — or, bare, of what
-was just worked on — and land it in the docs site: invoke the `wss-docs` skill
+was just worked on — and land it in the docs site: invoke the `docs` skill
 now, and write the result as a page under the site's annex directory
 (`docs/annex/` by the site's own convention). The rest of the message is the
 subject, not a question to answer first.
@@ -866,7 +866,7 @@ Authorization: none. Committing and pushing stay ordinary decisions.
 
 In force before the skill loads:
 - The three diagram rules are the style guide's
-  (`skills/wss-docs/references/WSS.STYLE-GUIDE.md`) and apply in full: check
+  (`skills/docs/references/WSS.STYLE-GUIDE.md`) and apply in full: check
   what will render it — docsify needs a plugin the default `index.html` does
   not load, so ASCII in a plain fence is the default; every box and arrow is a
   claim drawn from source you read; and stop before the graph stops being
@@ -879,7 +879,7 @@ EOF
   --wss-stocktake)
     cat <<'EOF'
 The user included the `--wss-stocktake` flag. That is an explicit, unconditional
-instruction to run the `wss-stocktake` skill incrementally — invoke it now,
+instruction to run the `stocktake` skill incrementally — invoke it now,
 without asking for confirmation first.
 
 The rest of the message is scope or emphasis, not a question to answer first.
@@ -907,7 +907,7 @@ Irreversible, in force before the skill loads:
   never incremental. When in doubt, widen.
 - The push grant does NOT extend to remediation code written afterwards. That is
   ordinary work: commit it and ask.
-- Close out through the `wss-wrap` skill rather than pushing by hand, so its
+- Close out through the `wrap` skill rather than pushing by hand, so its
   rails apply — a push publishes a ref, so check what rides along, and never
   force-push or resolve a rejection by force.
 EOF
@@ -915,7 +915,7 @@ EOF
   --wss-overview)
     cat <<'EOF'
 The user included the `--wss-overview` flag. That is an explicit, unconditional
-instruction to invoke the `wss-overview` skill now — report where the project
+instruction to invoke the `overview` skill now — report where the project
 stands, read fresh from its records, changing nothing.
 
 The rest of the message is scope or emphasis, not a question to answer first.
@@ -938,7 +938,7 @@ EOF
   --wss-scout)
     cat <<'EOF'
 The user included the `--wss-scout` flag. That is an explicit, unconditional
-instruction to invoke the `wss-scout` skill now — consult the project's toolbelt
+instruction to invoke the `scout` skill now — consult the project's toolbelt
 registry, and where it has no answer, search the stack's public registries for
 existing libraries that do or broadly resemble what the rest of the message
 describes, and explain the candidates. The rest of the message is the task to

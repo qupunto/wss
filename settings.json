@@ -32,14 +32,14 @@
     "defaultMode": "auto"
   },
   "skillOverrides": {
-    "wss-adopt": "user-invocable-only",
-    "wss-contracts": "name-only",
-    "wss-full-check": "name-only",
-    "wss-lane-record-sync": "name-only",
-    "wss-retire": "name-only",
-    "wss-stocktake": "user-invocable-only",
-    "wss-toggle": "user-invocable-only",
-    "wss-track": "name-only"
+    "adopt": "user-invocable-only",
+    "contracts": "name-only",
+    "full-check": "name-only",
+    "lane-record-sync": "name-only",
+    "retire": "name-only",
+    "stocktake": "user-invocable-only",
+    "toggle": "user-invocable-only",
+    "track": "name-only"
   },
   "hooks": {
     "UserPromptSubmit": [

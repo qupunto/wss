@@ -38,7 +38,7 @@ jobs:
         # hooks moved out of the root on 2026-08-01 and the glob did not follow
         # them, so for the length of that change the two files this workflow
         # exists to protect were the only shell nothing checked; and
-        # skills/wss-docs/assets/wss-scaffold.sh was never in any of the patterns at all.
+        # skills/docs/assets/wss-scaffold.sh was never in any of the patterns at all.
         # A glob is a silent form of coverage — it reports success by matching
         # nothing. `git ls-files` cannot miss a tracked script, so adding one in
         # a new directory needs no edit here.
@@ -162,7 +162,7 @@ jobs:
         # A general markdown link checker is NOT wanted here, and a first attempt
         # at one produced ~60 findings of which almost none were real:
         #
-        #   - skills/wss-docs/references/** is teaching material about how to write a
+        #   - skills/docs/references/** is teaching material about how to write a
         #     docs site, so it is full of deliberate placeholders. That skill's
         #     own handoff already documents template placeholders and
         #     page-relative shorthand as known false-positive classes; do not
@@ -175,7 +175,7 @@ jobs:
         # tracked files and skips placeholders.
         #
         # The exemptions are per LINK, not per directory. Excluding
-        # skills/wss-docs/references/ wholesale was the earlier shape, and it meant
+        # skills/docs/references/ wholesale was the earlier shape, and it meant
         # every relative link in that tree — including the live pointers into
         # workflow/ — was verified by nothing, which is the class this step
         # exists to catch. What is actually exempt:

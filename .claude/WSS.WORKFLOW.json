@@ -34,8 +34,8 @@
     "commands": {
       "typecheck": "while read -r f; do bash -n \"$f\" || exit 1; done < <(git ls-files '*.sh')",
       "test": "bash tests/wss-hook-contract.sh",
-      "indexRegen": "bash skills/wss-record/assets/wss-index-decisions.sh",
-      "indexCheck": "bash skills/wss-record/assets/wss-index-decisions.sh --check",
+      "indexRegen": "bash skills/record/assets/wss-index-decisions.sh",
+      "indexCheck": "bash skills/record/assets/wss-index-decisions.sh --check",
       "ci": {
         "tool": "gh",
         "workflow": "Verify"

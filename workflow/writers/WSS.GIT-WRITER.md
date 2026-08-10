@@ -158,7 +158,7 @@ fetched it, deleting it locally changes nothing.
 - **It does not rebase, revert or WSS.branch.** Those are decisions with a user in
   the loop, and none of them is history this workflow authors. **The one merge
   it does perform** is the one `--wss-pr` hands it, with the method from
-  `WSS.branch.mergeMethod` and only once `wss-pr` has the user's OK in that turn —
+  `WSS.branch.mergeMethod` and only once `pr` has the user's OK in that turn —
   [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md)'s `merge` row is the authority,
   and it is the reason a merge commit has an owner at all.
 
@@ -173,7 +173,7 @@ fetched it, deleting it locally changes nothing.
   merge decision, and the caller is a session that is about to be cleared.
 
   **The same landing has a main-checkout twin**, handed by
-  `/wss-lane-record-sync`'s step 0: `git merge --ff-only <lane-branch>` with
+  `/wss:lane-record-sync`'s step 0: `git merge --ff-only <lane-branch>` with
   `WSS.branch.integration` checked out, one lane at a time, fetch first where the
   lanes ride a remote. Local instead of remote, otherwise identical — it moves
   the ref onto commits that already exist, writes no merge commit, pushes

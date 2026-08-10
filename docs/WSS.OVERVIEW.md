@@ -87,7 +87,7 @@ is paid for far more often than a byte in another.
 | `CLAUDE.md` | every session, every project — **in the checkout form only** | the most expensive file in the repo, and unread entirely as a plugin |
 | Each skill's frontmatter `description` | every session | it is what decides whether the skill is ever invoked |
 | A skill's **body** | only when that skill is invoked | length here is cheap by comparison |
-| `skills/wss-docs/references/*.md` | only when the `wss-docs` skill reads one | reference detail belongs here, not in a body |
+| `skills/docs/references/*.md` | only when the `docs` skill reads one | reference detail belongs here, not in a body |
 | A `wss-shorthand-flags.sh` block | when its flag fires — minus the worktree-lane paragraphs, unless the checkout is in lane mode | injected into the prompt |
 | The project's `WSS.record.handoff` — or just its **card**, where the file carries a `<!-- handoff:card-ends -->` marker | every session in **any** project whose resolved handoff — declared, or the `WSS.HANDOFF.md` fallback when the key or the manifest is absent — is an existing file other than `CLAUDE.md`, via `wss-session-check.sh` | so *card* length is the permanent per-session cost of adopting, not file length. Without the marker the whole file is injected, which is what the split exists to escape |
 
@@ -110,7 +110,7 @@ The lever above has a hard limit, and which shape the suite is in decides whethe
 you have it at all.
 
 **As a checkout**, `skillOverrides` in `settings.json` controls each skill
-individually, and `/wss-toggle` is the slash-only editor of exactly that block
+individually, and `/wss:toggle` is the slash-only editor of exactly that block
 — it lists effective levels, refuses a level that would break a
 dispatch-reached skill, and warns when a change silences a flag. This
 repository uses two levels: `name-only` for a skill a session cannot usefully
@@ -165,7 +165,7 @@ loaded as project context at all.** `claude plugin validate` says so and suggest
 a skill instead. So an adopter who installs rather than clones would get no
 statement that the workflow is global, that skills read `.claude/WSS.WORKFLOW.json`,
 or where the three contracts are — none of which is inferable from a skill body.
-That is what `wss-contracts` carries, and why `CLAUDE.md` now holds the
+That is what `contracts` carries, and why `CLAUDE.md` now holds the
 contract paths and a pointer rather than the rules themselves: one owner, in the
 form that can actually reach both. The warning does not go away, because it fires
 on the file existing at the plugin root rather than on what is in it.
@@ -180,7 +180,7 @@ rest of the suite does.
 **What is and is not built.** Both forms are built and both are installable.
 `.claude-plugin/plugin.json` and `hooks/hooks.json` exist, `claude plugin
 validate` passes, and since 2026-08-02 the published repository —
-`qupunto/workflow-secretary-suite` — is public and is its own marketplace:
+`qupunto/wss` — is public and is its own marketplace:
 `.claude-plugin/marketplace.json` names the repository root as its plugin
 source, so the marketplace-add and plugin-install commands name the same place
 and there is no second repository to keep in step. The checkout remains the

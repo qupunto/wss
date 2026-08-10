@@ -25,7 +25,7 @@ Three files are the authority and settle any disagreement between skills:
 
 **What each one governs, what a project without a manifest falls back to, and
 where these paths resolve under a plugin install rather than a clone, is the
-`wss-contracts` skill.** It is canonical; the paths above are here so
+`contracts` skill.** It is canonical; the paths above are here so
 routing itself costs no lookup. `~/.claude/README.md` covers the `--flag`
 shorthands; what each one authorizes is `~/.claude/workflow/WSS.OWNERSHIP.md`'s
 matrix.

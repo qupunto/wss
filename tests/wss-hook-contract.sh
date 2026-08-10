@@ -161,7 +161,7 @@ fi
 
 head_ "A record sweep does not run twice"
 
-# wss-stocktake runs --wss-check's method over --wss-check's files as its record
+# stocktake runs --wss-check's method over --wss-check's files as its record
 # dimension: "invoke one or the other, never both". Firing both sweeps the
 # record twice, and the second reports the first one's writes as fresh drift.
 for wide in --wss-stocktake --wss-full-stocktake; do
@@ -261,14 +261,14 @@ overrides() { # scope, level — write one entry, or remove the file when level 
   if [ -z "$2" ]; then
     rm -f "$dir/settings.json"
   else
-    jq -nc --arg l "$2" '{skillOverrides:{"wss-wrap":$l}}' > "$dir/settings.json"
+    jq -nc --arg l "$2" '{skillOverrides:{"wrap":$l}}' > "$dir/settings.json"
   fi
 }
 
 for level in off user-invocable-only; do
   overrides user "$level"
   out=$(run "--wss-wrap")
-  [ -z "$out" ] && ok "--wss-wrap inert while wss-wrap is \"$level\"" \
+  [ -z "$out" ] && ok "--wss-wrap inert while wrap is \"$level\"" \
                 || bad "--wss-wrap fired for a skill the harness will refuse (\"$level\")"
 done
 
@@ -276,7 +276,7 @@ for level in on name-only; do
   overrides user "$level"
   out=$(run "--wss-wrap")
   printf '%s' "$out" | grep -q -- 'included the `--wss-wrap` flag' \
-    && ok "--wss-wrap still fires while wss-wrap is \"$level\"" \
+    && ok "--wss-wrap still fires while wrap is \"$level\"" \
     || bad "--wss-wrap lost to an override that does not block model invocation (\"$level\")"
 done
 
@@ -934,13 +934,13 @@ Nothing pending.'
   # "unreachable" identical to "zero". gh is stubbed on PATH both ways.
   upc="$TMP/upstream-conf"
   rm -rf "$upc"; mkdir -p "$upc/.claude-plugin" "$upc/stubs"
-  printf '{"name":"workflow-secretary-suite","version":"0.0.1","description":"d"}\n' \
+  printf '{"name":"wss","version":"0.0.1","description":"d"}\n' \
     > "$upc/.claude-plugin/plugin.json"
   printf '#!/usr/bin/env bash\necho 3\n' > "$upc/stubs/gh"; chmod +x "$upc/stubs/gh"
   out=$(cd "$upc" && CLAUDE_CONFIG_DIR="$upc" PATH="$upc/stubs:$PATH" bash "$CHECK" </dev/null 2>/dev/null \
         | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)
   case "$out" in
-    *"3 open issue(s) on qupunto/workflow-secretary-suite"*) ok "open upstream issues are counted in the nudge" ;;
+    *"3 open issue(s) on qupunto/wss"*) ok "open upstream issues are counted in the nudge" ;;
     *) bad "3 open upstream issues went unmentioned: $out" ;;
   esac
 
@@ -956,7 +956,7 @@ Nothing pending.'
   out=$(cd "$upc" && CLAUDE_CONFIG_DIR="$upc" PATH="$upc/stubs:$PATH" bash "$CHECK" </dev/null 2>/dev/null \
         | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)
   case "$out" in
-    *"qupunto/workflow-secretary-suite"*) bad "zero upstream issues still produced a nudge: $out" ;;
+    *"qupunto/wss"*) bad "zero upstream issues still produced a nudge: $out" ;;
     *) ok "zero upstream issues stay silent" ;;
   esac
 
@@ -964,7 +964,7 @@ Nothing pending.'
   out=$(cd "$TMP/bare" && CLAUDE_CONFIG_DIR="$upc" PATH="$upc/stubs:$PATH" bash "$CHECK" </dev/null 2>/dev/null \
         | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)
   case "$out" in
-    *"workflow-secretary-suite"*) bad "the upstream check fired outside the suite checkout" ;;
+    *"qupunto/wss"*) bad "the upstream check fired outside the suite checkout" ;;
     *) ok "no upstream check outside the suite's own checkout" ;;
   esac
 fi
@@ -1158,14 +1158,14 @@ OWNFIX
   # The cadence card and README's "How often" table are two hand-copies of one
   # list. The flag column must agree; wording and the third column must stay
   # free to differ, or the check would be demanding one document instead of an
-  # agreement between two. A fixture carrying wss-adopt draws an unrelated
+  # agreement between two. A fixture carrying adopt draws an unrelated
   # dispatch-only warn, so these assert on the needle rather than on exit 0.
   cadfix() { # dir, adopt-flags, readme-flags — one cadence table in each file
     docfix "$1"
-    mkdir -p "$1/skills/wss-adopt"
-    { printf '# wss-adopt\n\nThe cadence card:\n\n| When | Flag |\n|---|---|\n'
+    mkdir -p "$1/skills/adopt"
+    { printf '# adopt\n\nThe cadence card:\n\n| When | Flag |\n|---|---|\n'
       for f in $2; do printf '| Some moment | `%s` |\n' "$f"; done
-    } > "$1/skills/wss-adopt/SKILL.md"
+    } > "$1/skills/adopt/SKILL.md"
     { printf '# Fixture\n\nSee [the matrix](workflow/WSS.OWNERSHIP.md#the-matrix).\n'
       printf '\n### How often\n\n| When | Flag | Why then |\n|---|---|---|\n'
       for f in $3; do printf '| A different wording | `%s` | because |\n' "$f"; done
@@ -1242,12 +1242,12 @@ OWNFIX
   # holds a row the annex skips, and must still agree.
   lanefix() { # dir, skill-decline-cell, annex-decline-cell, annex-extra-row
     docfix "$1"
-    mkdir -p "$1/skills/wss-lane-record-sync" "$1/docs/annex"
-    { printf '# wss-lane-record-sync\n\n### The four rulings\n\n'
+    mkdir -p "$1/skills/lane-record-sync" "$1/docs/annex"
+    { printf '# lane-record-sync\n\n### The four rulings\n\n'
       printf '| Ruling | Files to the queue | Next run |\n|---|---|---|\n'
       printf '| **Accept** | yes, unmarked | — |\n'
       printf '| **Decline** | no | %s |\n' "$2"
-    } > "$1/skills/wss-lane-record-sync/SKILL.md"
+    } > "$1/skills/lane-record-sync/SKILL.md"
     { printf '# The record contract\n\n'
       printf '| | A record | A transfer queue |\n|---|---|---|\n'
       printf '| Writers | exactly one | **any lane** |\n'
@@ -1276,7 +1276,7 @@ OWNFIX
   lanefix "$lndrift" "**does not ask**" "**asks again**" ""
   says "$lndrift" "the two four-rulings tables disagree" \
     "a ruling cell worded differently on the two sides is a FAILURE"
-  printf '%s' "$(doc "$lndrift")" | grep -q "Differing rows in skills/wss-lane-record-sync/SKILL.md: \*\*Decline\*\*" \
+  printf '%s' "$(doc "$lndrift")" | grep -q "Differing rows in skills/lane-record-sync/SKILL.md: \*\*Decline\*\*" \
     && ok "the rulings failure names the row that drifted, not just that one did" \
     || bad "rulings failure did not name **Decline** as the drifting row"
   lnextra="$TMP/doc-lanes-annex-extra"
@@ -1482,20 +1482,20 @@ fi
 
 # ------------------------------------------------------- the transfer queue
 
-head_ "wss-lane-record-sync is reachable only by slash"
+head_ "lane-record-sync is reachable only by slash"
 
 # No flag, no wrapper, and both are design constraints rather than omissions:
 # the run is expensive and it writes into every lane's inbox, so it must never
 # fire from a phrase in a sentence or from another skill's dispatch. A flag
 # added later would remove that property silently — nothing else would fail.
-synch="$_root/skills/wss-lane-record-sync/SKILL.md"
-[ -f "$synch" ] && ok "the skill exists" || bad "skills/wss-lane-record-sync/SKILL.md is missing"
+synch="$_root/skills/lane-record-sync/SKILL.md"
+[ -f "$synch" ] && ok "the skill exists" || bad "skills/lane-record-sync/SKILL.md is missing"
 case " $FLAGS " in
   *lane-record-sync*)
-    bad "wss-lane-record-sync has a FLAGS entry — it is slash-only by design" ;;
+    bad "lane-record-sync has a FLAGS entry — it is slash-only by design" ;;
   *) ok "no flag serves it" ;;
 esac
-if [ -e "$_root/commands/wss-lane-record-sync.md" ]; then
+if [ -e "$_root/commands/lane-record-sync.md" ]; then
   bad "a commands/ wrapper exists for it — a wrapper must fire a flag, and it has none"
 else
   ok "no commands/ wrapper for it"
@@ -1613,7 +1613,7 @@ esac
 
 # --- the conflict inbox: ONE per project, not one per lane ------------------
 # A contradiction between two lanes belongs to neither, so it is a sibling of
-# `named` rather than a key inside a lane. wss-lane-record-sync is its only
+# `named` rather than a key inside a lane. lane-record-sync is its only
 # consumer, which is what makes a declared-but-absent path the dangerous case:
 # a session appends and creates a file nothing was told to read.
 printf '# Conflict inbox\n' > "$tq/docs/conflicts.md"
@@ -1969,7 +1969,7 @@ case $out in
 esac
 
 # The resolver that replaced it must itself pass, or the fix cannot be applied.
-printf '# Demo\n\n```bash\nS="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"\n[ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/workflow-secretary-suite/*/ 2>/dev/null | tail -1)\n"$S"/wss-doctor.sh\n```\n' \
+printf '# Demo\n\n```bash\nS="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"\n[ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)\n"$S"/wss-doctor.sh\n```\n' \
   > "$instp/skills/demo/SKILL.md"
 out=$(CLAUDE_CONFIG_DIR="$instp" CLAUDE_DIR="$instp" bash "$DOCTOR" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
 case $out in
@@ -2087,7 +2087,7 @@ esac
 co="$TMP/doc-coexist"
 docfix "$co"
 mkdir -p "$co/.claude-plugin"
-printf '{"name":"workflow-secretary-suite","version":"0.0.1","description":"d"}\n' \
+printf '{"name":"wss","version":"0.0.1","description":"d"}\n' \
   > "$co/.claude-plugin/plugin.json"
 docommit "$co"
 out=$(doc "$co")
@@ -2095,20 +2095,20 @@ printf '%s' "$out" | grep -q 'installed at most once' \
   && ok "the checkout form alone is not coexistence" \
   || bad "checkout form alone: the coexistence check reached no verdict"
 
-mkdir -p "$co/plugins/cache/mk/workflow-secretary-suite/0.0.1"
+mkdir -p "$co/plugins/cache/mk/wss/0.0.1"
 out=$(doc "$co")
 printf '%s' "$out" | grep -q 'installed TWICE' \
   && ok "a cached plugin install beside the checkout FAILs as coexistence" \
-  || bad "a cached workflow-secretary-suite install beside the checkout passed silently"
+  || bad "a cached wss install beside the checkout passed silently"
 
 rm -rf "$co/plugins"
-edit_ "$co/settings.json" 's/{"hooks"/{"enabledPlugins":{"workflow-secretary-suite@mk":true},"hooks"/'
+edit_ "$co/settings.json" 's/{"hooks"/{"enabledPlugins":{"wss@mk":true},"hooks"/'
 out=$(doc "$co")
 printf '%s' "$out" | grep -q 'installed TWICE' \
   && ok "enabledPlugins naming the suite FAILs as coexistence" \
-  || bad "enabledPlugins naming workflow-secretary-suite passed silently"
+  || bad "enabledPlugins naming wss passed silently"
 
-edit_ "$co/settings.json" 's/"enabledPlugins":{"workflow-secretary-suite@mk":true}/"enabledPlugins":{}/'
+edit_ "$co/settings.json" 's/"enabledPlugins":{"wss@mk":true}/"enabledPlugins":{}/'
 docommit "$co"
 out=$(doc "$co")
 printf '%s' "$out" | grep -q 'uninstall residue' \
@@ -2122,7 +2122,7 @@ printf '%s' "$out" | grep -q 'installed TWICE' \
 # checkout. The normal plugin case must not be reported as coexistence.
 ad=$(mktemp -d)
 printf '{"permissions":{"defaultMode":"auto"}}\n' > "$ad/settings.json"
-mkdir -p "$ad/plugins/cache/mk/workflow-secretary-suite/0.0.1"
+mkdir -p "$ad/plugins/cache/mk/wss/0.0.1"
 out=$(cd "$TMP/bare" && CLAUDE_CONFIG_DIR="$ad" CLAUDE_DIR="$pdir" bash "$DOCTOR" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
 printf '%s' "$out" | grep -q 'installed TWICE' \
   && bad "a plain plugin install with no checkout was reported as coexistence" \
@@ -2146,7 +2146,7 @@ esac
 
 head_ "A description cannot invite invocation on an ordinary word"
 
-# `wss-wrap` listed `"done"` and `wss-release` listed `"ship it"` — both hold a push
+# `wrap` listed `"done"` and `release` listed `"ship it"` — both hold a push
 # grant, so "ok that's done" could commit and push. The fix for the class is to
 # NAME the tempting word and refuse it, so the check has to pass a description
 # that mentions the word in order to forbid it, or it forbids its own remedy.
@@ -2518,7 +2518,7 @@ else
 
   # --all is the retirement snapshot: not "what would a clone lose" but "what
   # would a deletion lose". Tracked records stay IN, and the docs tree — which
-  # no manifest key names — travels by the same docs/ convention wss-docs uses.
+  # no manifest key names — travels by the same docs/ convention docs uses.
   printf 'SITE\n' > "$ex/proj/docs/index.html"
   (cd "$ex/proj" && bash "$ER" --all -o all.tar.gz >/dev/null 2>&1)
   if [ -f "$ex/proj/all.tar.gz" ]; then
@@ -2618,7 +2618,7 @@ else
 
   # The suite's own tree is never a valid target.
   suite=$(mktemp -d); mkdir -p "$suite/.claude-plugin" "$suite/.claude"
-  printf '{"name": "workflow-secretary-suite"}\n' > "$suite/.claude-plugin/plugin.json"
+  printf '{"name": "wss"}\n' > "$suite/.claude-plugin/plugin.json"
   printf '{"WSS":{"record":{"todo":"WSS.TODO.md"}}}\n' > "$suite/.claude/WSS.WORKFLOW.json"
   printf 'x\n' > "$suite/WSS.TODO.md"
   bash "$RW" --write --records --dir "$suite" >/dev/null 2>&1; rc=$?
@@ -2799,7 +2799,7 @@ head_ "The decisions index is generated, checked, and refuses to guess"
 
 # wss-index-decisions.sh resolves both paths from the manifest; decisionsIndex has
 # deliberately no fallback, so undeclared must be an error, not a default name.
-IDX="$_root/skills/wss-record/assets/wss-index-decisions.sh"
+IDX="$_root/skills/record/assets/wss-index-decisions.sh"
 if [ ! -f "$IDX" ]; then
   bad "wss-index-decisions.sh missing at $IDX"
 else
@@ -2974,7 +2974,7 @@ else
     || bad "the assembly's tests failed and publish did not (rc=$rc)"
 fi
 
-# ------------------------------------------------------- wss-overview wss-probe.sh
+# ------------------------------------------------------- overview wss-probe.sh
 
 head_ "wss-probe.sh emits the overview's countable lines"
 
@@ -2982,7 +2982,7 @@ head_ "wss-probe.sh emits the overview's countable lines"
 # that drifts here misreports every --wss-overview at once. Asserted on the
 # exact lines the report leans on. A bare config dir keeps the doctor line
 # hermetic — its content is not asserted, only that probe survives it.
-PROBE="$_root/skills/wss-overview/assets/wss-probe.sh"
+PROBE="$_root/skills/overview/assets/wss-probe.sh"
 if [ ! -f "$PROBE" ]; then
   bad "wss-probe.sh missing at $PROBE"
 else
@@ -3109,13 +3109,13 @@ else
   esac
 fi
 
-# --------------------------------------------------------- wss-docs wss-scaffold.sh
+# --------------------------------------------------------- docs wss-scaffold.sh
 
 head_ "wss-scaffold.sh builds the site shell once and refuses an existing one"
 
 # The shell is three files; the refusal is the contract — an existing site is
 # the authority on its own conventions and must never be overwritten.
-SCAF="$_root/skills/wss-docs/assets/wss-scaffold.sh"
+SCAF="$_root/skills/docs/assets/wss-scaffold.sh"
 if [ ! -f "$SCAF" ]; then
   bad "wss-scaffold.sh missing at $SCAF"
 else
@@ -3162,9 +3162,9 @@ head_ "Worktree-lane paragraphs are injected only where lane mode is on"
 # would withhold the lane instructions from the one tree that actually needs them.
 lg=$(mktemp -d)
 mklane() { # dir, manifest-json, [selector]
-  mkdir -p "$lg/$1/.claude/skills/wss-plan" "$lg/$1/.claude/skills/wss-wrap"
-  : > "$lg/$1/.claude/skills/wss-plan/SKILL.md"
-  : > "$lg/$1/.claude/skills/wss-wrap/SKILL.md"
+  mkdir -p "$lg/$1/.claude/skills/plan" "$lg/$1/.claude/skills/wrap"
+  : > "$lg/$1/.claude/skills/plan/SKILL.md"
+  : > "$lg/$1/.claude/skills/wrap/SKILL.md"
   printf '%s\n' "$2" > "$lg/$1/.claude/WSS.WORKFLOW.json"
   [ -n "${3:-}" ] && printf '%s\n' "$3" > "$lg/$1/.claude/WSS.LANE"
   return 0
@@ -3205,7 +3205,7 @@ run --wss-plan "$lg/broken" | grep -q 'included the `--wss-plan` flag' \
   || bad "a malformed manifest broke the flag through the lane gate"
 
 # The gate must never reach --wss-wrap's landing rules. Since the worktree
-# machinery moved into skills/wss-wrap/references/WSS.LANES.md — read only under
+# machinery moved into skills/wrap/references/WSS.LANES.md — read only under
 # lane mode — this block is the ONLY unconditional statement of the no-force
 # refspec left anywhere in wrap's path. Gating it would leave a force-push guard
 # that appears exactly where it is least needed.

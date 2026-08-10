@@ -15,7 +15,7 @@ procedure the gauntlet runs, and what to do with a failure.
 
 ```bash
 S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-[ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/workflow-secretary-suite/*/ 2>/dev/null | tail -1)
+[ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
 "$S"/wss-doctor.sh          # always; it validates this project's manifest too
 <WSS.commands.typecheck>
 <WSS.commands.test>          # the FULL suite, with coverage. Never a subset.

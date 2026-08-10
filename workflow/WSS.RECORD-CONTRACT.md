@@ -23,7 +23,7 @@ belongs where, and why putting it elsewhere breaks something.
 | `WSS.record.stocktake` | What each stocktake examined, when, against which commit, and what was found. Each entry carries an [`audit-coverage`](WSS.AUDIT-COVERAGE.md) block. Frozen records spell this role's former key, `WSS.record.audits`. | The resulting tasks — those go to `WSS.record.todo`. |
 | `WSS.record.audits` | The index of the independent audit passes: one row per frozen report — what it covered, its verdict, where it was wrong — plus the per-pass narrative between rows. | The findings' remediation — `git log` is the authority on what was done about each. |
 | `WSS.record.roadmap` | **Goals.** What an area of work is trying to achieve, the blocks that get it there, their order and dependencies. Written in that area's own terms. | Design arguments. **A version number or a completion mark** — those are `WSS.record.releases`', and a roadmap carrying one is the failure the split below exists to prevent. |
-| `WSS.record.releases` | **The release list.** One entry per milestone: the version it intends to ship as, which goals it comprises, and whether it is marked completed. Plus the declaration, where one has been made, that milestones have ended. **And, where a release ships a structural change adopted trees must apply, one `- migrate:` line per change at column 0 in that milestone's entry** — `- migrate: <detect-condition> → <mend>`, each line idempotent as written (its condition failing means already done). `wss-update` reads every such line after a tree's `WSS.suite` stamp, in release order; `--wss-plan` and `--wss-release` author them. | Goal prose or task breakdowns — it *cites* the goals a milestone comprises rather than restating them. The claim that a version *shipped* — a tag is the only proof of that. |
+| `WSS.record.releases` | **The release list.** One entry per milestone: the version it intends to ship as, which goals it comprises, and whether it is marked completed. Plus the declaration, where one has been made, that milestones have ended. **And, where a release ships a structural change adopted trees must apply, one `- migrate:` line per change at column 0 in that milestone's entry** — `- migrate: <detect-condition> → <mend>`, each line idempotent as written (its condition failing means already done). `update` reads every such line after a tree's `WSS.suite` stamp, in release order; `--wss-plan` and `--wss-release` author them. | Goal prose or task breakdowns — it *cites* the goals a milestone comprises rather than restating them. The claim that a version *shipped* — a tag is the only proof of that. |
 | `WSS.record.changelog` | The **engineering log**: what changed per released version, in the project's own terms — contract names, paths, reasoning, and any marker the machinery reads. | Unreleased work. User-facing release notes — those are the public `CHANGELOG.md`, which is not a record; see below. |
 | `WSS.record.handoff` | What a fresh session must know **before it touches code**, compressed, plus pointers to everything else. | Anything it can look up when the topic comes up. |
 | `WSS.record.toolbelt` | One row per **adopted capability**: task shape → package → pointer into the `WSS.record.decisions` entry that adopted it. Consulted before building any capability. | The reasoning — that goes to `WSS.record.decisions` via `--wss-log` at the moment of adoption, so the registry stays a lookup table rather than a second decision log. |
@@ -254,7 +254,7 @@ would be picking a side before anyone has ruled.
 | | Transfer queue | Conflict inbox |
 |---|---|---|
 | Declared | `WSS.lanes.named.<lane>.transfer`, one per lane | `WSS.lanes.conflicts`, one per project |
-| Addressed to | that lane | `wss-lane-record-sync` |
+| Addressed to | that lane | `lane-record-sync` |
 | Consumed by | that lane's `--wss-start` | that skill, on its next run |
 | Holds | work believed to be that lane's | a suspected contradiction between two lanes |
 
@@ -295,7 +295,7 @@ meaning the same thing in practice.
 
 **A lane may not mark its own request critical in another lane's queue.** The
 marker is written only where **the user said so in that turn** —
-`wss-lane-record-sync`'s mediation of a conflict, or its *accept as critical*
+`lane-record-sync`'s mediation of a conflict, or its *accept as critical*
 ruling on a dependency. Priority inflation is the standard failure of every
 ladder, and here it is worse than usual: a lane marking its own asks critical is
 one lane setting another lane's order. The user setting it is not that, which is

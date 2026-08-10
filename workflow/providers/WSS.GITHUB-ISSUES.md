@@ -28,7 +28,7 @@ The split `--wss-todo` already enforces is the same one: **the task goes to the
 provider, the reasoning goes to the decision log**, and the issue carries a link
 to it rather than the argument itself.
 
-**One writer still.** `wss-record` is the sole writer of issues carrying the
+**One writer still.** `record` is the sole writer of issues carrying the
 configured label. An issue without that label is somebody else's — a user bug
 report, a discussion — and this workflow does not touch it.
 
