@@ -22,6 +22,17 @@ Three jobs, all about the files that describe and drive the tooling:
 `WSS.record.tooling.sources`. Without a manifest, fall back to `.claude/WSS.TOOLING.md`,
 `.claude/skills/*/SKILL.md` and `.claude/agents/*.md`, and say so.
 
+**The declared globs are the scope, and an incomplete one is a finding rather
+than a narrowing you inherit.** A manifested project never reaches the fallback
+above, so a `sources` list that reaches the skills and not the agents leaves
+every agent file unswept while the catalog above still claims to index them.
+Before Job 2 or Job 3, check the declared globs against what the tree actually
+holds — agent files, and any directory of tooling prose the catalog has a row
+for. Where they do not match, say which files fall outside and hand the missing
+glob to [`manifest-writer`](../../workflow/writers/WSS.MANIFEST-WRITER.md); do
+not sweep undeclared files on your own authority, and do not report the declared
+scope as if it were the whole.
+
 Who owns what else is
 [`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md).
 
@@ -52,21 +63,28 @@ and are not affected.
 4. Refresh the interaction diagram below if what you changed moved an arrow.
 5. No confirmation needed. This is low-risk internal documentation.
 
-### Hand it to `--wss-docs` — do not write into the site
+### Hand it to `docs-writer` — do not write into the site
 
 Where the project has a documentation site, its annex should carry a **Claude
 tooling** page: a catalog is an exhaustive per-item reference over an enumerable
 set, which is what an annex is for.
 
-**You do not write that page.** After updating `WSS.record.tooling.catalog`, invoke
-`--wss-docs` and hand it the catalog as the source, for it to adapt into the site's
-annex in the site's own conventions. That skill owns everything under `docs/` —
+**You do not write that page.** After updating `WSS.record.tooling.catalog`, hand
+the catalog over as the source to
+[`docs-writer`](../../workflow/writers/WSS.DOCS-WRITER.md), which adapts it into
+the site's annex in the site's own conventions and owns everything under `docs/` —
 the page, its index row, its sidebar entry.
 
-**The derived copy is only as current as the handoff**, so invoking `--wss-docs` is
-part of this procedure rather than a courtesy — and where the catalog moved but
-the site did not, that is a finding for `--wss-check`, not something to fix by
-editing the page.
+**Go to the writer, not to `--wss-docs`.** Re-deriving a page that already exists
+decides nothing — the tier was settled when the page was created — and routing it
+through the whole skill buys only the cost of loading it. `--wss-docs` is for the
+one case that *is* a decision: the **Claude tooling** page does not exist yet and
+its placement has to be chosen.
+
+**The derived copy is only as current as the handoff**, so making it is part of
+this procedure rather than a courtesy — and where the catalog moved but the site
+did not, that is a finding for `--wss-check`, not something to fix by editing the
+page.
 
 Where the project has no documentation site, there is no second file and nothing
 to hand over.
@@ -96,8 +114,9 @@ docs style guide** (`skills/docs/references/WSS.STYLE-GUIDE.md`, its
 Diagrams section) — if the two ever disagree, that file wins and this one gets
 corrected.
 
-The diagram travels with the catalog when it goes to `--wss-docs`, which re-renders
-it for the site's own renderer under the rules above.
+The diagram travels with the catalog when it goes to `docs-writer`, which
+re-renders it for the site's own renderer under the rules above, keeping every box
+and arrow it asserted.
 
 ## Scope, when this runs as a sweep
 
@@ -127,6 +146,19 @@ file in `WSS.record.tooling.sources`.
 In one line, because it overrides the instinct to be helpful: *delete the mutable
 claim rather than correcting it.* The rule itself is
 [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule).
+
+**A contract file inside `sources` is subject to that rule like any other file
+there**, and this is worth stating because it reads as surprising. Where the
+declared globs reach the `workflow/*.md` contracts, a count, a "currently", or a
+claim about what does not yet exist in `WSS.OWNERSHIP.md` or `WSS.MANIFEST.md`
+is deleted rather than corrected, exactly as in a skill file. The rule carries no
+exemption for them, and
+[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md#the-matrix) already places
+the contracts outside the record matrix as ordinary work constrained by review —
+this sweep is that review, not an exception to it. What the sweep never touches
+is the *rules* those files state: a rule is not a claim about state, and
+deleting one because it reads as absolute is the failure mode to watch for here
+and nowhere else in `sources`.
 
 **What the method deliberately leaves to this skill**, because scope,
 disposition and authorization are a runner's and a method that carried them

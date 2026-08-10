@@ -6,7 +6,7 @@ the file and applies it** over a scope the skill itself resolves.
 
 ## Why they are not in the skills that own them
 
-Every one of these is borrowed. `--wss-full-check` and `--wss-stocktake` run the same
+Most of these are borrowed. `--wss-full-check` and `--wss-stocktake` run the same
 record taxonomy `--wss-check` does; `--wss-full-check` runs `--wss-docs`' audit and `--wss-tools`'
 claim rule. A method borrowed by **citing another skill's headings** breaks
 silently on a rename — the borrower checks nothing while reporting success — so

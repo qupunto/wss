@@ -31,14 +31,14 @@ audit-coverage:
 ```
 
 `name` is a stable dimension name — one from the skill's dimension library, or
-one the manifest's `audit.dimensions` declared. Stability is the point: coverage
+one the manifest's `WSS.audit.dimensions` declared. Stability is the point: coverage
 accounting across audits is a join on this string.
 
 **Which is why the names above are real ones.** `--wss-stocktake` runs `record` and
 `consistency` against any repository, `interface` when the shape has a public
 API, a CLI or a service, and `safety-nets` always. It deliberately does **not**
 run `correctness`, `security` or `data-model` — those belong to a project's own
-code-analysis skill and arrive, if at all, through `audit.dimensions`. This block
+code-analysis skill and arrive, if at all, through `WSS.audit.dimensions`. This block
 is what a project's first audit copies, and a copied name that no dimension ever
 emits joins against nothing forever: the next run reads it, matches no dimension,
 and silently treats that scope as never covered.

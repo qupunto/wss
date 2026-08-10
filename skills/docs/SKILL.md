@@ -22,18 +22,21 @@ Scaffold mode and the overview page — not a full site. It confers its own gran
 commit and not push, so what gets scaffolded there may be committed even though this flag
 alone authorizes nothing.
 
-**`--wss-tools` invokes this too**, handing over `WSS.record.tooling.catalog` for you to adapt into a
-**Claude tooling** annex page (T11). The catalog is the source and stays that skill's; the page
-is yours — its wording, its placement, and its index and sidebar rows. Re-render its
-interaction diagram for this site's renderer under `references/WSS.STYLE-GUIDE.md`'s three
-rules rather than reshaping it by hand. Adapt what you are given and **do not invent edges the catalog does not claim**.
+**`--wss-tools` does not come through here once the page exists.** A changed
+`WSS.record.tooling.catalog` is a mechanical re-derivation, so it goes straight to
+[`docs-writer`](../../workflow/writers/WSS.DOCS-WRITER.md) with the catalog as the
+source — the interaction diagram included, which that procedure re-renders for this
+site's renderer rather than reshaping by hand. This skill is reached only when the
+**Claude tooling** annex page does not exist yet, because that is a placement
+decision (T11) and placement is what this skill is for.
 
-## The two records this skill no longer writes
+## The two records this skill does not write
 
 `WSS.record.behaviour` and `WSS.record.reference` each have their own primitive —
 [`behaviour-writer`](../../workflow/writers/WSS.BEHAVIOUR-WRITER.md) and
-[`reference-writer`](../../workflow/writers/WSS.REFERENCE-WRITER.md). This skill owns **the site**,
-and those two files are records, not pages.
+[`reference-writer`](../../workflow/writers/WSS.REFERENCE-WRITER.md). This skill decides
+what **the site** holds and [`docs-writer`](../../workflow/writers/WSS.DOCS-WRITER.md)
+writes it; those two files are records, not pages, and belong to neither.
 
 **Dispatch findings about them straight to the owner** — `--wss-check`,
 `--wss-full-check`, `--wss-start` and `--wss-stocktake` do this already; the split is
@@ -47,8 +50,8 @@ and say so — do not write it into a page instead.
 
 ## Not this skill
 
-This skill owns exactly one job: the
-long-form docs site under `docs/`. Hand these back instead of firing:
+This skill owns exactly one job: deciding what the
+long-form docs site under `docs/` should hold. Hand these back instead of firing:
 
 | Request | Belongs to |
 |---|---|
@@ -128,6 +131,15 @@ done
 Everything that prints is in scope. Everything else was verified at `$BASE` and neither it
 nor anything it cites has moved since.
 
+**A page carrying its own verified-at stamp is compared against that stamp, not
+`$BASE`.** Workflow pages write one (`references/WSS.WORKFLOW-PAGES.md`), and it
+is the commit that page's claims were last read against — later than the site
+baseline whenever the page was verified since the last sweep, so using `$BASE`
+for it re-reads sources it has already been checked against. Read the stamp out
+of the page's header and substitute it for `$BASE` on that page's dependencies
+alone. Its other half does not apply: an edit to a workflow page *is* a
+verification, so "the page changed" never puts one back in scope.
+
 **Two things void the narrowing entirely**, because they change what a correct page even
 looks like:
 
@@ -180,58 +192,15 @@ coverage that isn't there and discredits the pages that are real.
 
 ## Guidelines
 
-Numbered so they can be cited in review. **G1, G2, and G8 are what make these docs worth
-having**; the rest are mechanics.
+**The guidelines are
+[`references/WSS.GUIDELINES.md`](references/WSS.GUIDELINES.md)**, shared with the
+writer and the audit method rather than owned here — a numbered list cited from
+across the reference set has no business living inside any one of its consumers.
 
-> Numbers are **append-only**. They are cited from every reference file in this skill, so
-> renumbering silently invalidates those citations. A new guideline takes the next free number
-> regardless of where it belongs thematically; a retired one keeps its number and is marked
-> retired rather than removed.
-
-**Content**
-
-- **G1 — Read the source first.** Open every file you will name. Copy type definitions
-  verbatim. Never document from inference; a plausible-but-wrong doc is worse than none.
-- **G2 — Every paragraph carries a *why*.** State the mechanism, then why it is that way:
-  `because`, `so that`, `instead of`, `otherwise`. A sentence with no *why* usually restates
-  the code — cut it.
-- **G3 — Name the file, inline, in backticks.** Every function, type, and behavior is
-  attributed to `src/where/it/lives.ts` at the point it is described.
-- **G4 — Record the rejected alternative.** When a choice looks arbitrary, document what the
-  obvious approach would have broken.
-- **G5 — Elide code.** Show the shape that matters; cut the rest with `/* ... */` or `# ...`.
-  Never paste a whole file.
-- **G6 — Cross-link instead of restating.** Say a thing once, on the page that owns it; link
-  to it from everywhere else, anchor-deep where useful.
-- **G7 — Mark what isn't live.** Unused or aspirational code gets flagged as such; generated
-  files get a loud **Do not edit it by hand.**
-- **G8 — Never invent rationale.** Can't find why? Write "reason unclear" or leave it out.
-
-**Mechanics**
-
-- **G9 — Verify before declaring done.** Every path exists, every link and `#anchor` resolves,
-  every fence is tagged — and every asserted symbol and value is confirmed against source
-  (`workflow/checks/WSS.DOCS-AUDIT.md` §8). Mechanics can be checked by script; accuracy needs re-reading the source.
-  Don't eyeball either.
-- **G10 — Tables for anything enumerable.** Routes, endpoints, props, tokens, env vars,
-  dependencies, key files.
-- **G11 — Close file-mapped pages with `## Key files`**, naming the actual exports.
-- **G12 — A page enters `_sidebar.md` and `index.md` in the same change that creates it.**
-  Never scaffold an empty page; never add content without its index entries.
-- **G13 — Every translation mirror updates in the same change.** One stale language is worse
-  than one language.
-
-**Scope**
-
-- **G14 — Extend before adding.** A new top-level page is justified only when a reader would
-  look for that concern by name in the sidebar. Otherwise it's a `##` on the nearest page.
-- **G15 — Push per-item detail to `annex/`** once it crowds out the concept the page teaches.
-  Guide pages explain how a layer works; annex pages enumerate its members exhaustively.
-- **G16 — Code wins.** Where docs and source disagree, the source is right. Fix the doc and
-  report the drift you found.
-- **G17 — Place by tier, not by convenience.** `references/WSS.TAXONOMY.md` fixes which tier a
-  subject belongs to, so the same concern lands in the same place in every project. Sidebar
-  depth is negotiable; tier ownership is not.
+G14, G15 and G17 — extend before adding, push per-item detail to the annex, place
+by tier — are this skill's, and settling them is the whole of what it decides
+before handing over. Every other number governs the writing and travels with
+[`docs-writer`](../../workflow/writers/WSS.DOCS-WRITER.md).
 
 ## Scaffold
 
@@ -262,54 +231,58 @@ Config rationale and the manual equivalent: `references/WSS.SITE-SETUP.md`.
 
 ## Write
 
-1. **Read the source** (G1). Collect: exact paths, verbatim type definitions, the reason
-   behind each odd-looking choice (check comments, git log, blame), and the gotchas —
-   library bugs worked around, ordering constraints, things that look wrong but are
-   load-bearing.
-2. **Place it** (G17, then G14/G15). Find the subject's tier in `references/WSS.TAXONOMY.md`.
-   Then: guide page → `docs/<concern>.md`; exhaustive item-by-item reference →
-   `docs/annex/<topic>.md`; too small for either → a `##` on the closest existing page.
-   An end-to-end flow past the split thresholds is a **workflow page** —
-   `references/WSS.WORKFLOW-PAGES.md` owns that shape, its citation contract and its stamp.
-3. **Draft** from the skeletons in `references/WSS.PAGE-ANATOMY.md`, following
-   `references/WSS.STYLE-GUIDE.md` for prose and formatting.
-4. **Wire it up** (G12): `_sidebar.md`, `index.md` table, `README.md` if it has one, and
-   every translation mirror (G13).
-5. **Verify** (G9) with [`workflow/checks/WSS.DOCS-AUDIT.md`](../../workflow/checks/WSS.DOCS-AUDIT.md) — mechanics *and* §8 accuracy — then render it
-   with the project's docs script and load the page.
+**This skill places; the writer writes.** Placement is the only decision here.
+
+1. **Place it** (G17, then G14/G15). Find the subject's tier in
+   `references/WSS.TAXONOMY.md`. Then: guide page → `docs/<concern>.md`;
+   exhaustive item-by-item reference → `docs/annex/<topic>.md`; too small for
+   either → a `##` on the closest existing page. An end-to-end flow past the split
+   thresholds is a **workflow page** — `references/WSS.WORKFLOW-PAGES.md` owns that
+   shape, its citation contract and its stamp.
+2. **Hand the target and its source to
+   [`docs-writer`](../../workflow/writers/WSS.DOCS-WRITER.md)** — which reads the
+   source, drafts from the skeletons, wires up `_sidebar.md`, `index.md` and every
+   mirror, and verifies. Name the page and the tier you chose; it hands back a
+   target that contradicts the taxonomy rather than relocating it quietly.
 
 ## Update
 
-The most common mode, and the one most often done badly — resist rewriting the whole page.
+Already documented, and the code moved. **Nothing here is decided** — the page
+exists and its tier was settled when it was created — so this mode is a hand-off
+in full. Give [`docs-writer`](../../workflow/writers/WSS.DOCS-WRITER.md) what
+changed and the pages that describe it; the diff, the grep for every mention, the
+rewrite of affected sections only, the mirrors and the verify are all its.
 
-1. **Diff what actually changed**: `git log --oneline -20`, `git diff main...HEAD --stat`.
-2. **Find every page that mentions it** — one change is usually described in several places
-   (a guide page, an annex entry, a `## Key files` row, a route table, the mirror):
-   ```bash
-   grep -rn "OldName\|old/path" docs --include='*.md'
-   ```
-3. **Rewrite only the affected sections**, re-reading the new source for each (G1).
-   Enumerated tables are the usual casualty — a renamed prop or a new endpoint invalidates
-   a row, not the page.
-4. **Check the rest of the page for consequences**: does the intro still describe the
-   current arrangement? Does every `## Key files` row still name real exports? Did a heading
-   rename break inbound anchors? `grep -rn '#the-old-slug' docs`.
-5. Mirrors (G13), then verify (G9).
-
-If the code changed *because the old design was wrong*, the doc's *why* changes too — not
-just its *what*.
+**A caller that changed a source some page derives from reaches the writer
+directly and never comes through here** — `--wss-tools` handing over the tooling
+catalog is the standing case. Routing a mechanical re-derivation through this
+skill buys nothing but the cost of loading it, and that cost is paid in the
+caller's context, at whatever size it has already reached.
 
 ## References
 
+**What this skill loads**, being everything it needs to decide:
+
 | File | Read it when |
 |---|---|
+| `references/WSS.GUIDELINES.md` | Any G-number is cited — G14, G15 and G17 are this skill's, the rest the writer's |
 | `references/WSS.TAXONOMY.md` | Deciding what pages a project needs, and which tier a subject belongs to |
 | `references/WSS.TIER-MOBILE.md` | The project has a mobile app (loaded from taxonomy, skip otherwise) |
 | `references/WSS.TIER-GOVERNANCE.md` | A compliance, legal, or regulatory obligation applies |
-| `references/WSS.WORKFLOW-PAGES.md` | Documenting an end-to-end flow — the diagram-plus-stages shape, its citation contract, the verified-at stamp |
-| `references/WSS.STYLE-GUIDE.md` | Writing or reviewing prose — voice, formatting, the full *why*-per-paragraph rules |
-| `references/WSS.PAGE-ANATOMY.md` | Starting a page — skeletons for guide pages, annex references, index, sidebar |
 | `references/WSS.SITE-SETUP.md` | Scaffolding, or changing docsify config |
 | `references/WSS.TRANSLATIONS.md` | The site is or should be multilingual — mirror rules, the anchor trap |
 | [`workflow/checks/WSS.DOCS-AUDIT.md`](../../workflow/checks/WSS.DOCS-AUDIT.md) | Verifying anything, or hunting drift after a refactor |
 | `assets/wss-scaffold.sh` | Creating the site shell |
+
+**What [`docs-writer`](../../workflow/writers/WSS.DOCS-WRITER.md) loads**, which this
+skill reaches for only in Audit mode when the finding is about prose:
+
+| File | Read it when |
+|---|---|
+| `references/WSS.STYLE-GUIDE.md` | Writing or reviewing prose — voice, formatting, the *why*-per-paragraph rules, and the three diagram rules |
+| `references/WSS.PAGE-ANATOMY.md` | Starting a page — skeletons for guide pages, annex references, index, sidebar |
+| `references/WSS.WORKFLOW-PAGES.md` | Documenting an end-to-end flow — the diagram-plus-stages shape, its citation contract, the verified-at stamp |
+
+**That split is the whole point of the hand-off.** A caller that has already
+settled where a page goes should not pay for the prose rules to be loaded into a
+context that is not going to write the prose.

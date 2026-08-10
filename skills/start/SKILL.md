@@ -6,7 +6,7 @@ description: "Pick up the project's pending work and do it — settle the open d
 # Starting the next block of work
 
 **Project facts come from `.claude/WSS.WORKFLOW.json`** — `WSS.record.*`, `WSS.commands.*`,
-`gate`, `agents.*`, `WSS.lanes.*`, `WSS.hazards.*`. Read it first. Without a manifest,
+`WSS.gate`, `WSS.agents.*`, `WSS.lanes.*`, `WSS.hazards.*`. Read it first. Without a manifest,
 fall back to conventional names, skip what you cannot resolve, and say so in one
 line rather than guessing. Where a `.claude/WSS.LANE` selector names a lane,
 `WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for `todo`, `openDecisions`,
@@ -225,7 +225,7 @@ unable to run anything. Two sequential lanes are cheaper than one lane that
 cannot verify itself. Check `worktree.symlinkDirectories` in
 `.claude/settings.json` before assuming otherwise.
 
-**Order the WSS.lanes.** Anything others build on goes first regardless of its own
+**Order the lanes.** Anything others build on goes first regardless of its own
 priority: exclusive paths, then shared modules, then features, then the tests for
 them. Lanes in the same wave are concurrent; waves are sequential.
 
@@ -259,9 +259,15 @@ to its owner from `agents.*` — this skill writes no feature code itself:
 | Test coverage, the authorization matrix, validation boundaries | `WSS.agents.test` |
 | Proving a specific vulnerability before anyone fixes it | `WSS.agents.exploit` — rare and expensive, against a named surface only |
 
-Where a role is undeclared, do that lane's work inline and say so; do not
-substitute a different role's agent, which is how a test lane ends up writing
-feature code.
+**Where a role is undeclared the lane still leaves this context** — run it as a
+general-purpose subagent carrying the same brief, and say so. Do not substitute a
+different role's agent, which is how a test lane ends up writing feature code.
+Undeclared is the normal case, not a misconfiguration: `--wss-adopt` tells a
+project with no agent files to omit `agents` entirely, on the strength of this
+fallback. Inline is the exception — for a lane too small to be worth a brief —
+because a lane run inline spends its whole read-and-edit cycle in the
+orchestrator's context, and every phase after it pays that context back on every
+call it makes.
 
 Each lane's brief carries, explicitly:
 
@@ -338,7 +344,7 @@ In order, and none of these are optional:
    destructively, and a crash mid-run should cost the run, not the work.
 4. **Ask for suite consent, then run `WSS.commands.test` once.** Use the coverage
    command, not a bare test run — a green suite says nothing about the coverage
-   gate, and `gate.coverage` is what CI enforces. A coverage gate can sit red
+   gate, and `WSS.gate.coverage` is what CI enforces. A coverage gate can sit red
    across several pushes while every local run is green.
 5. **Stamp the run through `sweep-tracker`**, as the `test-run` entry: the sha
    the run ran against, the result, and the runtime test count. Not written here
@@ -390,7 +396,7 @@ is the read/write race Phase 3 describes.
 3. **`behaviour-writer` and `reference-writer`** — what the *code* changed:
    `WSS.record.behaviour` for runtime rules, `WSS.record.reference` for schema and
    architecture. Straight to the owning primitive, not through `--wss-docs`, which
-   owns the site and no longer writes either record. Invoke `--wss-docs` separately
+   decides what the site holds and writes neither record. Invoke `--wss-docs` separately
    where the change also earns a page.
 4. **`--wss-plan`** — only if a block advanced or completed. **From a lane
    worktree that is the whole of it**: a lane session records the goal's

@@ -6,7 +6,7 @@ worked from a single checkout skips it entirely; nothing here can apply, and
 there is nothing to say about it.
 
 It holds what `--wss-start`'s Phase 0 hands over, **in the order written**, all
-of it before anything reads a `WSS.record`.
+of it before anything reads a record.
 
 **This is not the same thing as partitioning a batch into lanes.** Phase 3 does
 that inside one checkout, driven by `WSS.lanes.exclusive`, `.serialize` and

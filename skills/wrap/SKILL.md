@@ -138,7 +138,8 @@ so skip the file entirely and say nothing about it.
    **A mark written here lands after step 5's commit**, so commit it too rather
    than leaving `WSS.record.releases` dirty for a `/clear` to strip the context from.
    It is `--wss-plan`'s write and this skill's commit, which is the normal division.
-7. **Report where the project now stands**, in four numbers, read from the
+7. **Report where the project now stands**, in four numbers and a sweep line,
+   read from the
    records after step 5's commit and step 6's mark so they describe the tree the
    user is about to walk away from:
 
@@ -180,6 +181,60 @@ so skip the file entirely and say nothing about it.
    Say the backlog is provider-managed and give the number. Where `gh` cannot
    reach it, say *that* — an unreachable backlog is a third fact again, and the
    same contract forbids reading a local file in its place.
+
+   **Then one line: how far each sweep has fallen behind.** `WSS.sweeps` holds a
+   baseline per sweep — the tree that sweep last covered
+   ([`WSS.SWEEP-CHECKPOINT.md`](../../workflow/WSS.SWEEP-CHECKPOINT.md#reading-a-checkpoint))
+   — and the distance from that baseline to `HEAD` is drift that is otherwise
+   seen only where someone goes looking for it (`--wss-overview` prints it per
+   entry) or once a hook threshold trips. A wrap runs every session, so it is the
+   cheapest place to watch the number move:
+
+   ```bash
+   S=$(jq -r '.WSS.sweeps // empty' .claude/WSS.WORKFLOW.json 2>/dev/null)
+   S=${S:-.claude/WSS.SWEEPS.json}   # same resolution as the hook and the doctor
+   if [ -f "$S" ]; then
+     jq -r '.entries // {} | to_entries[] | "\(.key)\t\(.value.baseline // "")"' "$S" 2>/dev/null |
+     while IFS=$'\t' read -r n b; do s=${b%+dirty}
+       if   [ -z "$s" ];                                 then echo "$n: no baseline"
+       elif ! git cat-file -e "$s^{commit}" 2>/dev/null; then echo "$n: no such commit"
+       elif git merge-base --is-ancestor "$s" HEAD;      then echo "$n: $(git rev-list --count "$s"..HEAD)"
+       else echo "$n: off this history"; fi
+     done | paste -sd, - | sed 's/,/, /g'
+   fi
+   ```
+
+   Print the line, name it as commits behind each baseline, and stop. **It is a
+   report and not a gate**: no figure here blocks a wrap, fails one, asks the
+   user anything, or turns into a recommendation to sweep. `wss-session-check.sh`
+   already nudges past its own thresholds at the *start* of a session; this step
+   exists so the distance is visible while it is still small, which is why the
+   thresholds themselves were left alone.
+
+   How it declines to be interesting:
+
+   - **No checkpoint, or one whose `entries` is empty** — nothing prints and
+     nothing is said. An undeclared `WSS.sweeps` is not itself the absent case:
+     the read falls back to the default path exactly as `wss-session-check.sh`
+     and `wss-doctor.sh` do, so a project that swept without declaring the key
+     still gets its line, and only a path with no file behind it goes quiet. A
+     project that has never swept has no distance, and inventing a zero for it
+     would claim freshness it has not earned.
+   - **A baseline `HEAD` does not descend from** — a force-push, a rebase, a sha
+     stamped on another branch — prints `off this history` and no number.
+     `rev-list` would happily count there, but what it counts is everything on
+     `HEAD`'s side of the divergence, which reads as catastrophic drift when the
+     only fact is that the sha no longer sits behind `HEAD`. A sha that resolves
+     to nothing at all prints `no such commit`; an entry with no baseline field
+     prints `no baseline`. None of the three is an error.
+   - **Only `entries` is read**, matching what `sweep-tracker` resolves. A stamp
+     landing at the root of the checkpoint file instead of under `entries` has
+     happened, and it is invisible to the tracker; a reporter that saw further
+     than the writer would report freshness the sweep machinery does not have.
+
+   The checkpoint is `sweep-tracker`'s file
+   ([`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md)) — this step reads it
+   and never writes it. Measuring a baseline is not advancing one.
 
 8. **Tell the user plainly that it's safe to run `/clear`** — and that
    starting the next unrelated task fresh (either `/clear` or a new

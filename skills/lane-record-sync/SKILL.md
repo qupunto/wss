@@ -237,7 +237,7 @@ cheap way in — the same lookup `--wss-plan` and `--wss-start` already use. Say
 the run's opening how many derivations were suppressed that way, so a shrinking
 list is visible rather than mysterious.
 
-**A decline is not permanent by machinery, it is permanent by WSS.record.** Nothing
+**A decline is not permanent by machinery, it is permanent by record.** Nothing
 here detects that the source record changed and the derivation became valid
 again. Reversing it is a later decision, logged as one, which is how every other
 reversal in this project works — do not build change-detection to guess at it.
@@ -291,7 +291,7 @@ documented once, in the docs site's lane-synching annex, and a page carrying one
 run's actions is stale the moment the next run happens with nothing to
 re-derive it —
 [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule).
-Where the *mechanism* itself changed, that is `--wss-docs`' page to update.
+Where the *mechanism* itself changed, that is `docs-writer`'s page to update.
 
 ## Step 5 — Return the merged state to every lane
 
@@ -327,10 +327,10 @@ merely confuse it.
 **Never move a branch under a live session.** A lane worktree with a session
 running in it is mid-batch, and a batch whose `HEAD` and working tree change
 underneath it produces diffs that describe nothing. A dirty worktree is the
-cheap signal and the one to act on; there is no reliable clean-worktree
-liveness check today — lane session state is designed and unbuilt — so
-**say which lanes were skipped and why, and treat a clean-but-live lane as a
-known gap rather than an impossibility.**
+cheap signal and the one to act on; a clean worktree with a live session in it
+is indistinguishable from an idle one here, so **say which lanes were skipped
+and why, and treat a clean-but-live lane as a known gap rather than an
+impossibility.**
 
 **A skipped lane is not a failed run.** Steps 0–4 have already done the work
 this skill exists for; this step is redistribution, and a lane that has to wait

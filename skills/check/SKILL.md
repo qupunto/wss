@@ -21,10 +21,11 @@ Delegation is a lookup, not a judgement —
 | `WSS.record.todo` (a file, or a provider — see below), `WSS.record.openDecisions`, `WSS.record.decisions` | `--wss-todo` / `--wss-log` |
 | `WSS.record.decisionsIndex` — a stale generated index, per check 4 | `--wss-todo` / `--wss-log`, which owns `WSS.commands.indexRegen` |
 | `WSS.record.roadmap` — every lane's copy — and `WSS.record.releases` | `--wss-plan` |
+| `WSS.record.toolbelt` | `--wss-scout` |
 | `WSS.record.stocktake` | `audit-writer` |
 | `WSS.record.changelog` | `changelog-writer` |
 | `WSS.record.tooling.catalog`, `WSS.record.tooling.sources` | `--wss-tools` |
-| the docs site's annex page derived from `WSS.record.tooling.catalog` | `--wss-docs` |
+| the docs site's annex page derived from `WSS.record.tooling.catalog` | `docs-writer` |
 | `.claude/WSS.WORKFLOW.json` — a key naming a file that moved, or one nothing reads | `manifest-writer` |
 
 **Every row is a primitive or a record owner, and none is an orchestrator whose
@@ -79,8 +80,17 @@ already checked.**
 
 Ask `sweep-tracker` to resolve the entry `record` before reading anything. One
 scope per record key, named for it — `WSS.record.behaviour`, `WSS.record.reference`, and
-so on. A scope's `covered` is the record file **plus the code globs this run read
-to verify it**; that pairing is what a later run diffs against.
+so on. **That naming is the `record` entry's contract, and `--wss-full-check`
+stamps to the same one**: the key is what a reader resolves against, so a scope
+named for a dimension instead joins to nothing and the expensive run's stamp
+buys the cheap run nothing.
+
+A scope's `covered` is the record file **plus the code globs this run read to
+verify it**; that pairing is what a later run diffs against. **With no code
+globs to pair, the scope writes `covered: []`** — the record alone would be
+diffed against itself, which is
+[`WSS.SWEEP-CHECKPOINT.md`](../../workflow/WSS.SWEEP-CHECKPOINT.md#four-rules-and-they-are-the-whole-value)'s
+rule 4 rather than a rule of this skill's.
 
 The mechanics are
 [`WSS.SWEEP-CHECKPOINT.md`](../../workflow/WSS.SWEEP-CHECKPOINT.md#reading-a-checkpoint);

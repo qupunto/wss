@@ -8,12 +8,65 @@ reasoning behind each change, is `WSS.CHANGELOG.md`. This file is deliberately
 free of that: if an entry here only makes sense to someone editing the suite, it
 belongs in the other one.
 
+## 0.10.1 — 2026-08-10
+
+**You can now ask a project to describe itself.** `wss-tree-survey.sh`, run by
+hand from inside a project that uses the suite, prints what that project has
+actually declared — where its records live, which flags are wired to what, what
+is configured and what is not. Read-only: it changes nothing and writes nothing.
+Useful when you have inherited a project, or when you have several and no longer
+remember which is set up how. What it prints names your own paths and branches,
+so treat the output as private.
+
+**Work split into lanes no longer needs agents configured to get the benefit.**
+If your project declares no specialist agents — which is the normal case, and
+what setup recommends — a lane used to be worked through in the main session.
+Now it goes out to a subagent regardless, which leaves the main session's room
+for the work that needs it.
+
+**And you can now ask that of every project at once.** `wss-survey-all.sh` walks
+the roots you give it, surveys every adopted tree underneath, and rolls the
+answers up into one mapping of which surfaces have a project that could exercise
+them. It groups worktrees of the same project together instead of counting them
+as separate ones. The same privacy warning applies and applies harder: the
+output names every project on the machine, with paths, branches and remotes, so
+keep it local and never route it upstream.
+
+**Ending a session now tells you how stale each recurring check has become.**
+The wrap's closing report gains one line per periodic sweep: how many commits
+have landed since it last covered your tree. Until now that number was visible
+only if you went looking, or once it crossed a threshold and the session nudge
+fired — which on a fast-moving repository can fail to happen for a long time. It
+is a report and nothing else: no figure blocks a wrap or turns into a
+recommendation.
+
+**More of the commands that write your records now clean up after themselves.**
+Planning, logging a decision, recording an adopted capability, and writing a
+behaviour or reference note all now look for the sentences elsewhere in that
+record their own write just made false — a count that moved, a "not yet built",
+an item still listed as pending — and fix them in the same edit. Previously only
+some of them did, so a record could contradict itself the moment it was updated.
+
+**The tooling catalog says when your configured file list leaves things out.**
+If the list of files the catalog is built from misses a directory the catalog
+claims to cover, you are now told which files fall outside, instead of getting a
+sweep that quietly covers less than it reports.
+
+**No action needed.** Nothing you have declared, written or typed changes
+meaning in this release. If you are on `0.10.0` you are current after an
+ordinary update; if you are on anything older, `0.10.0`'s note below still
+applies and you need to reinstall rather than update.
+
 ## 0.10.0 — 2026-08-10
 
 **The suite is now called `wss`, and an existing install has to be replaced
 rather than updated.** The plugin, its marketplace and its repository all
-changed name at once, so the entry recording that the plugin is enabled points
-at something that no longer resolves. Uninstall the old one and install again:
+changed name at once, and the entry recording that the plugin is enabled still
+names the old pair. **It keeps working, which is the trap** — the old repository
+address redirects, so the stale entry goes on resolving, updates go on arriving,
+and the suite goes on running under its former name. Nothing errors, so a
+working install is not evidence you are on the current one. Uninstall the old
+one and install again:
 
 ```bash
 claude plugin marketplace add qupunto/wss --scope project

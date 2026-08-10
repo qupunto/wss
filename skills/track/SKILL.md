@@ -88,7 +88,7 @@ change in the family, **then run the step once**:
 
 | Family | Batch together | Tail, run once after the batch |
 |---|---|---|
-| Schema / data model | models, fields, relations, enums, indexes | the project's schema sequence — validate, regenerate the client, typecheck, migrate, reseed. Where `.claude/WSS.WORKFLOW.json` names an `onSchemaChange` skill, that skill owns the exact order |
+| Schema / data model | models, fields, relations, enums, indexes | the project's schema sequence — validate, regenerate the client, typecheck, migrate, reseed. Where `.claude/WSS.WORKFLOW.json` names a `WSS.onSchemaChange` skill, that skill owns the exact order |
 | API / endpoints | routes, handlers, services, request schemas | the full test suite (`WSS.commands.test`), then iterate on what fails |
 | Architecture / infra | compose files, service boundaries, build config | rebuild the stack, then smoke-run it |
 | Docs | every doc invalidated by the work above | a single documentation pass at the end |

@@ -38,8 +38,10 @@ diff-shaped: a diff-shaped obligation is mechanically checkable.
 | routes, services, domain logic — where it changes an auth rule, an ownership rule, a state transition, a visibility rule, an error status, or ordering | `WSS.record.behaviour` |
 | the schema | `WSS.record.reference` (data model) |
 | container, deployment or proxy config, operational scripts, or a stated convention | `WSS.record.reference` (overview) |
+| a commit that implements what a backlog item describes, or that clears the blocker one is parked on | `WSS.record.todo` — the lane's, where a `.claude/WSS.LANE` selector resolves one. Where it names a provider there is no file to diff; the paragraph below applies |
 | block scope, order or dependencies | `WSS.record.roadmap` — the lane's, where a `.claude/WSS.LANE` selector resolves one |
 | a milestone's scope, its intended version, or which goals it comprises | `WSS.record.releases` |
+| a dependency added, removed or replaced where the stack declares them, or a capability hand-built that a registry row says a library already covers | `WSS.record.toolbelt` |
 | a skill or agent file added, removed, or changed in purpose | `WSS.record.tooling.catalog`, and the docs site's Claude-tooling annex page, which is derived from it |
 
 The last row is two findings, not one: the catalog and the annex page derived
@@ -93,6 +95,16 @@ git ls-remote --tags origin
 Both, because they answer different questions: a tag that exists locally and
 not on the remote means nothing to anyone else's checkout. Compare against the
 versions `WSS.record.changelog` and `WSS.record.releases` claim shipped.
+
+**Include a public `CHANGELOG.md`** where one exists and is not what
+`WSS.record.changelog` points at — that test is `--wss-release`'s own, and it is
+the only way to identify the file, since no manifest key names it. It is not a
+record and has no owner, which is why nothing else looks at it; it is still a
+per-version claim about what shipped, and a tag with no entry, or an entry no tag
+resolves, is the same finding as in either record above. **Only the version
+headings are in scope** — the entries themselves are an append-only log, so the
+prose is history rather than a claim to re-verify, and the exemption above
+applies to it for that reason rather than for its not being a record.
 
 Three distinct findings live here:
 

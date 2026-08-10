@@ -36,6 +36,7 @@ wrong rather than merely old when they stop matching reality:
 | `WSS.record.behaviour`, `WSS.record.reference` | claims contradicted by source; updates the code owed and never got |
 | `WSS.record.handoff` | resolved warnings still present, pointers that no longer resolve |
 | the docs site | every check in `--wss-docs` audit mode, including the page-by-page accuracy pass |
+| `WSS.record.toolbelt` | a row whose package is no longer a dependency, an adopted capability since hand-built or replaced, a pointer into `WSS.record.decisions` that no longer resolves |
 | `WSS.record.tooling.catalog` and its sources | skills and agents that no longer exist, mutable claims that should be deleted, prose that changes nothing |
 
 **Where `WSS.record.todo` names a provider it is still covered, and read in full.**
@@ -115,8 +116,9 @@ fix, and they do not write.
 contracts and scripts, found by sessions working in other projects, which were
 forbidden to fix them and filed instead, per
 [`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md#a-file-belonging-to-the-installation-is-never-edited-from-a-project-session).
-`wss-doctor.sh` counts the open entries; nothing else reads them, and the session
-that wrote one is long cleared.
+Several readers count the open entries and surface them, but counting is all any
+of them does: the session that filed one is long cleared, so triage here is what
+closes it.
 
 **In scope only when this project *is* that configuration directory.** From
 anywhere else, filing is the whole action a session may take —
@@ -221,6 +223,16 @@ can never satisfy a later carry-forward.
 Hand `sweep-tracker` one entry per sweep — `record`, `docs`, `tooling`, and
 `health` for this run as a whole — with this tree's sha, `method: full`, and per
 scope what was genuinely covered.
+
+**The `record` entry's scopes are one per record key, named for it** —
+`WSS.record.behaviour`, `WSS.record.reference`, and so on. The vocabulary is
+[`--wss-check`](../check/SKILL.md#scope-comes-from-the-checkpoint)'s, because
+that skill is the one this stamp is for, and it resolves a scope by record key.
+A scope named for a dimension instead — `accuracy` across every record at once —
+joins to nothing on the next cheap run: an unrecognised name widens to full
+scope, so nothing is wrongly skipped and the whole cost of this run's stamp is
+simply wasted. Each scope's `covered` is the record file **plus the code globs
+its reader actually read**, and `covered: []` where there were none.
 
 **The `health` entry is what makes this skill visible when it is overdue.** The
 session hook nudges on any checkpoint whose baseline has fallen far behind `HEAD`,

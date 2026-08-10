@@ -1,6 +1,6 @@
 {
   "name": "wss",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "A secretary to coding, not the coder: skills that keep a project's record, roadmap, docs and tooling honest, with one writer per record file.",
   "author": {
     "name": "qupunto",

@@ -16,7 +16,7 @@ out, it hands the disagreement back rather than writing a corrected guess.
 
 ## Why this is not part of `--wss-adopt`
 
-Two callers want different amounts of work, which is
+Its callers want different amounts of work, which is
 [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md)'s split test:
 
 - **`--wss-adopt`, adopting** — a whole manifest written once, after detection,

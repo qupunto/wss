@@ -95,6 +95,16 @@ when a project's shape was established for the first time.
    command that produces it, or write the command instead of the number:
    [`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md#the-mutable-claim-rule).
 
+## Watch for state claims this edit falsifies
+
+**Before writing, grep the record for the claims the new fact makes false** — a
+count this change moves, "not yet built", a directory layout the rename
+supersedes, a convention section describing what was just replaced — and fix
+them in the same edit
+([`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+Same-file scope is the cheap case and the usual one; the cross-record form is a
+fact asserting X exists falsifying "no X exists" wherever that sentence lives.
+
 ## Negative claims need the grep that would disprove them
 
 "Nothing else reads this key", "no endpoint enforces X" — run the search first

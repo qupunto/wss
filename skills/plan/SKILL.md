@@ -210,3 +210,14 @@ they are written here, and a finding dispatched about either file gets the
 re-verification in
 [`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md#the-inspector-writes-nothing) before
 it is acted on.
+
+**Watch for state claims this write falsifies.** Before writing, grep the
+resolved roadmap and the release list for the claims the new goal, reordering or
+mark makes false — a block still sitting in next-up that this goal completes, a
+stated dependency this order reverses, a milestone reading open that the mark
+closes, an end-of-milestones section a new milestone contradicts — and fix them
+in the same edit
+([`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+Same-file scope is the cheap case and the usual one; the cross-record form is a
+mark or goal asserting X exists falsifying "no X exists" wherever that sentence
+lives.

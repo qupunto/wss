@@ -45,6 +45,14 @@ When the user adopts a candidate, two writes, split exactly as
 - **The reasoning, through `--wss-log`** (`record`): what was searched, what
   was rejected, why this one — the verbose entry the row points at.
 
+**Watch for state claims this row falsifies.** Before writing, grep the registry
+for the claims the adoption makes false — "no library does X", a row naming the
+package this one replaces, a task shape now covered that some entry still
+describes as hand-built — and fix them in the same edit
+([`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+Same-file scope is the cheap case and the usual one; the cross-record form is a
+row asserting X exists falsifying "no X exists" wherever that sentence lives.
+
 **One registry per project, never lane-split** — which tool does a job is a
 property of the project, not of a worktree
 ([`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)). Where the registry

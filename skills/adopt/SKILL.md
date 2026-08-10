@@ -166,7 +166,7 @@ Everything answerable from the repo should already be answered by now.
 - **`WSS.branch.integration` and `WSS.branch.publish`** — inferable from the current
   branch and the remote's default, but worth confirming; `--wss-wrap` pushes one of
   them.
-- **`gate.coverage`** — only where a coverage tool is configured. Ask for the
+- **`WSS.gate.coverage`** — only where a coverage tool is configured. Ask for the
   thresholds CI actually enforces, not aspirations.
 - **`WSS.commitTrailer`** — offer `Claude-Session`; it is what `--wss-wrap` stamps and
   what makes concurrent sessions distinguishable.
@@ -334,7 +334,8 @@ Say, briefly:
 - the one next step — usually `--wss-check` to see what the record already gets
   wrong, or `--wss-plan` if the project has no roadmap yet.
 
-**Then the cadence card, in full.** Say `--wss-flags` lists everything, then:
+**Then the cadence card.** It is a selection, not an inventory — say
+`--wss-flags` is what lists every flag, then:
 
 | When | Flag |
 |---|---|

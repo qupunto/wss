@@ -126,6 +126,27 @@ file nobody looks at again.
 claims nothing forward. Recording its slice as `covered` would let a later run
 skip on the strength of a run that never intended to license that.
 
+**A scope with no evidence globs is rule 4's case, not a new rule.** Where a
+scope's `covered` would name only the file that was checked and nothing it was
+checked *against*, step 2 below resolves it to
+`git diff <baseline>..HEAD -- <that same file>` — the file diffed against itself.
+It is not a false stamp; it addresses the wrong thing. A record describing code
+that moved, where the record itself did not move, comes back unchanged, and only
+the runner's own blast radius stands against that. Record scopes are the case
+that arises in practice: `covered` is the record file **plus the code globs the
+run read to verify it** —
+[`check`](../skills/check/SKILL.md#scope-comes-from-the-checkpoint)'s
+pairing — and a run that verified a record by reading the record has no second
+half to pair. It claims nothing forward, so it writes `covered: []` and the next
+sweep reads that scope in full.
+
+**Where every scope in an entry does that, the entry is `complete: false`.** That
+is the shape [`sweep-tracker`](writers/WSS.SWEEP-TRACKER.md) already prescribes
+for a stamp that cannot produce coverage, and it is what `wss-doctor.sh` checks
+for — `complete: true` beside an empty `covered` is a whole scope claimed by
+saying nothing, which rule 3 forbids. An entry with a mix keeps `complete: true`:
+the scopes that did pair evidence still claim what they covered.
+
 ## Reading a checkpoint
 
 The procedure, stated once so no two skills invent their own:
