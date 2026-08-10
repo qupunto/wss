@@ -1,20 +1,20 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "workflow-secretary-suite",
-  "description": "The marketplace for workflow-secretary-suite, which is the only plugin in it: this repository is both.",
+  "name": "wss",
+  "description": "The marketplace for wss, which is the only plugin in it: this repository is both.",
   "owner": {
     "name": "qupunto",
     "url": "https://github.com/qupunto"
   },
   "plugins": [
     {
-      "name": "workflow-secretary-suite",
+      "name": "wss",
       "description": "A secretary to coding, not the coder: skills that keep a project's record, roadmap, docs and tooling honest, with one writer per record file.",
       "author": {
         "name": "qupunto",
         "url": "https://github.com/qupunto"
       },
-      "homepage": "https://github.com/qupunto/workflow-secretary-suite",
+      "homepage": "https://github.com/qupunto/wss",
       "license": "MIT",
       "category": "workflow",
       "keywords": ["workflow", "records", "documentation", "project-secretary"],

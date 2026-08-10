@@ -68,7 +68,7 @@ a **skill**.
 `WSS.lanes.conflicts` is one file per project — not one per lane, because a
 contradiction between two lanes belongs to neither, and filing it to one of them
 would pick a side before anyone has ruled. Any session that trips over one while
-doing something else appends to it; `/wss-lane-record-sync` is the only thing
+doing something else appends to it; `/wss:lane-record-sync` is the only thing
 that consumes it.
 
 ```
@@ -131,7 +131,7 @@ failure of every ladder, and here it is worse than usual: a lane marking its own
 asks critical is one lane setting another lane's order. The user setting it is
 not that, which is why the rule names the writer rather than the route.
 
-## `/wss-lane-record-sync`
+## `/wss:lane-record-sync`
 
 The skill that finds what to file. **Slash-invoked only** — no flag, no
 `commands/` wrapper, no dispatch from another skill — because the run is

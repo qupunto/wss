@@ -22,7 +22,7 @@
 #   1. This repo was never adopted on the second machine, so wss-shorthand-flags.sh
 #      was simply absent and every --flag silently degraded to model judgement.
 #      The flags mostly still worked, so nothing looked wrong.
-#   2. Two skills cited `wss-track` as an authority while it resolved
+#   2. Two skills cited `track` as an authority while it resolved
 #      to nothing in that project. A dangling reference reads exactly like a
 #      live one.
 #   3. The repo's own .gitignore ignored README.md and docs/, so documentation
@@ -248,7 +248,7 @@ fi
 # prompt — measured on a real install, not predicted. The checkout half of the
 # evidence is the config directory itself carrying the suite's plugin manifest
 # at its root, which is the source repository's own shape; the plugin half is a
-# cached workflow-secretary-suite install, or enabledPlugins naming one. Keyed on
+# cached wss install, or enabledPlugins naming one. Keyed on
 # CONFIG_DIR throughout: coexistence is a property of the MACHINE, never of
 # whichever installation this particular run was pointed at.
 coexist_checkout=0
@@ -257,17 +257,21 @@ if [ -f "$CONFIG_DIR/.claude-plugin/plugin.json" ] && ! is_plugin_root "$CONFIG_
   coexist_checkout=1
 fi
 coexist_plugin=0
-if ls -d "$CONFIG_DIR"/plugins/cache/*/workflow-secretary-suite/ >/dev/null 2>&1; then
+if ls -d "$CONFIG_DIR"/plugins/cache/*/wss/ >/dev/null 2>&1; then
   coexist_plugin=1
-elif jq -c '.enabledPlugins // empty' "$CONFIG_DIR/settings.json" 2>/dev/null | grep -q 'workflow-secretary-suite'; then
+elif jq -e '(.enabledPlugins // {}) | keys[] | select((split("@") | .[0]) == "wss")' \
+       "$CONFIG_DIR/settings.json" >/dev/null 2>&1; then
+  # Matched on the id's name half, not a substring: `wss` is short enough that a
+  # bare grep also claims any unrelated `wssprobe@…` the user has enabled.
   coexist_plugin=1
 fi
 if [ $coexist_checkout -eq 1 ] && [ $coexist_plugin -eq 1 ]; then
   fail "the suite is installed TWICE — this config directory is the checkout
-        form, and a workflow-secretary-suite plugin is installed beside it. The hooks
+        form, and a wss plugin is installed beside it. The hooks
         double-fire, once from each form, on every prompt.
-        \`claude plugin uninstall workflow-secretary-suite\` or retire the checkout;
-        keeping both is never right."
+        Remove one. \`claude plugin uninstall\` DEFAULTS TO --scope user, so the
+        bare command is wrong for a project-scope install: run
+        \`wss-retire-workflow.sh --suite\` for the exact command per install."
 else
   pass "the suite is installed at most once — no plugin/checkout coexistence"
 fi
@@ -695,9 +699,9 @@ fi
 head_ "Trigger phrases a session would hit by accident"
 
 # A description is how the MODEL decides to invoke a skill, so a trigger listed
-# there is a claim about ordinary language. `wss-wrap` listed `"done"` and
-# `wss-release` listed `"ship it"` — both hold a push grant, so "ok that's done"
-# could commit and push work nobody asked to publish. `wss-stocktake`
+# there is a claim about ordinary language. `wrap` listed `"done"` and
+# `release` listed `"ship it"` — both hold a push grant, so "ok that's done"
+# could commit and push work nobody asked to publish. `stocktake`
 # listed `"where are we"`, the most expensive skill in the suite answering a
 # question a sentence would.
 #
@@ -1132,12 +1136,12 @@ while IFS=$'\t' read -r kind f ln body; do
           $body
         Resolve the root instead, checkout first:
           S=\"\${CLAUDE_CONFIG_DIR:-\$HOME/.claude}\"
-          [ -x \"\$S/wss-doctor.sh\" ] || S=\$(ls -d \"\$S\"/plugins/cache/*/workflow-secretary-suite/*/ 2>/dev/null | tail -1)"
+          [ -x \"\$S/wss-doctor.sh\" ] || S=\$(ls -d \"\$S\"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)"
   else
     fail "${f#"$CLAUDE_DIR"/}:$ln
         runs an installation path that only exists in a checkout:
           $body
-        Resolve the root instead, checkout first — see the \`wss-contracts\`
+        Resolve the root instead, checkout first — see the \`contracts\`
         skill. Config-directory paths (WSS.BUG-REPORTS.md, projects/, settings.json)
         are correct as they are and are not flagged."
   fi
@@ -1209,12 +1213,22 @@ if [ -d "$CLAUDE_DIR/commands" ]; then
     wn=$((wn + 1))
     wbase=$(basename "$c" .md)
     wbody=$(awk 'c == 2 && /^--[a-z]/ { print $1; exit } /^---$/ { c++ }' "$c")
-    if [ "$wbody" != "--$wbase" ]; then
+    # TWO FORMS, one rule. The checkout keeps the prefix on both sides
+    # (`log.md` fires `--wss-log`); the published plugin strips it from the
+    # wrapper NAME and never from the FLAG (`log.md` fires `--wss-log`), because
+    # plugin form namespaces the wrapper as `/wss:log` while the flags are the
+    # same string in both forms. Accepting both is not a loosening: a wrapper
+    # still has exactly one legal flag, and `todo.md` firing `--wss-log` fails
+    # against both spellings.
+    if [ "$wbody" != "--$wbase" ] && [ "$wbody" != "--wss-$wbase" ]; then
       fail "commands/$wbase.md fires '${wbody:-nothing}' — a wrapper's body must fire
-        the flag its own name promises: --$wbase"
+        the flag its own name promises: --$wbase or --wss-$wbase"
       wbad=$((wbad + 1))
-    elif ! printf '%s\n' $wflags | grep -qx -- "--$wbase"; then
-      fail "commands/$wbase.md fires --$wbase, which is not in the hook's FLAGS —
+    elif ! printf '%s\n' $wflags | grep -qx -- "$wbody"; then
+      # The flag actually in the body, not one rebuilt from the filename: those
+      # are the same token in checkout form and differ by the prefix in plugin
+      # form, and it is the fired one the hook either serves or does not.
+      fail "commands/$wbase.md fires $wbody, which is not in the hook's FLAGS —
         the menu offers a flag the hook does not serve"
       wbad=$((wbad + 1))
     fi
@@ -1256,7 +1270,7 @@ cadence_flags_() { # file — the flag column of the "| When | Flag |" table
     t { t = 0 }
   ' "$1" | sort
 }
-cad_card="$CLAUDE_DIR/skills/wss-adopt/SKILL.md"
+cad_card="$CLAUDE_DIR/skills/adopt/SKILL.md"
 cad_readme="$CLAUDE_DIR/README.md"
 if [ -f "$cad_card" ] && [ -f "$cad_readme" ]; then
   cad_a=$(cadence_flags_ "$cad_card")
@@ -1266,7 +1280,7 @@ if [ -f "$cad_card" ] && [ -f "$cad_readme" ]; then
     # blind agrees with everything, and an empty-vs-empty pass is what the
     # agreement was supposed to rule out.
     cad_blind=""
-    [ -z "$cad_a" ] && cad_blind="skills/wss-adopt/SKILL.md"
+    [ -z "$cad_a" ] && cad_blind="skills/adopt/SKILL.md"
     [ -z "$cad_b" ] && cad_blind="${cad_blind:+$cad_blind and }README.md"
     fail "no cadence table found in $cad_blind — the comparison needs a
         '| When | Flag |' table in both files, and two tables that cannot be
@@ -1277,7 +1291,7 @@ if [ -f "$cad_card" ] && [ -f "$cad_readme" ]; then
     cad_only_a=$(comm -23 <(printf '%s\n' "$cad_a") <(printf '%s\n' "$cad_b") | tr '\n' ' ')
     cad_only_b=$(comm -13 <(printf '%s\n' "$cad_a") <(printf '%s\n' "$cad_b") | tr '\n' ' ')
     fail "the two cadence tables name different flags.
-        Only in skills/wss-adopt/SKILL.md's card: ${cad_only_a:-none}
+        Only in skills/adopt/SKILL.md's card: ${cad_only_a:-none}
         Only in README.md's 'How often' table: ${cad_only_b:-none}
         Wording and the 'Why then' column may differ; the flag column may not."
   fi
@@ -1368,7 +1382,7 @@ head_ "Lane tables"
 # answer for the same reason as the check-method tables above: each copy exists
 # so its own reader sees the rule in place.
 #
-# The four-rulings table (skills/wss-lane-record-sync/SKILL.md and
+# The four-rulings table (skills/lane-record-sync/SKILL.md and
 # docs/annex/lane-synching.md) addresses the same reader on both sides, so ALL
 # columns must agree — the shape of the check-method comparison. What is free
 # to differ is a trailing "— see below" pointer: it is intra-document
@@ -1394,7 +1408,7 @@ rulings_rows_() { # file — the "| Ruling | Files to the queue | Next run |" ta
     t { t = 0 }
   ' "$1" | sort
 }
-rl_skill="$CLAUDE_DIR/skills/wss-lane-record-sync/SKILL.md"
+rl_skill="$CLAUDE_DIR/skills/lane-record-sync/SKILL.md"
 rl_annex="$CLAUDE_DIR/docs/annex/lane-synching.md"
 if [ -f "$rl_skill" ] && [ -f "$rl_annex" ]; then
   rl_a=$(rulings_rows_ "$rl_skill")
@@ -1403,7 +1417,7 @@ if [ -f "$rl_skill" ] && [ -f "$rl_annex" ]; then
     # The blind-parser guard both siblings carry: two tables that cannot be
     # read compare equal, and empty-vs-empty is what the agreement rules out.
     rl_blind=""
-    [ -z "$rl_a" ] && rl_blind="skills/wss-lane-record-sync/SKILL.md"
+    [ -z "$rl_a" ] && rl_blind="skills/lane-record-sync/SKILL.md"
     [ -z "$rl_b" ] && rl_blind="${rl_blind:+$rl_blind and }docs/annex/lane-synching.md"
     fail "no four-rulings table found in $rl_blind — the comparison needs a
         '| Ruling | Files to the queue | Next run |' table in both files, and
@@ -1414,7 +1428,7 @@ if [ -f "$rl_skill" ] && [ -f "$rl_annex" ]; then
     rl_only_a=$(comm -23 <(printf '%s\n' "$rl_a") <(printf '%s\n' "$rl_b") | cut -d'|' -f1 | sort -u | tr '\n' ' ')
     rl_only_b=$(comm -13 <(printf '%s\n' "$rl_a") <(printf '%s\n' "$rl_b") | cut -d'|' -f1 | sort -u | tr '\n' ' ')
     fail "the two four-rulings tables disagree.
-        Differing rows in skills/wss-lane-record-sync/SKILL.md: ${rl_only_a:-none}
+        Differing rows in skills/lane-record-sync/SKILL.md: ${rl_only_a:-none}
         Differing rows in docs/annex/lane-synching.md: ${rl_only_b:-none}
         A ruling named on one side only is a missing row; one named on both is
         a wording drift in its cells. Only a trailing '— see below' pointer may
@@ -1648,7 +1662,7 @@ WSS.gate.coverage'
   fi
 
   # The migration stamp. Detection overrides a wrong stamp, so a malformed one
-  # cannot corrupt a migration — but it silently buys nothing: wss-update
+  # cannot corrupt a migration — but it silently buys nothing: update
   # ignores it and re-derives everything from the tree. Warn, not fail.
   if jq -e '.WSS.suite != null' "$manifest" >/dev/null 2>&1; then
     if jq -e '.WSS.suite | (type == "object")
@@ -1658,7 +1672,7 @@ WSS.gate.coverage'
       pass "WSS.suite stamp carries a version and a commit"
     else
       warn "WSS.suite is declared but is not an object with non-empty string
-        \"version\" and \"commit\". wss-update ignores a malformed stamp and
+        \"version\" and \"commit\". update ignores a malformed stamp and
         detects from the tree — the stamp as written buys nothing."
     fi
   fi
@@ -1740,12 +1754,12 @@ if [ -z "$lane_names" ]; then
     pass "no WSS.lanes.named — project is unsplit"
   fi
   # Declaring the inbox with no lanes is dead config: a contradiction BETWEEN
-  # lanes needs lanes to exist, and wss-lane-record-sync refuses to run below
+  # lanes needs lanes to exist, and lane-record-sync refuses to run below
   # two, so nothing writes it and nothing would consume it.
   if [ -f "$PWD/.claude/WSS.WORKFLOW.json" ] &&
      jq -e '.WSS.lanes.conflicts != null' "$PWD/.claude/WSS.WORKFLOW.json" >/dev/null 2>&1; then
     warn "WSS.lanes.conflicts is declared but no lanes are named, so nothing can
-        file a cross-lane contradiction and wss-lane-record-sync refuses to
+        file a cross-lane contradiction and lane-record-sync refuses to
         run. Declare the lanes or drop the key."
   fi
 else
@@ -1844,7 +1858,7 @@ else
       pass "every lane declares a transfer queue and its path exists ($n_lanes lane(s))"
   fi
 
-  # The second queue: ONE per project, consumed by wss-lane-record-sync. A
+  # The second queue: ONE per project, consumed by lane-record-sync. A
   # contradiction between two lanes belongs to neither, so it is not a per-lane
   # key — filing it to one of the two would pick a side before anyone has ruled.
   # Absent is legal (nothing has been filed and the skill derives its own), but a
@@ -1856,7 +1870,7 @@ else
   elif [ ! -e "$PWD/$confl" ]; then
     fail "WSS.lanes.conflicts is missing: $confl. A session filing a contradiction
         would create a file nothing reads, and the only consumer is
-        wss-lane-record-sync."
+        lane-record-sync."
   else
     pass "conflict inbox declared and present: $confl"
   fi

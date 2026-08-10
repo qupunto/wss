@@ -18,14 +18,30 @@ deliberately not here.
 **As a plugin**, if you want the skills in your own projects and nothing else:
 
 ```bash
-claude plugin marketplace add qupunto/workflow-secretary-suite
-claude plugin install workflow-secretary-suite
+claude plugin marketplace add qupunto/wss --scope project
+claude plugin install wss --scope project
 ```
 
 This repository is its own marketplace — `.claude-plugin/marketplace.json` sits
 beside the plugin manifest and names the repository root as the source — so the
 two commands above name the same place, and there is no second repository to
 keep in step with this one.
+
+**`--scope project` is written out because both commands default to `user` and
+neither asks.** Only the interactive `/plugin` menu prompts; drop the flag and
+the CLI installs the suite for every project on the machine without saying so.
+It belongs on *both* — a project-scoped install pointing at a user-scoped
+marketplace resolves on your machine and nowhere else, so it will not travel
+with the repository you are adopting.
+
+Project scope is the one to reach for first because this suite keeps *a
+project's* record: its manifest, backlog, decision log and handoff all live in
+the repository, so the machinery that reads them belongs there too. Drop the
+flag from both commands if you would rather have the skills everywhere; `local`
+is the third option, meaning this machine and this project, written to nothing
+tracked. If you have already installed at the wrong scope,
+`claude plugin uninstall` and `claude plugin marketplace remove` undo both
+halves before you redo them.
 
 That gives you every skill and both hooks, merged with whatever config you
 already have — a plugin never owns your `settings.json`. The one thing it costs
@@ -70,7 +86,7 @@ and in one case (`.credentials.json`) must never leave the machine at all.
 | `wss-reset-records.sh` | Blanks every record the manifest declares back to its heading. Dry-run by default; `--write` to do it. What makes a fork yours rather than an inheritance — see below |
 | `WSS.BUG-REPORTS.md` | Inbox for defects in this config found from *other* projects. Gitignored, so it is not in the repo — `wss-doctor.sh` surfaces open entries |
 | `skills/` | User-level skills, available in every project |
-| `commands/` | Slash-command wrappers for the flags whose skill carries a different name — the filename is the flag, so `/wss-todo` autocompletes and fires `--wss-todo`. `wss-doctor.sh` asserts every wrapper fires the flag its name promises |
+| `commands/` | Slash-command wrappers for the flags whose skill carries a different name — a wrapper's name tracks the flag it fires, so `/wss:todo` autocompletes and fires `--wss-todo`. (Installed as a plugin the wrapper is `/wss:todo`, because the namespace supplies the prefix; the flag is `--wss-todo` in both forms.) `wss-doctor.sh` asserts every wrapper fires the flag its name promises |
 | `.claude/skills/` | Where a project's own skills go, resolved before the global suite. This repo keeps none — see the annex for why both of the ones it had turned out to be global concerns with local paths baked in |
 | `workflow/` | The authority files every skill links to instead of carrying its own copy — who may write what, what each record holds, which manifest keys exist, and how a sweep narrows itself — plus the record-writer procedures under `workflow/writers/` and the shared check methods under `workflow/checks/` |
 | `workflow/providers/` | Where a record lives somewhere that is not a file. Only `WSS.record.todo` takes one, and `WSS.GITHUB-ISSUES.md` is the only one that exists — see below |
@@ -79,7 +95,7 @@ and in one case (`.credentials.json`) must never leave the machine at all.
 
 **As a checkout** — cloning into `~/.claude`, which is what the section below
 does, and the form this suite is developed in — `skillOverrides` in
-`settings.json` controls each skill individually, and `/wss-toggle` is the
+`settings.json` controls each skill individually, and `/wss:toggle` is the
 slash-only editor of that block. This repository uses two levels: `name-only`
 for dispatch-reached skills (the description unloads, the dispatch still
 works) and `user-invocable-only` for heavyweights invoked by slash alone —
@@ -277,11 +293,11 @@ records in and adds the docs tree. It refuses archive entries that escape the
 project, and refuses to overwrite a non-empty file unless given `--force`. `--wss-adopt` runs the import
 when handed an archive during adoption.
 
-### Stopping cleanly — `/wss-retire`, or the script it drives
+### Stopping cleanly — `/wss:retire`, or the script it drives
 
-`claude plugin uninstall workflow-secretary-suite` removes the skills and hooks and
+`claude plugin uninstall wss` removes the skills and hooks and
 touches no project — the manifest, sweep cache and records a project
-accumulated all stay behind. **`/wss-retire` is the guided exit**, run per
+accumulated all stay behind. **`/wss:retire` is the guided exit**, run per
 project: one checkbox dialog — a full snapshot (`WSS.RETIREMENT-PLAN.tar.gz`,
 made by `wss-export-records.sh --all`, restorable at re-adoption) asked first,
 then the actions to run — delete the machinery, delete the records, wipe the
@@ -420,27 +436,27 @@ Current flags:
 
 | Flag | Skill | Tier |
 |---|---|---|
-| `--wss-adopt` | `wss-adopt` | orchestrator |
-| `--wss-update` | `wss-update` | orchestrator — updates the install, then migrates the adopted tree to the newest conventions; detection decides what needs migrating, the `WSS.suite` stamp only accelerates |
-| `--wss-track` | `wss-track` | primitive |
-| `--wss-todo` | `wss-record` | primitive |
-| `--wss-log` | `wss-record` | primitive |
-| `--wss-plan` | `wss-plan` | primitive |
-| `--wss-tools` | `wss-tools` | primitive |
-| `--wss-check` | `wss-check` | orchestrator — writes nothing; dispatches |
-| `--wss-full-check` | `wss-full-check` | orchestrator — writes no record; dispatches. `--wss-release` runs it before a tag |
-| `--wss-docs` | `wss-docs` | orchestrator |
-| `--wss-diagram` | `wss-docs` | orchestrator — one ad-hoc diagram, drawn under the style guide's rules and landed as an annex page |
-| `--wss-start` | `wss-start` | orchestrator |
-| `--wss-stocktake` / `--wss-full-stocktake` | `wss-stocktake` | orchestrator |
-| `--wss-pr` | `wss-pr` | orchestrator |
-| `--wss-release` | `wss-release` | orchestrator |
-| `--wss-wrap` | `wss-wrap` | orchestrator |
-| `--wss-report` | `wss-report` | orchestrator — appends to the machine-local inbox, then opens an upstream issue on a fresh OK |
-| `--wss-overview` | `wss-overview` | orchestrator — reads and reports, writes nothing at all |
-| `--wss-scout` | `wss-scout` | primitive |
-| `--wss-describe` | `wss-describe` | primitive — dispatches to `behaviour-writer`, which is `WSS.record.behaviour`'s sole writer |
-| `--wss-reference` | `wss-reference` | primitive — dispatches to `reference-writer`, which is `WSS.record.reference`'s sole writer |
+| `--wss-adopt` | `adopt` | orchestrator |
+| `--wss-update` | `update` | orchestrator — updates the install, then migrates the adopted tree to the newest conventions; detection decides what needs migrating, the `WSS.suite` stamp only accelerates |
+| `--wss-track` | `track` | primitive |
+| `--wss-todo` | `record` | primitive |
+| `--wss-log` | `record` | primitive |
+| `--wss-plan` | `plan` | primitive |
+| `--wss-tools` | `tools` | primitive |
+| `--wss-check` | `check` | orchestrator — writes nothing; dispatches |
+| `--wss-full-check` | `full-check` | orchestrator — writes no record; dispatches. `--wss-release` runs it before a tag |
+| `--wss-docs` | `docs` | orchestrator |
+| `--wss-diagram` | `docs` | orchestrator — one ad-hoc diagram, drawn under the style guide's rules and landed as an annex page |
+| `--wss-start` | `start` | orchestrator |
+| `--wss-stocktake` / `--wss-full-stocktake` | `stocktake` | orchestrator |
+| `--wss-pr` | `pr` | orchestrator |
+| `--wss-release` | `release` | orchestrator |
+| `--wss-wrap` | `wrap` | orchestrator |
+| `--wss-report` | `report` | orchestrator — appends to the machine-local inbox, then opens an upstream issue on a fresh OK |
+| `--wss-overview` | `overview` | orchestrator — reads and reports, writes nothing at all |
+| `--wss-scout` | `scout` | primitive |
+| `--wss-describe` | `describe` | primitive — dispatches to `behaviour-writer`, which is `WSS.record.behaviour`'s sole writer |
+| `--wss-reference` | `reference` | primitive — dispatches to `reference-writer`, which is `WSS.record.reference`'s sole writer |
 
 **What each flag authorizes is deliberately not a column here.** A grant is
 written by hand in two places — the block `wss-shorthand-flags.sh` injects, and the
@@ -458,17 +474,17 @@ its CI, and merges once you confirm in that turn. `--wss-pr`'s short form has a
 history: no flag may be a prefix of another — a token would decompose into the
 shorter flag plus junk, and `wss-doctor.sh` fails the list on it — and `--wss-pr`
 sat inside the old prune flag, which was renamed and later retired when its
-skill merged into `wss-tools`. The invariant held throughout; the neighbours
+skill merged into `tools`. The invariant held throughout; the neighbours
 moved.
 
 Two flags reach one skill where that skill does two jobs: `--wss-todo` parks an idea
-and `--wss-log` records a decision, both through `wss-record`.
+and `--wss-log` records a decision, both through `record`.
 
 Two pairs are one job at two scopes, and the wider one wins when both are typed:
 `--wss-stocktake` / `--wss-full-stocktake`, and `--wss-check` / `--wss-full-check`.
 
 A third suppression is absorption rather than scope: either stocktake flag drops
-`--wss-check`, because `wss-stocktake` runs that sweep as its own record
+`--wss-check`, because `stocktake` runs that sweep as its own record
 dimension. `--wss-full-check` survives alongside a stocktake, since it also covers
 the docs site and the tooling files that no stocktake reads.
 
@@ -477,8 +493,8 @@ rather than by you. Nobody wants to "record a baseline", "write the handoff" or
 "make a commit"; they want a sweep, a wrap, a landed batch, a release — and
 these are steps inside those. They are **procedure files under
 `workflow/writers/`, not skills** — a caller reads the file and follows it.
-(Three *skills* are also flagless — `/wss-lane-record-sync`, `/wss-retire` and
-`/wss-toggle` — for the opposite reason: they are invoked only by you, never
+(Three *skills* are also flagless — `/wss:lane-record-sync`, `/wss:retire` and
+`/wss:toggle` — for the opposite reason: they are invoked only by you, never
 by a phrase or another skill.)
 `workflow/writers/WSS.WRITERS.md` is the index and the ownership matrix names each
 one's record; four are worth knowing by name:
@@ -520,7 +536,7 @@ cannot edit.
 
 The rule holds with no exceptions today, and the one it once had was resolved
 the right way round — by generalising the skill rather than dropping its flag.
-`wss-tools`'s prune reads `WSS.record.tooling.sources` from whatever project it runs in,
+`tools`'s prune reads `WSS.record.tooling.sources` from whatever project it runs in,
 so it is global like the rest.
 
 ## Finding a bug in this suite from another project
@@ -552,7 +568,7 @@ File: <path within the suite> · Detail: <what is wrong, what you expected>
 Triage them from a session whose working directory is a **checkout** of this
 suite, re-verifying each before acting. Running it as a plugin you have no such
 checkout, so the entry is your own record and the fix is an issue upstream at
-[`qupunto/workflow-secretary-suite`](https://github.com/qupunto/workflow-secretary-suite).
+[`qupunto/wss`](https://github.com/qupunto/wss).
 
 Who may write which file is [`workflow/WSS.OWNERSHIP.md`](workflow/WSS.OWNERSHIP.md);
 what each record holds is

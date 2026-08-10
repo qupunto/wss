@@ -8,6 +8,42 @@ reasoning behind each change, is `WSS.CHANGELOG.md`. This file is deliberately
 free of that: if an entry here only makes sense to someone editing the suite, it
 belongs in the other one.
 
+## 0.10.0 — 2026-08-10
+
+**The suite is now called `wss`, and an existing install has to be replaced
+rather than updated.** The plugin, its marketplace and its repository all
+changed name at once, so the entry recording that the plugin is enabled points
+at something that no longer resolves. Uninstall the old one and install again:
+
+```bash
+claude plugin marketplace add qupunto/wss --scope project
+claude plugin install wss --scope project
+```
+
+If you installed at project scope, the old name is also written into your
+project's `.claude/settings.json` — remove the stale `enabledPlugins` and
+`extraKnownMarketplaces` entries when you reinstall, or you will be carrying a
+key that points at nothing. Nothing else in your project needs changing: your
+manifest, your records and the flags you type are untouched.
+
+**The commands got shorter to type.** Installed as a plugin, the skills are
+reached as `/wss:start`, `/wss:plan`, `/wss:docs` — the suite's name supplies the
+namespace, so it no longer appears twice. **The flags are exactly as they were:**
+`--wss-start` is still `--wss-start`, in every form, so anything you have written
+down keeps working.
+
+**Removing the suite now tells you the right command for your install.**
+Uninstalling a plugin defaults to your user-level copy, which is the wrong thing
+to remove if you installed it into a project — quietly, with no error, leaving
+the copy you meant to remove in place. Retiring now reads what is actually
+installed and prints the exact command for each one, and says so plainly when it
+finds leftovers it cannot identify instead of guessing.
+
+**A safeguard on what gets published was letting private paths through.** The
+check that stops a home directory or a private repository name reaching the
+public copy was fooled by the new, shorter name. Found by testing the check
+rather than by reading it, and fixed.
+
 ## 0.9.2 — 2026-08-09
 
 **A project that doesn't use worktree lanes stops paying for them.** The lane
@@ -95,7 +131,7 @@ treats it as fatal.
 now start with it injected, exactly as a declared mapping always did.
 Previously it was silently unread, and nothing told you.
 
-**`/wss-toggle` controls what each skill costs at session start.** It shows
+**`/wss:toggle` controls what each skill costs at session start.** It shows
 every skill's current load level, changes it safely — refusing a level that
 would break a skill other skills depend on, and warning when a change would
 silence one of the `--wss-*` flags — and can only be invoked by name, never by
@@ -126,7 +162,7 @@ are yours and which are the suite's. Project configuration nests under one
 `WSS` root in the manifest; the health check fails an old flat manifest
 loudly instead of misreading it silently.
 
-**There is now a guided way out: `/wss-retire`.** One dialog asks first
+**There is now a guided way out: `/wss:retire`.** One dialog asks first
 whether you want a full snapshot of your records — everything, including what
 git already tracks and your docs — then which things should go: the suite's
 own machinery, your records, a records wipe, or the plugin itself. The

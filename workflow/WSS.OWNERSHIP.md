@@ -100,38 +100,38 @@ while it stays easy to state.
 
 | Verb | Flag | Skill or procedure | Tier | Sole writer of | Authorization the flag grants |
 |---|---|---|---|---|---|
-| adopt | `--wss-adopt` | `wss-adopt` | orchestrator | **nothing with an owner** — the manifest goes through `manifest-writer`. It merges the `permissions.ask` entries it proposes into the project's `.claude/settings.json`, which is not a record | commit, **not** push |
-| update | `--wss-update` | `wss-update` | orchestrator | **nothing with an owner** — the manifest and its `WSS.suite` stamp go through `manifest-writer`, commits through `git-writer`, record surgery through each record's writer; the renames and regenerations touch the project's own unowned files | commit, **not** push |
+| adopt | `--wss-adopt` | `adopt` | orchestrator | **nothing with an owner** — the manifest goes through `manifest-writer`. It merges the `permissions.ask` entries it proposes into the project's `.claude/settings.json`, which is not a record | commit, **not** push |
+| update | `--wss-update` | `update` | orchestrator | **nothing with an owner** — the manifest and its `WSS.suite` stamp go through `manifest-writer`, commits through `git-writer`, record surgery through each record's writer; the renames and regenerations touch the project's own unowned files | commit, **not** push |
 | list the flags | `--wss-flags` `--wss-help` | *the hook itself* | — | **nothing** — it reads `wss-shorthand-flags.sh`'s own FLAGS array and prints what resolves here | — |
 | alerts | `--wss-alerts` | *the hook itself* | — | **nothing** — it toggles the machine-local state file the alert hook reads, which is a preference rather than a record | — |
-| track | `--wss-track` | `wss-track` | primitive | the session task list | — |
-| defer | `--wss-todo` | `wss-record` | primitive | `WSS.record.todo`, `WSS.record.openDecisions`, `WSS.record.decisions` + index | — |
-| record | `--wss-log` | `wss-record` *(same skill as `--wss-todo`)* | primitive | `WSS.record.decisions` + index — **and the delete from `WSS.record.openDecisions`** that settling an entry entails, which is the same skill's file and so not a second writer | — |
-| order | `--wss-plan` | `wss-plan` | primitive | `WSS.record.roadmap` — every lane's copy — **and** `WSS.record.releases`, the release list, which never splits | — |
-| scout | `--wss-scout` | `wss-scout` | primitive | `WSS.record.toolbelt` — the registry of adopted capabilities; the reasoning behind each row goes through `--wss-log`, which is `wss-record`'s file | — |
-| catalog | `--wss-tools` | `wss-tools` | primitive | `WSS.record.tooling.catalog`, plus stale claims and the prose prune inside `WSS.record.tooling.sources` | commit, **not** push |
-| build | `--wss-start` | `wss-start` | orchestrator | source code | commit, **not** push |
-| document | `--wss-docs` | `wss-docs` | orchestrator | the docs site | — |
-| draw | `--wss-diagram` | `wss-docs` *(same skill as `--wss-docs`)* | orchestrator | the docs site — one ad-hoc diagram, landed as a page in the site's annex directory | — |
-| state the wiring | — | `wss-contracts` | primitive | **nothing** — it says where the contracts resolve and which file settles a disagreement | — |
+| track | `--wss-track` | `track` | primitive | the session task list | — |
+| defer | `--wss-todo` | `record` | primitive | `WSS.record.todo`, `WSS.record.openDecisions`, `WSS.record.decisions` + index | — |
+| record | `--wss-log` | `record` *(same skill as `--wss-todo`)* | primitive | `WSS.record.decisions` + index — **and the delete from `WSS.record.openDecisions`** that settling an entry entails, which is the same skill's file and so not a second writer | — |
+| order | `--wss-plan` | `plan` | primitive | `WSS.record.roadmap` — every lane's copy — **and** `WSS.record.releases`, the release list, which never splits | — |
+| scout | `--wss-scout` | `scout` | primitive | `WSS.record.toolbelt` — the registry of adopted capabilities; the reasoning behind each row goes through `--wss-log`, which is `record`'s file | — |
+| catalog | `--wss-tools` | `tools` | primitive | `WSS.record.tooling.catalog`, plus stale claims and the prose prune inside `WSS.record.tooling.sources` | commit, **not** push |
+| build | `--wss-start` | `start` | orchestrator | source code | commit, **not** push |
+| document | `--wss-docs` | `docs` | orchestrator | the docs site | — |
+| draw | `--wss-diagram` | `docs` *(same skill as `--wss-docs`)* | orchestrator | the docs site — one ad-hoc diagram, landed as a page in the site's annex directory | — |
+| state the wiring | — | `contracts` | primitive | **nothing** — it says where the contracts resolve and which file settles a disagreement | — |
 | stamp | — | [`writers/WSS.SWEEP-TRACKER.md`](writers/WSS.SWEEP-TRACKER.md) | primitive | `WSS.sweeps` — the checkpoint cache | — |
 | hand over | — | [`writers/WSS.HANDOFF-WRITER.md`](writers/WSS.HANDOFF-WRITER.md) | primitive | `WSS.record.handoff` | — |
 | note | — | [`writers/WSS.CHANGELOG-WRITER.md`](writers/WSS.CHANGELOG-WRITER.md) | primitive | `WSS.record.changelog` | — |
 | declare | — | [`writers/WSS.MANIFEST-WRITER.md`](writers/WSS.MANIFEST-WRITER.md) | primitive | `.claude/WSS.WORKFLOW.json` | — |
-| describe | `--wss-describe` | `wss-describe`, which dispatches to [`writers/WSS.BEHAVIOUR-WRITER.md`](writers/WSS.BEHAVIOUR-WRITER.md) | primitive | `WSS.record.behaviour` — the writer's; the skill is a route to it and writes nothing | — |
-| reference | `--wss-reference` | `wss-reference`, which dispatches to [`writers/WSS.REFERENCE-WRITER.md`](writers/WSS.REFERENCE-WRITER.md) | primitive | `WSS.record.reference` — the writer's; the skill is a route to it and writes nothing | — |
+| describe | `--wss-describe` | `describe`, which dispatches to [`writers/WSS.BEHAVIOUR-WRITER.md`](writers/WSS.BEHAVIOUR-WRITER.md) | primitive | `WSS.record.behaviour` — the writer's; the skill is a route to it and writes nothing | — |
+| reference | `--wss-reference` | `reference`, which dispatches to [`writers/WSS.REFERENCE-WRITER.md`](writers/WSS.REFERENCE-WRITER.md) | primitive | `WSS.record.reference` — the writer's; the skill is a route to it and writes nothing | — |
 | log an audit | — | [`writers/WSS.AUDIT-WRITER.md`](writers/WSS.AUDIT-WRITER.md) | primitive | `WSS.record.stocktake` — the stocktake log — plus `WSS.record.audits`, the index of independent passes, one row per report | — |
 | commit | — | [`writers/WSS.GIT-WRITER.md`](writers/WSS.GIT-WRITER.md) | primitive | commits and tags | — |
-| inspect | `--wss-check` | `wss-check` | orchestrator | **nothing** — dispatches to the owner | — |
-| overview | `--wss-overview` | `wss-overview` | orchestrator | **nothing** — a read-only report; its counts go in the reply, which is not a record | — |
-| health-check | `--wss-full-check` | `wss-full-check` | orchestrator | **nothing with an owner** — every write goes through the owner it invokes: the skill files and the catalog through `--wss-tools`, the checkpoints through `sweep-tracker`. It edits the project's unowned files directly, the same as any ordinary work there | — |
-| take stock | `--wss-stocktake` `--wss-full-stocktake` | `wss-stocktake` | orchestrator | **nothing** — the entry goes through `audit-writer` | commit **and** push, **its own record only** |
-| merge | `--wss-pr` | `wss-pr` | orchestrator | **nothing** — the merge goes through `git-writer` | commit; push needs a fresh OK |
-| publish | `--wss-release` | `wss-release` | orchestrator | **nothing** — the entry goes through `changelog-writer`, the tag through `git-writer` | commit; push needs a fresh OK |
-| hand off | `--wss-wrap` | `wss-wrap` | orchestrator | **nothing** — the handoff goes through `handoff-writer` | commit **and** push, the latter including fast-forwarding a lane worktree's branch onto `WSS.branch.integration` |
-| report upstream | `--wss-report` | `wss-report` | orchestrator | **nothing with an owner** — it appends to the machine-local inbox, which any session in any project may write | none — opening the upstream issue needs a fresh OK in that turn |
-| synch lanes | — | `wss-lane-record-sync` | orchestrator | **nothing with an owner** — every finding is appended to the addressed lane's transfer queue, which has no single writer; it drains `WSS.lanes.conflicts`, the queue it is the sole consumer of; and the run's entry goes through `audit-writer` | none — **and it has no flag by design.** Slash-invoked only, so it can never fire from a phrase, a batch or another skill. Its step 0 lands lane branches onto `WSS.branch.integration`, and its step 5 brings each lane worktree back onto it once the run has finished — both **fast-forward only, through `git-writer`, locally** — a ref moved onto existing commits, nothing authored, nothing pushed; divergence is reported, never resolved, and step 5 additionally skips any lane whose worktree is dirty. Its step 6 hands the close-out to `--wss-wrap`, which inherits that nothing and **asks for its own commit in that turn** — the same shape as `report upstream` above. A flagless row can confer no grant, because there is no hook block to state one and no flag for `git-writer` to trace back to; the user is present throughout a slash-only run, so asking costs one question. **The push is never on offer**: step 0's local landings would otherwise reach the remote as a side effect of tidying up |
-| retire | — | `wss-retire` | orchestrator | **nothing** — the retire and reset scripts delete, the export script archives, and a deletion is not a record write; the dirty tree it leaves is the user's to commit or restore | none — **and it has no flag by design.** Slash-invoked only, and its own frontmatter blocks model invocation, so a deletion can never fire from a phrase, a batch or another skill; each destructive action runs only where the user checked its box in that turn |
+| inspect | `--wss-check` | `check` | orchestrator | **nothing** — dispatches to the owner | — |
+| overview | `--wss-overview` | `overview` | orchestrator | **nothing** — a read-only report; its counts go in the reply, which is not a record | — |
+| health-check | `--wss-full-check` | `full-check` | orchestrator | **nothing with an owner** — every write goes through the owner it invokes: the skill files and the catalog through `--wss-tools`, the checkpoints through `sweep-tracker`. It edits the project's unowned files directly, the same as any ordinary work there | — |
+| take stock | `--wss-stocktake` `--wss-full-stocktake` | `stocktake` | orchestrator | **nothing** — the entry goes through `audit-writer` | commit **and** push, **its own record only** |
+| merge | `--wss-pr` | `pr` | orchestrator | **nothing** — the merge goes through `git-writer` | commit; push needs a fresh OK |
+| publish | `--wss-release` | `release` | orchestrator | **nothing** — the entry goes through `changelog-writer`, the tag through `git-writer` | commit; push needs a fresh OK |
+| hand off | `--wss-wrap` | `wrap` | orchestrator | **nothing** — the handoff goes through `handoff-writer` | commit **and** push, the latter including fast-forwarding a lane worktree's branch onto `WSS.branch.integration` |
+| report upstream | `--wss-report` | `report` | orchestrator | **nothing with an owner** — it appends to the machine-local inbox, which any session in any project may write | none — opening the upstream issue needs a fresh OK in that turn |
+| synch lanes | — | `lane-record-sync` | orchestrator | **nothing with an owner** — every finding is appended to the addressed lane's transfer queue, which has no single writer; it drains `WSS.lanes.conflicts`, the queue it is the sole consumer of; and the run's entry goes through `audit-writer` | none — **and it has no flag by design.** Slash-invoked only, so it can never fire from a phrase, a batch or another skill. Its step 0 lands lane branches onto `WSS.branch.integration`, and its step 5 brings each lane worktree back onto it once the run has finished — both **fast-forward only, through `git-writer`, locally** — a ref moved onto existing commits, nothing authored, nothing pushed; divergence is reported, never resolved, and step 5 additionally skips any lane whose worktree is dirty. Its step 6 hands the close-out to `--wss-wrap`, which inherits that nothing and **asks for its own commit in that turn** — the same shape as `report upstream` above. A flagless row can confer no grant, because there is no hook block to state one and no flag for `git-writer` to trace back to; the user is present throughout a slash-only run, so asking costs one question. **The push is never on offer**: step 0's local landings would otherwise reach the remote as a side effect of tidying up |
+| retire | — | `retire` | orchestrator | **nothing** — the retire and reset scripts delete, the export script archives, and a deletion is not a record write; the dirty tree it leaves is the user's to commit or restore | none — **and it has no flag by design.** Slash-invoked only, and its own frontmatter blocks model invocation, so a deletion can never fire from a phrase, a batch or another skill; each destructive action runs only where the user checked its box in that turn |
 
 `WSS.record.*` keys resolve through the project's `.claude/WSS.WORKFLOW.json`. A project
 without one falls back to conventional names and skips what it cannot resolve.
@@ -189,7 +189,7 @@ nothing true is lost.
 
 **`WSS.lanes.conflicts` is the same shape with a different consumer.** One per
 project, written by any session that notices two lanes' records contradicting
-each other, and consumed by `wss-lane-record-sync` — which re-verifies each
+each other, and consumed by `lane-record-sync` — which re-verifies each
 claim before acting on it, per [the inspector rule](#the-inspector-writes-nothing)
 below. Neither queue has a row in the matrix, because neither is a record.
 
@@ -359,7 +359,7 @@ Filing is the whole action. It is not a step on the way to fixing it.
 checkout can close one.** Triage runs from a session whose working directory is
 the suite's own repository. An adopter running the plugin has no such
 repository, so their terminal step is an issue upstream at
-`qupunto/workflow-secretary-suite`; the local entry stays as their own record that it
+`qupunto/wss`; the local entry stays as their own record that it
 was reported.
 
 **A grant is authorization, not the act.** Every skill in the matrix that may
@@ -445,7 +445,7 @@ produce a decision skill with nobody to ask. The test is whether the decision
 needs a conversation, not whether it is a decision.
 
 **One writer per file is the invariant — not one file per skill.**
-`wss-record` owns several records and keeps them, because a deferral writes
+`record` owns several records and keeps them, because a deferral writes
 the backlog entry and the decision entry as a single action. Splitting it would
 turn that atomicity into a convention between two skills, which is weaker than
 a procedure. A skill owning several files is only a problem when they move
@@ -465,7 +465,7 @@ independently.
    the manifest maps a README into `WSS.record.reference`, editing it directly makes
    you its second writer, and this step is where that happens most often.
    **The flag's name equals the skill's name** — a scope-variant prefix
-   (`--wss-full-stocktake` over `wss-stocktake`) is the one sanctioned divergence.
+   (`--wss-full-stocktake` over `stocktake`) is the one sanctioned divergence.
    Where one skill serves several verbs, each verb's flag gets a same-named
    wrapper in `commands/`, so the menu entry, the flag and the route stay one
    token; `wss-doctor.sh` asserts every wrapper fires the flag its name promises.

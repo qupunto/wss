@@ -7,7 +7,7 @@
 
 The mechanical half of G9 (verify, don't eyeball) and the detection half of G16 (code wins).
 **G-numbers throughout this file are the guardrails in
-[`skills/wss-docs/SKILL.md`](../../skills/wss-docs/SKILL.md)**, which is where they are
+[`skills/docs/SKILL.md`](../../skills/docs/SKILL.md)**, which is where they are
 defined and numbered; cited here by number so a finding can name one in review.
 
 Docs rot silently. Run this when asked to check the docs, or after any refactor that
@@ -56,11 +56,11 @@ done
 
 A file-relative link that only works from the root is the classic symptom of a page copied
 into a translation folder without repointing — and of `relativePath: true` missing from
-`index.html` (see [`WSS.SITE-SETUP.md`](../../skills/wss-docs/references/WSS.SITE-SETUP.md)).
+`index.html` (see [`WSS.SITE-SETUP.md`](../../skills/docs/references/WSS.SITE-SETUP.md)).
 
 For anchors, compare the `#slug` in each link against the headings of the target file, in
 the target file's own language (see
-[`WSS.TRANSLATIONS.md`](../../skills/wss-docs/references/WSS.TRANSLATIONS.md) — a translated file's
+[`WSS.TRANSLATIONS.md`](../../skills/docs/references/WSS.TRANSLATIONS.md) — a translated file's
 anchors are translated too).
 
 ## 3. Stale type and prop definitions

@@ -93,13 +93,13 @@ For this flow the grant is the row `workflow/WSS.OWNERSHIP.md::build`:
 Pin the tree, check the pipeline is not already red, read the three planning
 records, and build the task list.
 
-`skills/wss-start/SKILL.md::Phase 0 — Orient`. The pipeline check comes before
+`skills/start/SKILL.md::Phase 0 — Orient`. The pipeline check comes before
 the work for a reason the stage order makes invisible otherwise: a batch merged
 onto a red pipeline hides which change broke it, so a red CI *becomes* the
 batch rather than being noted beside it.
 
 The task list is built through `--wss-track` rather than written here —
-`skills/wss-track/SKILL.md` — because the ordering doctrine that governs it
+`skills/track/SKILL.md` — because the ordering doctrine that governs it
 (ramification first, then batch by expensive tail) is one thing in one place.
 
 ### 3 — Open decisions are settled first, because they get made anyway
@@ -107,12 +107,12 @@ The task list is built through `--wss-track` rather than written here —
 Every entry in the open-decisions record, in file order, put to the person with
 its options and what it blocks. This is the first human gate.
 
-`skills/wss-start/SKILL.md::Phase 1 — Settle the open decisions`. The reason
+`skills/start/SKILL.md::Phase 1 — Settle the open decisions`. The reason
 this precedes the work rather than being scheduled alongside it: an open
 decision is not a task that can wait, it is a choice that gets made silently by
 whoever writes the first line of code depending on it.
 
-Each ruling is handed to `--wss-log` (`skills/wss-record/SKILL.md`), which owns
+Each ruling is handed to `--wss-log` (`skills/record/SKILL.md`), which owns
 deleting the entry from the open-decisions record and appending the outcome —
 including the options rejected — to the decision log. An entry never lives in
 both; `workflow/WSS.RECORD-CONTRACT.md` rule 3.
@@ -122,13 +122,13 @@ both; `workflow/WSS.RECORD-CONTRACT.md` rule 3.
 Critical-marked items first, then section order, minus everything ineligible —
 deferred, blocked, production-touching, credential-needing.
 
-`skills/wss-start/SKILL.md::Phase 2 — Choose the batch`. Two properties are
+`skills/start/SKILL.md::Phase 2 — Choose the batch`. Two properties are
 easy to miss. Backlog order is only meaningful when the backlog is a *file*:
 under a provider the list arrives newest-first, which is close to the inverse
 of the intended ordering, so rank must be read out of item bodies
 (`workflow/providers/WSS.GITHUB-ISSUES.md`). And when the backlog yields
 nothing, the fallback is not improvisation — the roadmap's first open block
-goes to `--wss-plan` (`skills/wss-plan/SKILL.md`) to become concrete items,
+goes to `--wss-plan` (`skills/plan/SKILL.md`) to become concrete items,
 because a roadmap block is a paragraph and a lane needs a file list.
 
 ### 5 — Partition by file sets, counting reads as well as writes
@@ -136,7 +136,7 @@ because a roadmap block is a paragraph and a lane needs a file list.
 Lanes run concurrently in one working tree, so the unit of parallelism is the
 file set rather than the task.
 
-`skills/wss-start/SKILL.md::Phase 3 — Partition into lanes that cannot collide`.
+`skills/start/SKILL.md::Phase 3 — Partition into lanes that cannot collide`.
 The non-obvious half is the read set. Two lanes where one *reads* what another
 *writes* corrupt nothing — which is exactly the danger, because nothing looks
 broken. The output is a confident, well-cited, wrong report citing a file where
@@ -153,7 +153,7 @@ All lanes of a wave dispatched in one message so they are genuinely concurrent,
 each with its write list, its read list, the decision entries that bear on it,
 and whether it may run the test suite at all.
 
-`skills/wss-start/SKILL.md::Phase 4 — Run the wave`. Where the project declares
+`skills/start/SKILL.md::Phase 4 — Run the wave`. Where the project declares
 a consent-gated suite (`WSS.commands.testConsentEnv`,
 `workflow/WSS.MANIFEST.md`), a lane cannot run it — not the whole suite, not one
 file, not a single filter, because the gate is in the harness rather than in the
@@ -166,7 +166,7 @@ already spent the attempt.
 Read every lane's diff, regenerate anything generated, typecheck, then commit
 each lane separately.
 
-`skills/wss-start/SKILL.md::Phase 5 — Integrate and verify, once`, and
+`skills/start/SKILL.md::Phase 5 — Integrate and verify, once`, and
 `workflow/writers/WSS.GIT-WRITER.md` for the commits. Committing before the
 suite rather than after is deliberate: the suite may reset state destructively,
 and a crash mid-run should cost the run rather than the work.
@@ -184,7 +184,7 @@ mutation behind.
 The second human gate. One full run of `WSS.commands.test`, read rather than
 assumed, then stamped.
 
-`skills/wss-start/SKILL.md::Phase 5 — Integrate and verify, once` steps 4–5, and
+`skills/start/SKILL.md::Phase 5 — Integrate and verify, once` steps 4–5, and
 `workflow/WSS.SWEEP-CHECKPOINT.md` for the checkpoint's fields. The stamp goes
 through `workflow/writers/WSS.SWEEP-TRACKER.md` and is written **only** after a
 full consented run whose result was read. Refused consent, a run that died
@@ -200,7 +200,7 @@ What shipped leaves the backlog, non-obvious calls reach the decision log,
 behaviour and reference records take what the code changed, and the handoff is
 refreshed last.
 
-`skills/wss-start/SKILL.md::Phase 6 — Record through the owners, then close out`,
+`skills/start/SKILL.md::Phase 6 — Record through the owners, then close out`,
 against the matrix in `workflow/WSS.OWNERSHIP.md`.
 
 These run **sequentially, never concurrently**, and the reason inverts the
@@ -215,11 +215,11 @@ in the one place the file lists suggest there cannot be one.
 Phase 6 refreshes the handoff through `workflow/writers/WSS.HANDOFF-WRITER.md`
 and stops. It does not call `--wss-wrap`.
 
-`skills/wss-start/SKILL.md::What this skill does not do`, and
+`skills/start/SKILL.md::What this skill does not do`, and
 `workflow/WSS.OWNERSHIP.md::hand off` for the contrasting grant. An invoked
 skill inherits its caller's grant, so a batch calling the closing ritual would
 end the session on `--wss-start`'s authority — commit-only — rather than on the
-person's. The push in `skills/wss-wrap/SKILL.md::Committing and pushing` exists
+person's. The push in `skills/wrap/SKILL.md::Committing and pushing` exists
 because somebody typed `--wss-wrap`, and there is no path by which a batch
 acquires it by succeeding.
 

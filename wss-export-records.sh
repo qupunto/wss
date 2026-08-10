@@ -145,7 +145,7 @@ candidates() {
   if [ "$PWD" -ef "$CONFIG_DIR" ] && [ -f "$PWD/WSS.BUG-REPORTS.md" ]; then
     echo "WSS.BUG-REPORTS.md"
   fi
-  # The docs site has no manifest key — wss-docs finds it at docs/ by
+  # The docs site has no manifest key — docs finds it at docs/ by
   # convention, and so does this. Files only, and `find` without -L, so a
   # symlink pointing out of the project is skipped rather than followed.
   if [ "$ALL" -eq 1 ] && [ -d "$PWD/docs" ]; then

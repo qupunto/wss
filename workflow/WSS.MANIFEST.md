@@ -49,7 +49,7 @@ The pre-rename **filename** — `.claude/workflow.json` — is the counterpart
 case, and the more dangerous one: no current reader looks for it, so without
 its own check it reads as *cleanly absent* rather than as legacy, and every
 skill falls back to defaults over an adopted tree. `wss-doctor.sh` fails on that
-filename too and routes to `wss-update`; `wss-export-records.sh` alone still
+filename too and routes to `update`; `wss-export-records.sh` alone still
 reads it, export-only, so the snapshot can be taken before the migration.
 
 ## Keys
@@ -71,7 +71,7 @@ hidden lowercase file if it were a cache.
 
 | Role | Form | Examples |
 |---|---|---|
-| A name the harness resolves as an identifier | `wss-<name>`, lowercase — the filename *is* the invocation | `skills/wss-check/`, `commands/wss-log.md` |
+| A name the harness resolves as an identifier | `wss-<name>`, lowercase — the filename *is* the invocation | `skills/check/`, `commands/log.md` |
 | Executable | `wss-<name>.sh`, lowercase | `wss-doctor.sh`, `hooks/wss-alert.sh` |
 | Anything a person is meant to read or notice | `WSS.<FUNCTION>` | `WSS.TODO.md`, `.claude/WSS.WORKFLOW.json`, `WSS.ALERTS-ON` |
 | Machine bookkeeping with no reader | `.wss-<name>`, hidden | `.wss-alert.stamp` |
@@ -112,7 +112,7 @@ cased.
 
 **A file about a subsystem takes no instance segment** — its subject is the
 machinery, not one member. `WSS.LANE.CONFLICTS.md` is one per project and
-addressed to `wss-lane-record-sync`; only a genuinely per-lane file, like that
+addressed to `lane-record-sync`; only a genuinely per-lane file, like that
 lane's transfer queue, carries a lane name.
 
 ### Manifest keys are not filenames
@@ -221,7 +221,7 @@ no conventional fallback either, and most projects never declare it: a project
 that runs no independent audits has nothing to index.
 
 **`WSS.record.toolbelt` is the capability registry** — one row per adopted library
-or tool, read before building any capability. `wss-scout` is its sole writer and
+or tool, read before building any capability. `scout` is its sole writer and
 [`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md) holds the row shape. An absent file is
 an empty registry, not a failure: the file is created when the first adoption is
 made. It never appears under a lane's `records` — which tool does a job is a
@@ -266,7 +266,7 @@ by every reader of the splittable records.
 | `WSS.lanes.serialize` | A lane *modifying* one runs alone or first; lanes merely *calling* it run in parallel |
 | `WSS.lanes.generated` | No lane writes these; the orchestrator regenerates once |
 | `WSS.lanes.named` | Map of lane name → `{"scope": [globs], "records": {…}, "transfer": path}`, one entry per lane for a project worked on from several git worktrees at once |
-| `WSS.lanes.conflicts` | path — **one per project**, the conflict inbox `wss-lane-record-sync` consumes |
+| `WSS.lanes.conflicts` | path — **one per project**, the conflict inbox `lane-record-sync` consumes |
 
 **`WSS.record.releases` is the release list and `WSS.record.roadmap` is not.** Milestones,
 the version each intends to ship as and the completion marks live in the first;
@@ -322,7 +322,7 @@ addressed to.
 **`WSS.lanes.conflicts` is the second queue and there is exactly one**, a sibling of
 `named` rather than a key inside a lane. It takes a contradiction between two
 lanes' records that some session noticed while doing something else, and
-`wss-lane-record-sync` is what consumes it. One per project because a
+`lane-record-sync` is what consumes it. One per project because a
 contradiction belongs to neither lane involved — filing it to one of them would
 be picking a side before anyone has ruled.
 [`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md) holds the entry shape and the rule
@@ -379,9 +379,9 @@ not about which key resolves.
 | `WSS.commitTrailer` | trailer key | e.g. `Claude-Session` |
 | `WSS.sweeps` | path (generated, **gitignored**) | The sweep checkpoint cache. Fallback `.claude/WSS.SWEEPS.json`; its shape and rules are [`WSS.SWEEP-CHECKPOINT.md`](WSS.SWEEP-CHECKPOINT.md) |
 | `onSchemaChange` | **skill name** | The project's mandatory post-schema-edit sequence, and the guard rails around it. A skill rather than a command, because the order matters and because the dangerous operations need prose next to them |
-| `WSS.localCI` | path | The project's local-CI runbook script — prepare-never-perform. Presence says integration-branch pushes run the suite on a self-hosted runner; `wss-adopt` reads it, raising the key only when the user asks and confirming the path resolves |
+| `WSS.localCI` | path | The project's local-CI runbook script — prepare-never-perform. Presence says integration-branch pushes run the suite on a self-hosted runner; `adopt` reads it, raising the key only when the user asks and confirming the path resolves |
 | `WSS.hazards.*` | `file#anchor` | Map of phase name → where that phase's known traps are written. Conventional names: `testing`, `lanes`, `migrations`, `generated` |
-| `WSS.suite` | object | `{"version": "0.9.0", "commit": "<sha>"}` — the migration stamp: which suite version, at which suite commit, this tree was last migrated to. Written **only** by `wss-update` and `--wss-adopt`; read by `wss-update` as an accelerator. **Detection from the tree is the authority** — a wrong or stale stamp is overridden by what the tree actually is, and its absence means "detect unaided", which both pre-stamp customers require anyway. The commit is what anchors a tree migrated from a checkout between releases |
+| `WSS.suite` | object | `{"version": "0.9.0", "commit": "<sha>"}` — the migration stamp: which suite version, at which suite commit, this tree was last migrated to. Written **only** by `update` and `--wss-adopt`; read by `update` as an accelerator. **Detection from the tree is the authority** — a wrong or stale stamp is overridden by what the tree actually is, and its absence means "detect unaided", which both pre-stamp customers require anyway. The commit is what anchors a tree migrated from a checkout between releases |
 
 **`WSS.sweeps` is deliberately not under `WSS.record.*`.** Every `WSS.record.*` path is
 expected to exist, and `wss-doctor.sh` fails on one that does not. The checkpoint is

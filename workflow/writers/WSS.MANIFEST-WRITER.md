@@ -23,7 +23,7 @@ Two callers want different amounts of work, which is
   searching and a round of questions.
 - **`--wss-adopt`, amending** — one key added or corrected in a manifest that
   already exists. No detection phase, nothing to ask.
-- **`wss-update` (and `--wss-adopt` at its finish) — the `WSS.suite` stamp**: the
+- **`update` (and `--wss-adopt` at its finish) — the `WSS.suite` stamp**: the
   version-and-commit object written after a passing doctor, and the manifest
   key renames a migration lands. Same rules as any amendment, with one
   addition: a stamp with an unresolvable commit is not written at all —
@@ -117,7 +117,7 @@ together or the unknown-key warning fires on a manifest that is now correct.
 
 ```bash
 S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-[ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/workflow-secretary-suite/*/ 2>/dev/null | tail -1)
+[ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
 "$S"/wss-doctor.sh
 ```
 

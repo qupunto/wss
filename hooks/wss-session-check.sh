@@ -284,20 +284,20 @@ if [ "$PWD" = "$CLAUDE_DIR" ] && [ -f "$CLAUDE_DIR/.claude-plugin/plugin.json" ]
    [ -z "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   up=""
   if command -v gh >/dev/null 2>&1; then
-    up=$(gh issue list -R qupunto/workflow-secretary-suite --state open \
+    up=$(gh issue list -R qupunto/wss --state open \
            --json number --jq length 2>/dev/null) || up=""
   fi
   case $up in
     0) : ;;
     ''|*[!0-9]*) out="${out}${out:+
 
-}Upstream issues on qupunto/workflow-secretary-suite were NOT checked (gh missing,
+}Upstream issues on qupunto/wss were NOT checked (gh missing,
 offline, or unauthenticated) — not checked is not zero. Run:
-gh issue list -R qupunto/workflow-secretary-suite" ;;
+gh issue list -R qupunto/wss" ;;
     *) out="${out}${out:+
 
-}$up open issue(s) on qupunto/workflow-secretary-suite await triage — findings filed
-upstream by adopters. gh issue list -R qupunto/workflow-secretary-suite;
+}$up open issue(s) on qupunto/wss await triage — findings filed
+upstream by adopters. gh issue list -R qupunto/wss;
 --wss-full-check's triage reads these alongside the local inbox." ;;
   esac
 fi
@@ -316,7 +316,7 @@ fi
 if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ ! -f "$CLAUDE_DIR/.wss-welcomed" ]; then
   out="${out}${out:+
 
-}The workflow-secretary-suite plugin is installed. One-time orientation, for the user:
+}The wss plugin is installed. One-time orientation, for the user:
 type --wss-flags to see everything it provides and what resolves here, and in a
 project it should keep records for, type --wss-adopt to set that up. Until a
 project is adopted the suite stays quiet — nothing here nags. Relay this to the

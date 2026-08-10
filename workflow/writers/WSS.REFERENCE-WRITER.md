@@ -65,7 +65,7 @@ Two things it never holds:
 
 This is why the record has its own primitive rather than living inside `--wss-docs` —
 [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md)'s split test. A third route,
-`--wss-reference` (`wss-reference`), exists to bring a conversation-settled fact
+`--wss-reference` (`reference`), exists to bring a conversation-settled fact
 here directly; it arrives shaped like the dispatched correction below — one
 fact, one named file and section.
 

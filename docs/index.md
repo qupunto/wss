@@ -25,5 +25,5 @@ directory is the working tree.
 
 | File | Description |
 |---|---|
-| [annex/lane-synching.md](annex/lane-synching.md) | How work crosses between lanes without any lane writing another's records — the transfer queue, the `[critical → why]` marker, and `/wss-lane-record-sync` |
+| [annex/lane-synching.md](annex/lane-synching.md) | How work crosses between lanes without any lane writing another's records — the transfer queue, the `[critical → why]` marker, and `/wss:lane-record-sync` |
 | [annex/WSS.CLAUDE-TOOLING.md](annex/WSS.CLAUDE-TOOLING.md) | Every skill and script, what each is for, the tier diagram, and who invokes whom |
