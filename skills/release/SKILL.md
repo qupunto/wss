@@ -177,9 +177,8 @@ apply, per
 Where this version owes one, the release is a compatibility event whether or
 not anyone planned it, and pre-1.0 the minor field is the channel that says so.
 Ask it of the work, not of the diff: does an adopted tree have to change to
-keep working? Do not assume a maintenance release owes nothing — `0.7.0` and
-`0.8.0` both did, with no milestone between them, and `0.8.0`'s renamed every
-adopted tree's manifest.
+keep working? Do not assume a maintenance release owes nothing: a version with
+no milestone behind it can still rename a key every adopted tree carries.
 
 **And read the entry, never the diff.** `git log -S'- migrate:'` over the range
 answers a different question. Those lines are written *retroactively* — a

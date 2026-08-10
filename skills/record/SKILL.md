@@ -167,6 +167,15 @@ order for them. The marker is written only where the **user** said so in that
 turn, which in practice means `lane-record-sync`'s two gates —
 [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s queue section.
 
+**Watch for state claims this entry falsifies.** Before writing, grep
+`WSS.record.todo` and `WSS.record.openDecisions` for the claims the new entry makes
+false — "nothing exercises Y", "no X exists yet", a `[blocked → …]` marker whose
+decision has since been settled, a sibling entry proposing what this one
+supersedes — and fix them in the same edit
+([`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+Same-file scope is the cheap case and the usual one; the cross-record form is an
+entry asserting X exists falsifying "no X exists" wherever that sentence lives.
+
 **Never write the reasoning here.** That is the whole point of the split.
 
 ## Writing to `WSS.record.decisions`

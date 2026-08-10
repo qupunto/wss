@@ -6,10 +6,9 @@ and read CI's verdict on the audited commit. A finding here is any non-green
 result, and it outranks prose findings — drift describes the tree; a red suite
 describes the product.
 
-Extracted from `--wss-full-check` and `--wss-stocktake` by audit pass 12 (its F2),
-which found the same rules stated at length in both. This file is the one
-statement; a runner keeps only what is genuinely its own — scope, where in its
-procedure the gauntlet runs, and what to do with a failure.
+This file is the one statement of the gauntlet's rules; a runner keeps only what
+is genuinely its own — scope, where in its procedure the gauntlet runs, and what
+to do with a failure.
 
 ## The sequence
 
@@ -28,7 +27,7 @@ skill, a record path that no longer exists, a checkpoint claiming a baseline
 that is not a commit.
 
 **Always the full suite, and always the coverage command rather than a bare
-test run** — a green suite says nothing about `gate.coverage`, which is what CI
+test run** — a green suite says nothing about `WSS.gate.coverage`, which is what CI
 enforces. If the suite fails, re-run once in full before treating any failure
 as a finding.
 

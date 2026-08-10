@@ -3,8 +3,8 @@
 **A method, not a skill** — see [`WSS.CHECKS.md`](WSS.CHECKS.md). The rubric of
 the ritual that produces the frozen reports under `audits/`: an adversarial
 read of the whole suite from outside its own machinery, run on the owner's ask,
-by whatever model is running the session. Codified by audit pass 12 (its F5),
-which found the rubric living only in precedent across twelve reports.
+by whatever model is running the session. This file is the rubric; a pass that
+reads only its predecessors inherits precedent instead.
 
 ## The cumulative law
 
@@ -17,7 +17,7 @@ the previous report and the index, and enumerate the features as a checklist.
 covered and re-checks it only through the standard prior-findings step. Focus
 goes wherever audit coverage is currently thinnest.
 
-## The standing features, as of pass 12
+## The standing features
 
 - **The header block** — date; the exact HEAD and whether the tree was clean;
   method (warm or cold, subagents or inline); doctor, contract suite, syntax

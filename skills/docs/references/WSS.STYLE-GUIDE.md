@@ -115,8 +115,10 @@ Escape pipes inside cell content: `` `currentPage?: string \| null` ``.
 
 ### Code blocks — always tagged, always elided (G5)
 
-Tags in use: `typescript` (default for `.ts`/config), `tsx` (JSX), `ts` (short snippets),
-`bash`, `json`, `dockerfile`, `nginx`. Untagged fences only for directory trees.
+Tag with the language the block is in — `typescript` (the default for `.ts` and config),
+`tsx` (JSX), `ts` (short snippets), `bash`, `json`, `dockerfile`, `nginx` on a project of
+that stack, and whatever the stack at hand actually uses. Untagged fences only for
+directory trees.
 
 Show the shape, cut the body:
 
@@ -162,9 +164,11 @@ bare `│` line to group related entries.
 
 ### Diagrams
 
-`architecture.md` exists to show shape, so it needs a picture. Draw it here — no skill
-exists for this, deliberately: choosing a form and laying out boxes is behaviour Claude
-already has, and a skill description is paid for in every session.
+`architecture.md` exists to show shape, so it needs a picture. Draw it here; an ad-hoc
+one anywhere else is `--wss-diagram`, which routes back to `docs` rather than to a
+skill of its own — choosing a form and laying out boxes is behaviour Claude already has,
+so it is served by a hook block that costs nothing until the flag is typed, where a
+skill's description would be paid for in every session.
 
 Three rules apply. The first ships a broken page rather than a missing one when you get
 it wrong: **check what will render it.** ASCII in a plain fence is the default, and **docsify

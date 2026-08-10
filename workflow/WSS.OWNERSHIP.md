@@ -37,7 +37,8 @@ writes, rather than inferring it from this row.
 
 **An orchestrator can be dispatched to, and a primitive can dispatch.** Neither
 is exotic: `--wss-release` invokes `--wss-full-check`, `--wss-stocktake` invokes `--wss-wrap`, `--wss-adopt`
-invokes `--wss-docs`, and the primitive `--wss-tools` invokes `--wss-docs` for the
+invokes `--wss-docs`, and the primitive `--wss-tools` reaches
+[`writers/WSS.DOCS-WRITER.md`](writers/WSS.DOCS-WRITER.md) directly for the
 documentation page derived from its catalog. The tier says what a skill *owns*,
 not who is allowed to call it.
 
@@ -111,8 +112,8 @@ while it stays easy to state.
 | scout | `--wss-scout` | `scout` | primitive | `WSS.record.toolbelt` — the registry of adopted capabilities; the reasoning behind each row goes through `--wss-log`, which is `record`'s file | — |
 | catalog | `--wss-tools` | `tools` | primitive | `WSS.record.tooling.catalog`, plus stale claims and the prose prune inside `WSS.record.tooling.sources` | commit, **not** push |
 | build | `--wss-start` | `start` | orchestrator | source code | commit, **not** push |
-| document | `--wss-docs` | `docs` | orchestrator | the docs site | — |
-| draw | `--wss-diagram` | `docs` *(same skill as `--wss-docs`)* | orchestrator | the docs site — one ad-hoc diagram, landed as a page in the site's annex directory | — |
+| document | `--wss-docs` | `docs`, which dispatches to [`writers/WSS.DOCS-WRITER.md`](writers/WSS.DOCS-WRITER.md) | orchestrator | **nothing** — it settles whether a subject earns a page, which page, and which tier, then hands the target over | — |
+| draw | `--wss-diagram` | `docs` *(same skill as `--wss-docs`)* | orchestrator | **nothing** — one ad-hoc diagram, placed here and written by the same primitive, landing as a page in the site's annex directory | — |
 | state the wiring | — | `contracts` | primitive | **nothing** — it says where the contracts resolve and which file settles a disagreement | — |
 | stamp | — | [`writers/WSS.SWEEP-TRACKER.md`](writers/WSS.SWEEP-TRACKER.md) | primitive | `WSS.sweeps` — the checkpoint cache | — |
 | hand over | — | [`writers/WSS.HANDOFF-WRITER.md`](writers/WSS.HANDOFF-WRITER.md) | primitive | `WSS.record.handoff` | — |
@@ -121,6 +122,7 @@ while it stays easy to state.
 | describe | `--wss-describe` | `describe`, which dispatches to [`writers/WSS.BEHAVIOUR-WRITER.md`](writers/WSS.BEHAVIOUR-WRITER.md) | primitive | `WSS.record.behaviour` — the writer's; the skill is a route to it and writes nothing | — |
 | reference | `--wss-reference` | `reference`, which dispatches to [`writers/WSS.REFERENCE-WRITER.md`](writers/WSS.REFERENCE-WRITER.md) | primitive | `WSS.record.reference` — the writer's; the skill is a route to it and writes nothing | — |
 | log an audit | — | [`writers/WSS.AUDIT-WRITER.md`](writers/WSS.AUDIT-WRITER.md) | primitive | `WSS.record.stocktake` — the stocktake log — plus `WSS.record.audits`, the index of independent passes, one row per report | — |
+| write a page | — | [`writers/WSS.DOCS-WRITER.md`](writers/WSS.DOCS-WRITER.md) | primitive | the documentation site — every page and annex page, their `_sidebar.md` and `index.md` rows, the translation mirrors, and the diagrams inside any of them | — |
 | commit | — | [`writers/WSS.GIT-WRITER.md`](writers/WSS.GIT-WRITER.md) | primitive | commits and tags | — |
 | inspect | `--wss-check` | `check` | orchestrator | **nothing** — dispatches to the owner | — |
 | overview | `--wss-overview` | `overview` | orchestrator | **nothing** — a read-only report; its counts go in the reply, which is not a record | — |
@@ -176,7 +178,7 @@ many-writer and every **record** still has exactly one — an entry becomes part
 of `WSS.record.todo` when that lane's own session puts it there, not when a sibling
 files it.
 
-**This is not a carve-out, because a queue is not a WSS.record.** A record holds
+**This is not a carve-out, because a queue is not a record.** A record holds
 state and is read; a queue holds messages in flight and is empty in the steady
 state. [`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md) draws the line and holds the
 entry shape. The invariant is unchanged and still has no exceptions — which is

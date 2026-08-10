@@ -119,6 +119,11 @@
 # The tidy exit: removes the suite's machinery from a project, records only
 # behind a second flag. Travels — stopping cleanly is an adopter act.
 !wss-retire-workflow.sh
+# Prints one adopted tree's own properties, read-only, run by hand from inside
+# it. Travels: it reads whatever manifest it is pointed at and holds nothing
+# about this repository. Its OUTPUT is local-only — it names a private
+# project's paths and record layout, and the suite's repository is public.
+!wss-tree-survey.sh
 # Agent audit reports. Tracked so they are BACKED UP — they are the most
 # expensive artifact this repo produces and they existed on one machine only
 # until 2026-08-02, one disk failure from gone.

@@ -65,6 +65,15 @@ rather than architecture.
    arrangement? Did a renamed rule break an inbound anchor elsewhere?
    `grep -rn '#the-old-slug'` across the docs tree.
 
+## Watch for state claims this edit falsifies
+
+**Before writing, grep the record for the claims the new rule makes false** —
+"no endpoint enforces X", "not yet built", an ordering guarantee this rule
+overrides, a table row the new status code invalidates — and fix them in the
+same edit ([`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+Same-file scope is the cheap case and the usual one; the cross-record form is a
+rule asserting X exists falsifying "no X exists" wherever that sentence lives.
+
 ## Where the code disagrees, the code is right
 
 Fix the record and **report the drift you found** — a record that silently

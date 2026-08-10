@@ -99,7 +99,7 @@ The business model, independent of any framework.
 | `domain/workflows.md` | End-to-end journeys across layers: what the user does, what the system does | Multi-step flows exist (onboarding, checkout, approval) |
 
 Past the usual split thresholds (G14/G15), each journey becomes its own
-`domain/workflows/<name>.md` in the workflow-page shape — a Mermaid diagram plus
+`domain/workflows/<name>.md` in the workflow-page shape — a diagram plus
 ordered stages, each stage citing the behaviour record and the implementation —
 **→ `references/WSS.WORKFLOW-PAGES.md`**, which owns the shape, the citation
 contract and the verified-at stamp.
@@ -259,8 +259,9 @@ Exhaustive per-item reference, one page per enumerable set:
 
 `annex/WSS.CLAUDE-TOOLING.md` is the one annex whose source is another skill's record rather than
 the codebase: `--wss-tools` owns `WSS.record.tooling.catalog` and hands it over, and this page is the
-adaptation. Include it when the project has skills or agents of its own — a reader who inherits
-the repository has no other way to learn how it is worked on.
+adaptation. Include it when the project has skills or agents of its own — the catalog it
+derives from is addressed to Claude and sits outside the site, so without this page a person
+reading the docs finds no account of how the repository is worked on.
 
 An annex exists when the set is large enough that a reader wants lookup rather than
 narrative. Below roughly six items, keep it as a table on the guide page (G14).

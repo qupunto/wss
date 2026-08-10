@@ -20,14 +20,13 @@ contracts in this directory.
 
 ## Location does not change ownership
 
-**One writer per WSS.record.** A procedure is one file, the sole writer of its
+**One writer per record.** A procedure is one file, the sole writer of its
 record, and [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md)'s matrix is the authority on
 which. Where a procedure lives says nothing about who may write what.
 
 **The authorization rule.** A procedure inherits the grant of the flag the
-*user* typed, however many hops away. It confers nothing of its own — that is
-why none of these ever had a flag, and why a file here cannot be reached by
-typing something.
+*user* typed, however many hops away. It confers nothing of its own: a flag that
+reaches one of these does so through a skill, and the grant stays that flag's.
 
 ## The files
 
@@ -36,6 +35,7 @@ typing something.
 | [`WSS.AUDIT-WRITER.md`](WSS.AUDIT-WRITER.md) | `WSS.record.stocktake`, `WSS.record.audits` |
 | [`WSS.BEHAVIOUR-WRITER.md`](WSS.BEHAVIOUR-WRITER.md) | `WSS.record.behaviour` |
 | [`WSS.CHANGELOG-WRITER.md`](WSS.CHANGELOG-WRITER.md) | `WSS.record.changelog` |
+| [`WSS.DOCS-WRITER.md`](WSS.DOCS-WRITER.md) | the documentation site — pages, index and sidebar rows, mirrors, and the diagrams inside them |
 | [`WSS.GIT-WRITER.md`](WSS.GIT-WRITER.md) | commits and tags |
 | [`WSS.HANDOFF-WRITER.md`](WSS.HANDOFF-WRITER.md) | `WSS.record.handoff` and its overflow document |
 | [`WSS.MANIFEST-WRITER.md`](WSS.MANIFEST-WRITER.md) | `.claude/WSS.WORKFLOW.json` |

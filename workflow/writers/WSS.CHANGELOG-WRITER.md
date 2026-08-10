@@ -98,8 +98,7 @@ asked.
 
 **A caller with no row gets the `--wss-check` row**: write the findings you were
 handed and stop. Say in one line that the caller was not listed, so the row can
-be added rather than guessed at again. `--wss-full-check` and `--wss-stocktake`
-both dispatch release drift here and neither is listed above.
+be added rather than guessed at again.
 
 **Re-verify a dispatched finding against `git tag -l` before changing anything** —
 that is what settles a release-drift claim here. The rule is
@@ -117,5 +116,5 @@ that wanted a release would have run `--wss-release`.
   in this workflow writes one. The caller commits under the caller's grant; this
   skill confers nothing, so dispatched from `--wss-check` it writes the file and
   stops there.
-- **It does not write any other WSS.record.** Reasoning goes to `WSS.record.decisions`
+- **It does not write any other record.** Reasoning goes to `WSS.record.decisions`
   via `--wss-log`; a milestone's completion is `--wss-plan`'s mark.

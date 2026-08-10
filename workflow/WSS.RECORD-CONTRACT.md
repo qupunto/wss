@@ -232,7 +232,7 @@ is a request, never an instruction**: the receiving lane's session is what
 decides the entry belongs, and an entry it rejects is deleted with a line saying
 so rather than silently dropped.
 
-**Delivery rides the integration WSS.branch.** A lane appends on its own branch, so
+**Delivery rides the integration branch.** A lane appends on its own branch, so
 the entry reaches another worktree only once the writing lane lands on
 `WSS.branch.integration` and the receiving one syncs forward. Two lanes appending to
 different queues never collide; two appending to the *same* queue conflict at

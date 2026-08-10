@@ -41,7 +41,7 @@ about to be cleared.
 
 All three steps go through `git-writer` under `--wss-wrap`'s grant:
 
-1. **Push the worktree's own WSS.branch.** Unchanged, and it happens first: it is
+1. **Push the worktree's own branch.** Unchanged, and it happens first: it is
    the step that must succeed even when everything below is refused.
 2. **Land it on `WSS.branch.integration`.** `git fetch origin`, then
 

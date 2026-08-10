@@ -52,13 +52,11 @@ disabled, so those flags stop firing while the slash form (if any) survives.
      skill you author, the frontmatter key in its own file, which does travel
      with a plugin. **Write both spellings** — `disableModelInvocation: true`
      and `disable-model-invocation: true` — because which one the harness
-     honours has already changed once and nothing warns when it does.
-     Measured on CLI 2.1.226 against a purpose-built probe plugin: the kebab
-     form hides, the camelCase form does **not**, and carrying both hides and
-     is tolerated. That is the reverse of what was measured on 2.1.224, and
-     the reversal shipped silently — every skill here carrying only the
-     camelCase key had been exposing its description to plugin consumers,
-     who have no `skillOverrides` to mask it.
+     honours has already flipped between CLI releases and nothing warns when
+     it does. Carrying both hides the skill and is tolerated under either
+     spelling; carrying one is a bet that fails silently, and the cost of
+     losing it is a description exposed to plugin consumers, who have no
+     `skillOverrides` to mask it.
 
 4. **Write at user scope by default** — the description floor is paid in every
    project, so `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json` is where a

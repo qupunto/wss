@@ -178,7 +178,7 @@ effort is not.
 ## What this procedure does not do
 
 - **It does not commit or push.** The caller does, under the caller's grant.
-- **It does not write any other WSS.record.** Not `WSS.record.todo`, not
+- **It does not write any other record.** Not `WSS.record.todo`, not
   `WSS.record.decisions` — those are `--wss-todo`/`--wss-log`'s, and a handoff that starts
   carrying reasoning is how the split collapses.
 - **It does not decide whether a milestone finished.** `--wss-wrap` reads

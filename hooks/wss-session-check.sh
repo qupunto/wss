@@ -253,8 +253,9 @@ fi
 
 # ------------------------------------------------------------ bug reports
 # Filed by sessions in other projects, which may not edit this config and append
-# instead. Nothing else surfaces them — the file is gitignored, so it never
-# appears in git status either.
+# instead. Other readers count them; this is the one that puts them in front of
+# a session unasked, and the file is gitignored, so it never appears in git
+# status either.
 inbox="$CLAUDE_DIR/WSS.BUG-REPORTS.md"
 if [ -f "$inbox" ]; then
   # `|| true` is load-bearing: `trap exit_clean ERR` exits 0, so an unreadable

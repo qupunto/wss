@@ -6,9 +6,9 @@ cuttable prose in a skill, agent or tooling file: text that is verbose and
 everything else; this method is the deliberate sweep for prose whose removal
 changes nothing about what Claude does.
 
-Extracted from `--wss-tools`' Job 3 by audit pass 12 (its F1), so any
-orchestrator can borrow it; that skill remains its standalone runner and keeps
-the runner's share — scope, stamping, and where relocated reasoning goes.
+It lives here so any orchestrator can borrow it; `--wss-tools` remains its
+standalone runner and keeps the runner's share — scope, stamping, and where
+relocated reasoning goes.
 
 ## The test
 

@@ -25,6 +25,9 @@
         "sources": [
           "skills/*/SKILL.md",
           "skills/*/references/*.md",
+          "agents/*.md",
+          "workflow/*.md",
+          "workflow/providers/*.md",
           "workflow/writers/*.md",
           "workflow/checks/*.md",
           "commands/*.md"

@@ -56,7 +56,7 @@ The probe stops where mechanics stop. On top of its output:
   this area is working toward* — in a lane worktree, that lane's, and say
   which lane. The release list's is *what ships next*: name the first
   milestone not marked completed, whether it is a real milestone or a
-  maintenance coda, and which of its versions is the nearest minor and which
+  maintenance gate, and which of its versions is the nearest minor and which
   the nearest major. **A goal being met is not a milestone being complete**,
   and nothing derives one from the other.
 - **Say when the probe warns that a roadmap heading carries a version or a

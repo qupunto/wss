@@ -365,8 +365,8 @@ not about which key resolves.
 
 | Key | Type | Notes |
 |---|---|---|
-| `audit.dimensions` | array | Strings name a built-in dimension; `{"name": ..., "brief": "path.md#anchor"}` supplies a project's own. Prunes, adds and re-briefs |
-| `audit.invalidates` | map of glob → array | Which dimensions a changed path voids. `"*"` means all. **Only ever widens** the built-in blast radius — see the skill's Phase 0 |
+| `WSS.audit.dimensions` | array | Strings name a built-in dimension; `{"name": ..., "brief": "path.md#anchor"}` supplies a project's own. Prunes, adds and re-briefs |
+| `WSS.audit.invalidates` | map of glob → array | Which dimensions a changed path voids. `"*"` means all. **Only ever widens** the built-in blast radius — see the skill's Phase 0 |
 
 ### Everything else
 
@@ -375,10 +375,10 @@ not about which key resolves.
 | `WSS.branch.integration` | branch name | What `--wss-wrap` pushes, and what `--wss-pr` opens a PR from |
 | `WSS.branch.publish` | branch name | What `--wss-release` tags, and what `--wss-pr` merges into |
 | `WSS.branch.mergeMethod` | `merge` \| `squash` \| `rebase` | How `--wss-pr` merges. Fallback **`merge`** — a squash discards the individual commit messages the history is the record of, so it is a project's explicit choice rather than a default |
-| `gate.coverage` | object of thresholds | e.g. `{"lines": 91, "branches": 79}` — what CI enforces |
+| `WSS.gate.coverage` | object of thresholds | e.g. `{"lines": 91, "branches": 79}` — what CI enforces |
 | `WSS.commitTrailer` | trailer key | e.g. `Claude-Session` |
 | `WSS.sweeps` | path (generated, **gitignored**) | The sweep checkpoint cache. Fallback `.claude/WSS.SWEEPS.json`; its shape and rules are [`WSS.SWEEP-CHECKPOINT.md`](WSS.SWEEP-CHECKPOINT.md) |
-| `onSchemaChange` | **skill name** | The project's mandatory post-schema-edit sequence, and the guard rails around it. A skill rather than a command, because the order matters and because the dangerous operations need prose next to them |
+| `WSS.onSchemaChange` | **skill name** | The project's mandatory post-schema-edit sequence, and the guard rails around it. A skill rather than a command, because the order matters and because the dangerous operations need prose next to them |
 | `WSS.localCI` | path | The project's local-CI runbook script — prepare-never-perform. Presence says integration-branch pushes run the suite on a self-hosted runner; `adopt` reads it, raising the key only when the user asks and confirming the path resolves |
 | `WSS.hazards.*` | `file#anchor` | Map of phase name → where that phase's known traps are written. Conventional names: `testing`, `lanes`, `migrations`, `generated` |
 | `WSS.suite` | object | `{"version": "0.9.0", "commit": "<sha>"}` — the migration stamp: which suite version, at which suite commit, this tree was last migrated to. Written **only** by `update` and `--wss-adopt`; read by `update` as an accelerator. **Detection from the tree is the authority** — a wrong or stale stamp is overridden by what the tree actually is, and its absence means "detect unaided", which both pre-stamp customers require anyway. The commit is what anchors a tree migrated from a checkout between releases |
@@ -402,7 +402,7 @@ reading it. A project that needs its own name has `README.md`.
 
 **Nor are permissions.** A stack's destructive commands — migration resets,
 force-syncs, anything that drops state — belong in the project's own
-`.claude/settings.json` under `permissions.ask`, beside the `onSchemaChange`
+`.claude/settings.json` under `permissions.ask`, beside the `WSS.onSchemaChange`
 skill that explains them. Shipping them in a shared global config sends one
 stack's tooling to every adopter, and worse, it puts the guard somewhere the
 project cannot change when its tooling does.

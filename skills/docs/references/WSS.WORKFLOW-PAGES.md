@@ -1,9 +1,9 @@
 # Workflow pages
 
-A workflow page documents **one end-to-end flow as its own document**: a Mermaid
-diagram plus the ordered stages under it, where each stage cites the project's
+A workflow page documents **one end-to-end flow as its own document**: a diagram
+plus the ordered stages under it, where each stage cites the project's
 behaviour record by the rule's **bolded lead phrase** and the implementation by
-`path::symbol`. It restates no policy — the page is a *route through* rules that
+`path::anchor`. It restates no policy — the page is a *route through* rules that
 live elsewhere, which is G6 applied to a journey instead of a fact. The pages
 that earn their keep are the ones where the obvious narration is **wrong
 somewhere that matters** — a check the reader assumes happens at step three actually happens
@@ -31,14 +31,15 @@ paragraph on the page that owns that subject, not a workflow.
 
 ## The diagram
 
-Mermaid, under [`WSS.STYLE-GUIDE.md`](WSS.STYLE-GUIDE.md)'s three diagram rules —
-they all still apply, and the first is the one that ships broken pages:
-**check what will render it** (docsify needs a plugin the default `index.html`
-does not load), every box and arrow is a claim drawn from source you read (G1),
-and stop before the graph stops being readable. Number the diagram's nodes to
-match the ordered stages below it, so the picture and the prose are one
-document rather than two adjacent ones — a reader who cannot run Mermaid still
-has the full flow in the stages.
+**The form is picked by the first of
+[`WSS.STYLE-GUIDE.md`](WSS.STYLE-GUIDE.md)'s three diagram rules — check what
+will render it — and never by this shape**, which would otherwise have every
+page choosing one form against its renderer. The other two apply unchanged: every box and arrow is a claim drawn
+from source you read (G1), and stop before the graph stops being readable.
+
+Number the diagram's nodes to match the ordered stages below it, so the picture
+and the prose are one document rather than two adjacent ones — a reader who
+skips the picture still has the full flow in the stages.
 
 ## The citation contract
 
@@ -49,10 +50,15 @@ Each stage carries two anchors, and the form of each is load-bearing:
   assert it still appears; a section number or line reference rots silently.
   Where the project declares no behaviour record, cite the source alone and say
   the page is doing both jobs.
-- **The implementation**, as `path::symbol` — `backend/src/auth/session.ts::issueSession` —
-  never a line number. Symbols survive edits that renumber every line, and a
-  symbol that stops resolving is a *detectable* staleness, where a stale line
-  number is an undetectable lie.
+- **The implementation**, as `path::anchor` — never a line number. The anchor is
+  the file's own greppable name for the thing, and which kind it is follows what
+  the file is made of: a **symbol** where the implementation is code
+  (`backend/src/auth/session.ts::issueSession`), and a **heading, verbatim**
+  where it is prose (`skills/start/SKILL.md::Phase 3 — Partition into lanes
+  that cannot collide`), which is what a project implemented as instruction
+  files has in place of symbols. Both survive edits that renumber every
+  line, and an anchor that stops resolving is a *detectable* staleness, where a
+  stale line number is an undetectable lie.
 
 The page asserts the *order and the gates*; the rule's wording and the code
 stay where they live. When writing a stage would mean explaining a rule at
@@ -63,20 +69,28 @@ and cite what lands there.
 
 The page's header carries the commit it was last verified at. It is written at
 *verification* time, never bumped by an ordinary code change — so a diff on a
-workflow page means exactly one thing: somebody re-verified it. Where the stamp
-is present it narrows the audit for this page more precisely than the site-wide
-baseline: it is the page's own baseline.
+workflow page means exactly one thing: somebody re-verified it.
 
-The stamp is what makes staleness mechanical, in two classes:
+**What reads it is the docs audit's dependency scan** ([`SKILL.md`](../SKILL.md)'s
+*Audit scope*), which resolves a page's sources from the backticked paths in it
+and marks the page stale when one of them moved since a baseline. A page
+carrying a stamp supplies **its own** baseline for that comparison instead of
+the site-wide one, so a page verified since the last sweep stops being re-read
+for changes it was already checked against. That substitution is the whole of
+the mechanism; the scan's other half — *the page itself was edited* — decides
+nothing here, because on a workflow page an edit **is** a verification.
 
-- **A cited symbol whose last-touch commit is newer than the stamp**
-  (`git log -1 -L :symbol:file`) — re-read those stages against source.
-- **An endpoint under a path the workflow covers but cites nowhere** —
-  functionality grew past the page.
+Two staleness classes the stamp does not catch, which the page must own rather
+than imply away:
 
-And one class nothing detects, which the page must own rather than imply away:
-**behaviour changing inside a symbol whose signature held.** The stamp says when
-a person last read the flow, not that nothing moved beneath it.
+- **Behaviour changing inside an anchor whose name held.** Every path still
+  resolves and the scan stays quiet.
+- **Functionality growing past the page** — a handler under a path the workflow
+  covers that the page cites nowhere, and so is in no page's dependency set.
+
+The stamp says when a person last read the flow, not that nothing moved beneath
+it. Both classes close only by re-reading, and the stamp is what says how long
+it has been.
 
 ## The page describes; findings go to the backlog
 

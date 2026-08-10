@@ -31,6 +31,8 @@ before a single skill runs.
 ├── wss-export-records.sh      moves machine-local state between machines by archive
 ├── wss-retire-workflow.sh     the tidy exit — removes the machinery, and only on request the records
 ├── wss-remove-lanes.sh        turns worktree-lane mode off for one checkout — never touches a record
+├── wss-tree-survey.sh         prints what ONE adopted tree declares — read-only, output is local-only
+├── wss-survey-all.sh          walks many roots and rolls the surveys up — read-only, output is local-only
 ├── wss-publish.sh             assembles and gates the public tree; deliberately never pushes
 │
 ├── hooks/                 the hook scripts, and the hooks.json a plugin needs
@@ -42,6 +44,7 @@ before a single skill runs.
 │
 ├── commands/              slash-command wrappers: the filename is the flag it fires
 ├── skills/                the global suite; available in every project
+├── agents/                the subagents a manifest may name, e.g. `WSS.agents.release`
 ├── workflow/              the contracts every skill links to instead of copying
 │
 ├── .claude/WSS.WORKFLOW.json  the manifest — which file plays which record role

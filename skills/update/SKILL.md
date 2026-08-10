@@ -7,8 +7,8 @@ description: "Update the suite install, then detect what conventions the adopted
 
 Two jobs, in order: bring the **install** up to date, then bring the **adopted
 project** up to the conventions the updated suite expects. They are separable —
-a tree can need migrating under an install that is already current, which is
-how both known first customers arrived — and Job 2 is the one with teeth.
+a tree can need migrating under an install that is already current — and Job 2
+is the one with teeth.
 
 **Project facts come from `.claude/WSS.WORKFLOW.json`** — or, on exactly the
 trees this skill exists for, from a manifest that predates that name. The
@@ -45,13 +45,12 @@ found anything.
 **Detection is the authority; the stamp only accelerates.** The tree's own
 files say which conventions it carries, and every claim the stamp or the
 migration lines make is re-verified against the tree before anything is
-mended. A wrong or missing stamp changes the starting point, never the
-outcome — both first customers predate stamping entirely.
+mended. A wrong or missing stamp changes the starting point, never the outcome;
+a tree that predates stamping entirely is migrated from detection alone.
 
 ### Read the tree
 
-What to look for, from the real `workflow/v1`→v2 migration that produced this
-skill (the five bites of upstream issue #16):
+What to look for:
 
 - **The pre-rename manifest filename** — `.claude/workflow.json`. It reads as
   *cleanly absent* to every current reader; `wss-doctor.sh` fails on it now, and

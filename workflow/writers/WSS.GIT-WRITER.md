@@ -50,7 +50,7 @@ nothing. Trace back to the flag; do not read an absent row as a refusal.
 If you cannot tell which grant is in force, you are not authorized. Ask.
 
 **Never push under an inherited commit-only grant**, however obvious the push
-looks. That distinction is the whole reason three grants exist rather than one.
+looks. That distinction is the whole reason the grants are tiered rather than one.
 
 ## Commits
 
@@ -155,7 +155,7 @@ fetched it, deleting it locally changes nothing.
 - **It does not write any record file.** Not the changelog, not the roadmap,
   not the handoff — those have their own owners, and a commit is not a licence
   to adjust what is in it.
-- **It does not rebase, revert or WSS.branch.** Those are decisions with a user in
+- **It does not rebase, revert or branch.** Those are decisions with a user in
   the loop, and none of them is history this workflow authors. **The one merge
   it does perform** is the one `--wss-pr` hands it, with the method from
   `WSS.branch.mergeMethod` and only once `pr` has the user's OK in that turn —

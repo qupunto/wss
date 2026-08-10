@@ -36,8 +36,8 @@ skill needs the user is the finding-by-finding review.
 [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s resolution rule, and the rebuilt
 backlog goes to the resolved file; `WSS.agents.audit` for the fan-out and the remediation owners under
 `agents.*`; `WSS.commands.typecheck`, `WSS.commands.test`, `WSS.commands.testConsentEnv`,
-`audit.dimensions` and `audit.invalidates` for scope and blast radius;
-`gate.coverage` for the threshold CI enforces.
+`WSS.audit.dimensions` and `WSS.audit.invalidates` for scope and blast radius;
+`WSS.gate.coverage` for the threshold CI enforces.
 
 **Without a manifest the audit still runs — smaller, and louder.** A supported
 mode rather than a degraded one; it is every project on its first pass:
@@ -101,7 +101,7 @@ verdicts and dispositions — not the contents of the files they came from.
    here.** They are the project code-analysis skill's. Where the project has no
    such skill they are simply not covered, and step 7 says so out loud.
 
-   **Where the manifest declares `audit.dimensions`** it prunes, adds or
+   **Where the manifest declares `WSS.audit.dimensions`** it prunes, adds or
    re-briefs: a string names one from the set above; an object
    `{"name": ..., "brief": "path.md#anchor"}` supplies a project's own. Manifest
    entries win over inference. Dimension names are stable — coverage accounting
@@ -132,11 +132,11 @@ verdicts and dispositions — not the contents of the files they came from.
    | anything touching authentication, roles or ownership | security, **always** |
 
    **`correctness` and `security` are defaults for a project that supplies
-   them** — through `audit.dimensions`, or its own code-analysis skill. This
+   them** — through `WSS.audit.dimensions`, or its own code-analysis skill. This
    skill runs neither, here or in the `lanes` rule below. The schema row's
    **every** does include the dimensions it does run.
 
-   **Where the manifest declares `audit.invalidates`** — a map of glob to the
+   **Where the manifest declares `WSS.audit.invalidates`** — a map of glob to the
    dimensions that glob voids, with `"*"` meaning all of them — those entries are
    **added** to the default set. A project can widen this rule and cannot narrow
    it.
@@ -227,7 +227,7 @@ brief assumes the project has routes, or a database, or a server.
 
 **A dimension whose evidence Phase 0 did not find is not dispatched.**
 
-**Where a project declares extra dimensions in `audit.dimensions`,** each carries
+**Where a project declares extra dimensions in `WSS.audit.dimensions`,** each carries
 its own `brief` pointer, and those may be as stack-specific as the project likes.
 
 **No auditor runs the test suite.** They have no write tools, but you are the one
@@ -469,7 +469,7 @@ different role's agent:
 
 | Finding in | Goes to |
 |---|---|
-| The schema or its migrations (`WSS.lanes.exclusive`) | `WSS.agents.architecture` to decide the shape, then the manifest's `onSchemaChange` skill for its mandatory post-edit sequence |
+| The schema or its migrations (`WSS.lanes.exclusive`) | `WSS.agents.architecture` to decide the shape, then the manifest's `WSS.onSchemaChange` skill for its mandatory post-edit sequence |
 | Routes, services, domain logic | `WSS.agents.implement` |
 | Containers, networking, infra scripts, CI workflows | `WSS.agents.infra` |
 | A test gap, or missing regression coverage | `WSS.agents.test` |

@@ -43,6 +43,42 @@ tracked. If you have already installed at the wrong scope,
 `claude plugin uninstall` and `claude plugin marketplace remove` undo both
 halves before you redo them.
 
+**An install made before `0.10.0` has to be replaced, not updated.** The plugin,
+its marketplace and this repository were all renamed to `wss` in that release,
+and Claude Code captures both names at install time — plugins are keyed
+`<plugin>@<marketplace>` in `~/.claude/plugins/installed_plugins.json`,
+marketplaces by name in `known_marketplaces.json`. `/plugin update` fetches new
+content *into* the existing key and never rewrites the key, so an updated install
+keeps running under its old registration and its skills keep announcing
+themselves as `workflow-secretary-suite:` however current the content is.
+
+**Nothing errors, and that is the part worth stating.** GitHub redirects the old
+repository slug, so the stale registration keeps resolving and the suite keeps
+working — a working install is not evidence you are on the current one. Read
+`claude plugin list` for the old name rather than inferring it from behaviour.
+Removing the old pair and adding the new one is the whole fix:
+
+```bash
+claude plugin uninstall workflow-secretary-suite
+claude plugin marketplace remove workflow-secretary-suite
+claude plugin marketplace add qupunto/wss --scope project
+claude plugin install wss --scope project
+```
+
+`claude plugin uninstall` defaults to user scope, so name the scope you actually
+installed into or it removes the wrong copy and leaves yours in place, quietly.
+`wss-retire-workflow.sh --suite` reads what is really installed on the machine
+and prints the exact command for each one, which is the reliable way to get that
+right. If you installed at project scope the old key is also written into that
+project's `.claude/settings.json`; drop the stale `enabledPlugins` and
+`extraKnownMarketplaces` entries when you reinstall, or you keep a row pointing
+at nothing.
+
+Afterwards the skills are reached as `/wss:start`, `/wss:plan` and so on — still
+namespaced rather than bare, because the plugin name supplies the prefix. **The
+flags do not move**: `--wss-start` is `--wss-start` in every form, so nothing you
+have written down needs changing.
+
 That gives you every skill and both hooks, merged with whatever config you
 already have — a plugin never owns your `settings.json`. The one thing it costs
 you is granularity: **plugin skills are all-or-nothing.** `skillOverrides` does
@@ -84,6 +120,8 @@ and in one case (`.credentials.json`) must never leave the machine at all.
 | `.claude-plugin/plugin.json` | The plugin manifest. `claude plugin validate` reads it |
 | `wss-doctor.sh` | Read-only health check for this config and the current project. Stays at the root rather than moving into `hooks/`, because it is run by hand as often as by the hook |
 | `wss-reset-records.sh` | Blanks every record the manifest declares back to its heading. Dry-run by default; `--write` to do it. What makes a fork yours rather than an inheritance — see below |
+| `wss-tree-survey.sh` | Surveys one adopted tree. Run it from a project root and it prints what that project *declares* — manifest schema, lanes, backlog as file or provider, which declared records exist, branches, commands — and says explicitly when it could not read something rather than printing a blank row. Read-only; `-o <file>` also tees to a path outside the project. **Its output is for local reading only**: it names a private project's paths and record layout |
+| `wss-survey-all.sh` | Drives the surveyor across every adopted tree under the roots you name, one file each, then rolls the results up into a surface-to-candidate mapping. **Counts projects, not directories** — worktrees of one checkout are grouped and the main checkout is the one read, because six directories sharing a checkout read as six candidates and are one. An unread probe is carried into the summary as a flag rather than left blank, and a surface nothing can detect (`/wss:retire`) says so instead of guessing. Read-only, and the output is local-only for the same reason the surveyor's is, doubled: this one names every private tree on the machine at once |
 | `WSS.BUG-REPORTS.md` | Inbox for defects in this config found from *other* projects. Gitignored, so it is not in the repo — `wss-doctor.sh` surfaces open entries |
 | `skills/` | User-level skills, available in every project |
 | `commands/` | Slash-command wrappers for the flags whose skill carries a different name — a wrapper's name tracks the flag it fires, so `/wss:todo` autocompletes and fires `--wss-todo`. (Installed as a plugin the wrapper is `/wss:todo`, because the namespace supplies the prefix; the flag is `--wss-todo` in both forms.) `wss-doctor.sh` asserts every wrapper fires the flag its name promises |
@@ -493,9 +531,11 @@ rather than by you. Nobody wants to "record a baseline", "write the handoff" or
 "make a commit"; they want a sweep, a wrap, a landed batch, a release — and
 these are steps inside those. They are **procedure files under
 `workflow/writers/`, not skills** — a caller reads the file and follows it.
-(Three *skills* are also flagless — `/wss:lane-record-sync`, `/wss:retire` and
-`/wss:toggle` — for the opposite reason: they are invoked only by you, never
-by a phrase or another skill.)
+(Four *skills* are also flagless. Three — `/wss:lane-record-sync`, `/wss:retire`
+and `/wss:toggle` — for the opposite reason: they are invoked only by you, never
+by a phrase or another skill. The fourth, `contracts`, is flagless for a
+third reason again: it is model-invoked on demand, so it is neither typed nor
+dispatched.)
 `workflow/writers/WSS.WRITERS.md` is the index and the ownership matrix names each
 one's record; four are worth knowing by name:
 
@@ -556,8 +596,10 @@ directory (`$CLAUDE_CONFIG_DIR`, else `~/.claude`), the single file any session
 in any project may write to. Append-only, which is what makes many writers safe
 on it — an append is additive, so concurrent entries cannot destroy each other.
 Gitignored, so filing never dirties a tree and your private project names never
-travel with the repo. `wss-doctor.sh` counts the open entries, since nothing else
-would ever surface them. Because it is gitignored it ships with no template:
+travel with the repo. Several readers count the open entries — the doctor, the
+session hook, the overview probe — but counting is all any of them does, so a
+filing is closed by someone reading it rather than by a check going green.
+Because it is gitignored it ships with no template:
 
 ```
 ## [open] <one-line summary>
