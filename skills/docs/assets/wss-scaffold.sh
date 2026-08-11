@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 # Scaffold a docsify documentation site.
 #
-#   wss-scaffold.sh <docs-dir> <project-name> [root-lang [translation-lang ...]]
+#   wss-scaffold.sh [--root <dir>] <project-name> [root-lang [translation-lang ...]]
 #
-#   wss-scaffold.sh docs "Acme UI"              # monolingual, no navbar
-#   wss-scaffold.sh docs "SIME UI" en ca        # root is English, docs/ca/ is Català
-#   wss-scaffold.sh docs "SIME UI" en ca es     # plus docs/es/
+#   wss-scaffold.sh "Acme UI"                       # monolingual, no navbar
+#   wss-scaffold.sh "SIME UI" en ca                 # root is English, <root>/ca/ is Català
+#   wss-scaffold.sh --root website "SIME UI" en ca  # scaffolds website/ instead
+#
+# The docs root is NOT a positional. It is resolved from `WSS.docs.root` in
+# .claude/WSS.WORKFLOW.json, and where the manifest declares nothing, from that key's
+# declared fallback chain: the first existing of docs/, doc/, documentation/, website/,
+# and docs/ when none of them exists — which is the case a scaffold is for. `--root`
+# overrides both. It is a flag rather than an optional leading positional because
+# `wss-scaffold.sh "Acme UI"` and `wss-scaffold.sh docs "Acme UI"` are indistinguishable
+# once the first argument is optional. The resolved root is always announced: a scaffolder
+# and a manifest that disagree in silence is the defect this resolution exists to prevent.
 #
 # Creates the site SHELL only — index.html, _sidebar.md, index.md, and _navbar.md when
 # multilingual. Content pages are deliberately not scaffolded: an empty page in the sidebar
@@ -16,12 +25,68 @@
 
 set -euo pipefail
 
-DOCS_DIR=${1:?usage: wss-scaffold.sh <docs-dir> <project-name> [root-lang [translation-lang ...]]}
-PROJECT=${2:?usage: wss-scaffold.sh <docs-dir> <project-name> [root-lang [translation-lang ...]]}
-shift 2
+USAGE='usage: wss-scaffold.sh [--root <dir>] <project-name> [root-lang [translation-lang ...]]'
+MANIFEST=${WSS_MANIFEST:-.claude/WSS.WORKFLOW.json}
+
+# `WSS.docs.root` as declared, or empty. jq where it exists; by hand where it does not,
+# because silently ignoring a declared root would reinstate the mismatch this prevents.
+#
+# Always returns 0. A manifest that cannot be parsed is a loud fallback, never a dead
+# scaffolder: jq exits non-zero on a parse error, and letting that reach `$(...)` under
+# `set -e` would kill the run with an empty screen and a bare exit code — the same
+# silence, one turn later. Scaffolding a site does not require a well-formed manifest;
+# it requires being told when the manifest could not be consulted.
+declared_root() {
+  [ -f "$MANIFEST" ] || return 0
+  local val
+  if command -v jq >/dev/null 2>&1; then
+    if val=$(jq -r '.WSS.docs.root // empty' "$MANIFEST" 2>/dev/null); then
+      printf '%s' "$val"
+    else
+      echo "warning: $MANIFEST is not valid JSON — WSS.docs.root cannot be read" >&2
+      echo "         and is being ignored; the root falls back to the declared chain." >&2
+      echo "         Fix the manifest: every later check resolves that key too." >&2
+    fi
+  else
+    tr -d ' \n\t' <"$MANIFEST" \
+      | grep -o '"docs":{[^}]*}' \
+      | sed -n 's/.*"root":"\([^"]*\)".*/\1/p' | head -1
+  fi
+  return 0
+}
+
+ROOT_OVERRIDE=
+while [ $# -gt 0 ]; do
+  case $1 in
+    --root)   ROOT_OVERRIDE=${2:?--root needs a directory}; shift 2 ;;
+    --root=*) ROOT_OVERRIDE=${1#--root=}; shift ;;
+    --)       shift; break ;;
+    -*)       echo "unknown option: $1" >&2; echo "$USAGE" >&2; exit 2 ;;
+    *)        break ;;
+  esac
+done
+
+PROJECT=${1:?$USAGE}
+shift
 ROOT_LANG=${1:-}
 [ $# -gt 0 ] && shift
 TRANSLATIONS=("$@")
+
+DECLARED=$(declared_root)
+if [ -n "$ROOT_OVERRIDE" ]; then
+  DOCS_DIR=$ROOT_OVERRIDE
+  ORIGIN="--root"
+elif [ -n "$DECLARED" ]; then
+  DOCS_DIR=$DECLARED
+  ORIGIN="WSS.docs.root in $MANIFEST"
+else
+  DOCS_DIR=docs
+  ORIGIN="fallback: none of docs/ doc/ documentation/ website/ exists yet"
+  for d in docs doc documentation website; do
+    [ -d "$d" ] && { DOCS_DIR=$d; ORIGIN="fallback: first existing of docs/ doc/ documentation/ website/"; break; }
+  done
+fi
+echo "docs root: $DOCS_DIR   ($ORIGIN)" >&2
 
 if [ -e "$DOCS_DIR" ]; then
   echo "refusing to scaffold: '$DOCS_DIR' already exists" >&2
@@ -174,3 +239,11 @@ remaining — none of which this script does for you:
   4. replace every placeholder:  grep -rn '{{' $DOCS_DIR
   5. point README.md at $DOCS_DIR/index.md
 NEXT
+
+# A root that only this run knows about is the mismatch again, one release later.
+if [ "$DOCS_DIR" != "$DECLARED" ] && [ "$DOCS_DIR" != docs ]; then
+  cat <<NOTE
+  6. declare it, so every later check resolves the same root:
+       "WSS": { "docs": { "root": "$DOCS_DIR" } }   in $MANIFEST
+NOTE
+fi

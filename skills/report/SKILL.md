@@ -1,6 +1,6 @@
 ---
 name: report
-description: "File a finding about this suite upstream — append it to the machine-local inbox, then, with an explicit OK in that turn, open a GitHub issue on the suite's public repository. SHORTHAND: `--wss-report`. Also trigger on \"report this upstream\", \"file this against the suite\", \"send this to the workflow repo\"."
+description: "File a finding about this suite upstream — append it to the machine-local inbox, then, with an explicit OK in that turn, open a GitHub issue on the suite's public repository. SHORTHAND: `--wss-report`. Also trigger on \"report this upstream\", \"file this against the suite\", \"send this to the workflow repo\", \"send the whole inbox\"."
 ---
 
 # Reporting a suite finding upstream

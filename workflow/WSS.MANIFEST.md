@@ -9,6 +9,14 @@ defined nowhere, one value read as both a string and an array.
 Who may write each record is [`WSS.OWNERSHIP.md`](WSS.OWNERSHIP.md); what each record
 holds is [`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md). This file is about **keys**.
 
+**Filenames are [`WSS.NAMING.md`](WSS.NAMING.md)'s** — which files carry the
+`WSS.`/`wss-` prefix, how the segments are cased and hyphenated, why key names
+take neither, and **who rules a case on the boundary**, which is the owner and is
+stated there once. **A pass that settles filenames and key names together reads
+both files**; `--wss-adopt` and `update` are exactly that, and for them the
+split is a second read and no saving, because a key declared here resolves to a
+path whose *name* this contract does not govern.
+
 **To create one, use `--wss-adopt`** — it detects the project's shape, maps files
 that already exist to the records that expect them, and proves the result with
 `wss-doctor.sh`. Writing a manifest by hand is fine too; this table is what it must
@@ -46,10 +54,10 @@ misread: the nesting arrived with `workflow/v2` and is what the version gate
 exists to catch.
 
 The pre-rename **filename** — `.claude/workflow.json` — is the counterpart
-case, and the more dangerous one: no current reader looks for it, so without
+case, and the more dangerous one: no skill looks for it, so without
 its own check it reads as *cleanly absent* rather than as legacy, and every
 skill falls back to defaults over an adopted tree. `wss-doctor.sh` fails on that
-filename too and routes to `update`; `wss-export-records.sh` alone still
+filename too and routes to `update`; `wss-export-records.sh` still
 reads it, export-only, so the snapshot can be taken before the migration.
 
 ## Keys
@@ -57,95 +65,6 @@ reads it, export-only, so the snapshot can be taken before the migration.
 Every key below is written as its full path from the root — `WSS.record.todo`
 is the `todo` key inside `record` inside `WSS`. Every key is optional. A skill
 that cannot resolve one says so and continues.
-
-## The file-naming convention, and what it does NOT cover
-
-Every file **the suite creates in order to run** carries a prefix, so a user can
-tell at a glance which files in their tree are theirs and which are the suite's.
-That is a transparency property: a file that looks like the user's but is
-written by machinery is the shape a hostile change would take.
-
-**The form follows the file's ROLE, not its extension.** Extension is a poor
-proxy: `.json` is caps for the manifest, which people read, and would be a
-hidden lowercase file if it were a cache.
-
-| Role | Form | Examples |
-|---|---|---|
-| A name the harness resolves as an identifier | `wss-<name>`, lowercase — the filename *is* the invocation | `skills/check/`, `commands/log.md` |
-| Executable | `wss-<name>.sh`, lowercase | `wss-doctor.sh`, `hooks/wss-alert.sh` |
-| Anything a person is meant to read or notice | `WSS.<FUNCTION>` | `WSS.TODO.md`, `.claude/WSS.WORKFLOW.json`, `WSS.ALERTS-ON` |
-| Machine bookkeeping with no reader | `.wss-<name>`, hidden | `.wss-alert.stamp` |
-
-**Caps are a channel, not decoration**, which is why that last row is not an
-oversight. Caps mean *a human should notice this*, borrowed from `README`,
-`TODO` and `LICENSE`. A debounce timestamp has no reader, so shouting at nobody
-would be noise — and the same test is what keeps a cache from becoming
-`WSS.CACHE.json`.
-
-### The segment grammar
-
-**A dot is navigation — it narrows to a subset.** A hyphen joins words inside
-one concept and never navigates.
-
-```
-WSS . <GROUP> . <FUNCTION> . <instance> . <ext>
-      CAPS       CAPS         lowercase
-      optional                optional
-```
-
-- **The FUNCTION segment is caps**, hyphenated only where the concept itself
-  needs several words: `WSS.AUDIT-COVERAGE.md`. Hyphens do not group files.
-- **A GROUP segment is caps and names a subsystem** whose files belong together:
-  `WSS.LANE.CONFLICTS.md`. Reading left to right narrows — suite, then lane
-  machinery, then which file.
-- **An instance segment is lowercase and follows the FUNCTION it instantiates**,
-  appearing only where the file is one of many: `WSS.TODO.frontend.md` beside
-  the unsplit `WSS.TODO.md`. The unsplit name is a prefix of every split one, so
-  the lane variants sort beside their twin and one glob — `WSS.TODO.*` — catches
-  the whole family.
-
-**Case is what tells a group from an instance**, and position alone cannot be
-trusted to. Lane names are user-chosen, so a lane may be called `docs`, `state`
-or `todo`. `WSS.LANE.CONFLICTS.md` and `WSS.TODO.frontend.md` are unambiguous at
-a glance; their all-lowercase equivalents are not. That is why the convention is
-cased.
-
-**A file about a subsystem takes no instance segment** — its subject is the
-machinery, not one member. `WSS.LANE.CONFLICTS.md` is one per project and
-addressed to `lane-record-sync`; only a genuinely per-lane file, like that
-lane's transfer queue, carries a lane name.
-
-### Manifest keys are not filenames
-
-`WSS.record.todo`, `WSS.lanes.named`, `WSS.commands.indexRegen` are keys inside
-`.claude/WSS.WORKFLOW.json`. **The `WSS` root carries the namespace once; every
-key below it takes no prefix and no caps.** Prefixing each key would restate the
-namespace on every line and buy nothing — below the root there is nothing
-foreign to separate from, and keys already navigate by dot, which is the same
-idea one level down. The caps root against the lowercase keys is the same
-group-versus-instance casing the filename grammar uses.
-
-**Ownership is authorship, not usage.** Using a file, or even being its sole
-writer, does not make it ours — that is governance. The prefix marks files whose
-*format we invented*. A file whose name belongs to somebody else's tool keeps
-that name, however much the suite writes it:
-
-- `SKILL.md`, `hooks.json`, `plugin.json`, `marketplace.json`, `settings.json` —
-  the harness resolves these by name.
-- `README.md`, `CHANGELOG.md`, `LICENSE`, `.gitignore` — the ecosystem's.
-- `index.md`, `_sidebar.md`, `index.html` — docsify's, even though the suite's
-  own scaffold writes them.
-
-**Where the two tests disagree, authorship of the *name* wins.** `index.md` is
-produced on every docs scaffold and is still not ours, because docsify defined
-it. Conversely a page the suite always emits under a name of its own —
-`WSS.OVERVIEW.md` — is ours, while a topic annex a project chose to write
-(`annex/lane-synching.md`) is that project's.
-
-**The test for a new file: would this file exist if the suite were not
-installed?** If yes, it is not ours to rename. If no, it takes the prefix. Where
-that is genuinely unclear, ask the owner and record the ruling here rather than
-guessing — the boundary is the kind of thing that has to be decided once.
 
 ### `record` — where each record file lives
 
@@ -176,8 +95,8 @@ project whose backlog already lives somewhere else declares a provider instead:
 
 `provider` is what distinguishes the two forms, and every reader keys on its
 presence rather than on the value being an object — `WSS.record.tooling` is an
-object too and is not a provider. The only provider that exists is
-[`providers/WSS.GITHUB-ISSUES.md`](providers/WSS.GITHUB-ISSUES.md), which is the
+object too and is not a provider. A provider resolves to its contract file
+under [`providers/`](providers/WSS.GITHUB-ISSUES.md), which is the
 authority on its keys and on what a skill does when the remote cannot be
 reached. Declaring one nothing implements is a `wss-doctor.sh` failure, not a
 silent fallback to a file.
@@ -268,98 +187,14 @@ by every reader of the splittable records.
 | `WSS.lanes.named` | Map of lane name → `{"scope": [globs], "records": {…}, "transfer": path}`, one entry per lane for a project worked on from several git worktrees at once |
 | `WSS.lanes.conflicts` | path — **one per project**, the conflict inbox `lane-record-sync` consumes |
 
-**`WSS.record.releases` is the release list and `WSS.record.roadmap` is not.** Milestones,
-the version each intends to ship as and the completion marks live in the first;
-goals and the blocks that reach them live in the second, which may split by lane.
-[`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md) holds why, and holds the rule that
-makes a split roadmap safe: **no roadmap, lane or unsplit, carries a version
-number or a completion mark.** `wss-doctor.sh` fails on one that does.
-
-**`WSS.lanes.named` holds the worktree lanes**, nested so lane names cannot collide
-with the three reserved keys above. Each entry's `scope` globs are the paths the
-lane owns — a `--wss-start` batch running inside that worktree partitions within
-them — and its `records` object may redirect a record to a lane-scoped file:
-
-```jsonc
-// inside the WSS root, beside "record" and "commands"
-"lanes": {
-  "named": {
-    "backend": { "scope": ["backend/**"],
-                 "records": { "todo": "WSS.TODO.backend.md",
-                              "openDecisions": "docs/WSS.OPEN-DECISIONS.backend.md",
-                              "handoff": "docs/WSS.HANDOFF.backend.md",
-                              "roadmap": "WSS.ROADMAP.backend.md" },
-                 "transfer": "docs/WSS.TRANSFER.backend.md" },
-    "frontend": { "scope": ["frontend/**"],
-                  "records": { "todo": "WSS.TODO.frontend.md",
-                               "openDecisions": "docs/WSS.OPEN-DECISIONS.frontend.md",
-                               "handoff": "docs/WSS.HANDOFF.frontend.md",
-                               "roadmap": "WSS.ROADMAP.frontend.md" },
-                  "transfer": "docs/WSS.TRANSFER.frontend.md" }
-  },
-  "conflicts": "WSS.LANE.CONFLICTS.md"
-}
-```
-
-The example validates as it stands — both lanes split every record they split,
-and both declare a queue — because the half-shapes it must not show are
-`wss-doctor.sh` failures, described below.
-
-**`transfer` is a sibling of `records`, never a key inside it**, and the nesting
-is the point rather than tidiness: everything under `records` has exactly one
-writer, and a transfer queue has many. It is the lane's **inbox** — where every
-*other* lane files work it believes this lane owns, so that no lane ever writes
-another's records. [`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md) holds what it may
-contain, why append-only makes many writers safe, and the `[critical → why]`
-marker. `wss-doctor.sh` fails on `transfer` appearing under `records`.
-
-Like the splittable records it is **declared for all named lanes or none** — a
-lane with no queue is a lane nothing can file to, which reads as "nobody needs
-anything from them" and is almost never true. It is tracked, unlike the
-`.claude/WSS.LANE` selector, because an entry has to travel to the worktree it is
-addressed to.
-
-**`WSS.lanes.conflicts` is the second queue and there is exactly one**, a sibling of
-`named` rather than a key inside a lane. It takes a contradiction between two
-lanes' records that some session noticed while doing something else, and
-`lane-record-sync` is what consumes it. One per project because a
-contradiction belongs to neither lane involved — filing it to one of them would
-be picking a side before anyone has ruled.
-[`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md) holds the entry shape and the rule
-that a filed entry is a claim to be re-verified rather than a conflict to act
-on. Declaring it without `WSS.lanes.named` is meaningless and `wss-doctor.sh` says so.
-
-Only `todo`, `openDecisions`, `handoff` and `roadmap` may appear under a lane's
-`records` — which records may split by lane and which must never is
-[`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md)'s rule, and `wss-doctor.sh` fails on any
-other key there. **`releases` is not among them**, and that is what keeps a
-release checkpoint singular however many lanes a project runs. A splittable record is split for **all** named lanes or none:
-a half-split is how two writers land on one file, and `wss-doctor.sh` fails on that
-too. Name lane files by **lane**, which is durable (`WSS.TODO.backend.md`),
-never by worktree, which is litter that outlives the worktree — the instance
-segment after the FUNCTION, per the segment grammar above.
-
-**The selector is a file, not a key: `.claude/WSS.LANE`** — gitignored, one per
-worktree, holding the lane name, written once at worktree setup
-(`--wss-adopt --lane <name>`). Absence means "unsplit project", the same degradation
-as any missing key. It is deliberately **not** derived from the git branch name:
-tempting and fragile, where the explicit file is boring and correct. Like
-`WSS.sweeps`, it is per-checkout state that legitimately does not exist, so it is
-not a `WSS.record.*` path and its absence is never a failure — but a selector naming
-a lane the manifest does not declare **is** a `wss-doctor.sh` failure.
-
-**The resolution rule, stated once, here:** where a lane is selected and
-`WSS.lanes.named.<lane>.records.X` exists, it overrides `WSS.record.X`; in every other
-case `WSS.record.X` applies exactly as it does today. Cross-lane reads need no
-extra key — every lane's paths sit in this shared manifest, which is tracked
-and identical on every branch, and that identity is what removes the
-record-file merge conflicts worktree lanes otherwise produce.
-
-**Scope globs also bound what a session may act on.** A request that falls
-under another lane's `scope` is announced and routed to that lane rather than
-executed where it lands — [`WSS.OWNERSHIP.md`](WSS.OWNERSHIP.md)'s rule ("Work scoped
-to another lane"), stated there because it is about which session may act,
-not about which key resolves.
+**Everything else about worktree lanes is
+[`WSS.LANE-CONTRACT.md`](WSS.LANE-CONTRACT.md)** — the `WSS.lanes.named` entry
+shape and its validating example, which records may split and which must
+never, the transfer queue, the conflict inbox, the `.claude/WSS.LANE` selector,
+the resolution rule, and the `wss-doctor.sh` failures each constraint carries.
+Read it in lane mode — a selector present, or `WSS.lanes.named` declared — and
+when **deciding whether to adopt lanes at all**: that reader has no selector
+yet, so no gate can detect it, and it follows the pointer anyway.
 
 ### `audit` — scope control for `--wss-stocktake`
 
@@ -367,6 +202,28 @@ not about which key resolves.
 |---|---|---|
 | `WSS.audit.dimensions` | array | Strings name a built-in dimension; `{"name": ..., "brief": "path.md#anchor"}` supplies a project's own. Prunes, adds and re-briefs |
 | `WSS.audit.invalidates` | map of glob → array | Which dimensions a changed path voids. `"*"` means all. **Only ever widens** the built-in blast radius — see the skill's Phase 0 |
+
+### `docs` — the shape of the documentation site
+
+Read by `--wss-docs` and by
+[`checks/WSS.DOCS-AUDIT.md`](checks/WSS.DOCS-AUDIT.md), which resolves every one
+of its shell blocks from these three values rather than from one project's tree.
+
+| Key | Type | Notes |
+|---|---|---|
+| `WSS.docs.root` | directory path | Where the site's markdown lives, relative to the project root. Fallback: the **first existing** of `docs/`, `doc/`, `documentation/`, `website/`. If none exists the project has no site, and every site-shaped check is skipped with a one-line note |
+| `WSS.docs.languages` | array of strings | **The first element is the root language**, whose pages sit at `<root>/`; every later element is a translation subdirectory at `<root>/<lang>/`. Absent means monolingual, and the translation-parity check is skipped. Order is the contract, not decoration — a list written translation-first inverts every parity comparison |
+| `WSS.docs.devCommand` | shell command | Starts the site's dev server, for the live-render step that no grep can replace. Absent means that step is skipped with a one-line note |
+
+All three optional, and the `docs` object itself optional — the fallbacks above
+are the contract, not a convenience, and a check that takes one says so in one
+line rather than silently narrowing its scope. `wss-doctor.sh` checks the types
+and that a declared `root` resolves to a directory; a wrong root is otherwise
+silent, because a check that finds no pages reports no findings.
+
+**Declare `root` only where the fallback gets it wrong.** A project whose site is
+at `docs/` is already resolved by the first fallback, and a key that restates a
+default is one more thing to keep true.
 
 ### Everything else
 
@@ -381,7 +238,7 @@ not about which key resolves.
 | `WSS.onSchemaChange` | **skill name** | The project's mandatory post-schema-edit sequence, and the guard rails around it. A skill rather than a command, because the order matters and because the dangerous operations need prose next to them |
 | `WSS.localCI` | path | The project's local-CI runbook script — prepare-never-perform. Presence says integration-branch pushes run the suite on a self-hosted runner; `adopt` reads it, raising the key only when the user asks and confirming the path resolves |
 | `WSS.hazards.*` | `file#anchor` | Map of phase name → where that phase's known traps are written. Conventional names: `testing`, `lanes`, `migrations`, `generated` |
-| `WSS.suite` | object | `{"version": "0.9.0", "commit": "<sha>"}` — the migration stamp: which suite version, at which suite commit, this tree was last migrated to. Written **only** by `update` and `--wss-adopt`; read by `update` as an accelerator. **Detection from the tree is the authority** — a wrong or stale stamp is overridden by what the tree actually is, and its absence means "detect unaided", which both pre-stamp customers require anyway. The commit is what anchors a tree migrated from a checkout between releases |
+| `WSS.suite` | object | `{"version": "<semver>", "commit": "<sha>"}` — the migration stamp: which suite version, at which suite commit, this tree was last migrated to. Written **only** by `update` and `--wss-adopt`; read by `update` as an accelerator. **Detection from the tree is the authority** — a wrong or stale stamp is overridden by what the tree actually is, and its absence means "detect unaided", which both pre-stamp customers require anyway. The commit is what anchors a tree migrated from a checkout between releases |
 
 **`WSS.sweeps` is deliberately not under `WSS.record.*`.** Every `WSS.record.*` path is
 expected to exist, and `wss-doctor.sh` fails on one that does not. The checkpoint is

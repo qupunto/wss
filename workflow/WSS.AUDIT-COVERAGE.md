@@ -34,11 +34,9 @@ audit-coverage:
 one the manifest's `WSS.audit.dimensions` declared. Stability is the point: coverage
 accounting across audits is a join on this string.
 
-**Which is why the names above are real ones.** `--wss-stocktake` runs `record` and
-`consistency` against any repository, `interface` when the shape has a public
-API, a CLI or a service, and `safety-nets` always. It deliberately does **not**
-run `correctness`, `security` or `data-model` — those belong to a project's own
-code-analysis skill and arrive, if at all, through `WSS.audit.dimensions`. This block
+**Which is why the names above are real ones** — drawn from `--wss-stocktake`'s
+own dimension library; its Phase 0 is the authority on which dimensions run
+when, and `WSS.audit.dimensions` is how a project adds its own. This block
 is what a project's first audit copies, and a copied name that no dimension ever
 emits joins against nothing forever: the next run reads it, matches no dimension,
 and silently treats that scope as never covered.
@@ -59,9 +57,7 @@ script:
   the paths they cited findings in. Nothing else.
 - Anything under "could not check", any dispatched path no report mentions, and
   every dimension that died or was skipped is `not-covered`. **A report vague
-  about which paths it read is `not-covered` too** — the cost of a needless
-  re-read is one agent, and the cost of a wrong `covered` is code nobody looks at
-  again.
+  about which paths it read is `not-covered` too.**
 - `record` and `safety-nets` always write `covered: []`. They are never
   incremental, so they license nothing forward.
 

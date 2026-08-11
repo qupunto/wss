@@ -2,10 +2,6 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md). Sole writer of commits and tags, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
-**Sole writer of commits and tags.** Every skill in this workflow that needs
-either calls this one; who owns what is
-[`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
-
 **Project facts come from `.claude/WSS.WORKFLOW.json`**: `WSS.branch.integration` is
 what ordinary work goes to, `WSS.branch.publish` is what `--wss-release` tags, and
 `WSS.commitTrailer` names the session trailer. Without a manifest, fall back to the
@@ -18,16 +14,12 @@ the caller's.
 
 ## Why the history has an owner at all
 
-The history is a record, and this workflow's invariant is that every record has
-exactly one writer — [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md) is the
-authority on that and on which flags grant what. The rules below live here rather
-than in each caller's file so that a flag granting COMMIT grants it to one
-disciplined writer instead of to whatever the moment suggested.
-
-Every rule here exists because breaking it is **silent**. A trailer in the wrong
-paragraph makes the liveness check find nothing. A `git add -A` publishes
-whatever else was in the tree. A push carries another session's unreviewed
-commits along with yours, and reports success.
+The history is a record, and every record has exactly one writer —
+[`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md) is the authority on that and on which
+flags grant what. The rules below live here rather than in each caller's file so
+that a flag granting COMMIT grants it to one disciplined writer instead of to
+whatever the moment suggested. **Every rule here exists because breaking it is
+silent** — each one below says how.
 
 ## The grant is the caller's, always
 
@@ -140,7 +132,7 @@ git push origin <branch>
 git push origin vX.Y.Z
 ```
 
-**This skill never asks for that confirmation and never proceeds without it.** A
+**This procedure never asks for that confirmation and never proceeds without it.** A
 primitive has no channel to ask — the same reason `WSS.agents.release` prepares the
 material and never publishes it. If the caller has not said the OK was given in
 that turn, stop and hand back.
@@ -166,6 +158,9 @@ fetched it, deleting it locally changes nothing.
   merge and is not one.** `--wss-wrap` hands it
   `git push origin <worktree-branch>:<WSS.branch.integration>` — **never with a
   leading `+`** — so it resolves as a fast-forward or is refused by the remote.
+  **This file is the authority on the no-leading-`+` rule**; the lane procedure
+  (`skills/wrap/references/WSS.LANES.md`) and the `--wss-wrap` hook block
+  carry working copies that lose any disagreement.
   No working tree is touched, no merge commit is written, `WSS.branch.mergeMethod`
   has nothing to choose, and there is no partial state to unwind. **A refusal is
   handed back, never forced and never resolved here**, which is the ordinary

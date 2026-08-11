@@ -33,7 +33,7 @@ skill needs the user is the finding-by-finding review.
 `WSS.record.*` — where a `.claude/WSS.LANE` selector names a lane,
 `WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for `todo`,
 `openDecisions`, `handoff` and `roadmap`, per
-[`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s resolution rule, and the rebuilt
+[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s resolution rule, and the rebuilt
 backlog goes to the resolved file; `WSS.agents.audit` for the fan-out and the remediation owners under
 `agents.*`; `WSS.commands.typecheck`, `WSS.commands.test`, `WSS.commands.testConsentEnv`,
 `WSS.audit.dimensions` and `WSS.audit.invalidates` for scope and blast radius;
@@ -83,8 +83,8 @@ verdicts and dispositions — not the contents of the files they came from.
    [`WSS.PROJECT-SHAPE.md`](../../workflow/WSS.PROJECT-SHAPE.md), which owns the signals
    and what evidence establishes each.
 
-   **Two dimensions apply to any repository**: `record` and `consistency`. The
-   third runs when its signal is present:
+   **`record`, `consistency` and `safety-nets` apply to any repository.** One
+   more runs when its signal is present:
 
    | Extra dimension | Runs when the shape has |
    |---|---|
@@ -270,7 +270,7 @@ finding with three citations.
 
 **False clean.** For every surviving finding, check whether its file sat inside a
 previous audit's `covered` globs at a commit where the defect was already present
-(`git log -1 --format=%H -- <file>` against that baseline tells you). If it did,
+(`git show <that audit's baseline>:<file>` is the file as that audit saw it). If it did,
 that audit reported clean on code that wasn't. Mark the finding
 `[missed by <date> audit]`: it says a dimension's brief or slice was too narrow.
 
@@ -504,6 +504,3 @@ method and it lives in
 [`workflow/checks/WSS.RECORD-DRIFT.md`](../../workflow/checks/WSS.RECORD-DRIFT.md) —
 point the auditor at the file rather than copying it, or at the skill that
 happens to also run it. Invoke one flag or the other, never both.
-
-Ownership of everything else is
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md).

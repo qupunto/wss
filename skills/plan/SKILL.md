@@ -30,7 +30,7 @@ checklist is `WSS.record.todo` and the reasoning is `WSS.record.decisions`, both
 manifest, fall back to `WSS.ROADMAP.md` and `WSS.RELEASES.md` and say so. Where a
 `.claude/WSS.LANE` selector names a lane, `WSS.lanes.named.<lane>.records.X` overrides
 `WSS.record.X` for `todo`, `openDecisions`, `handoff` and `roadmap` —
-[`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s resolution rule. `releases` is
+[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s resolution rule. `releases` is
 never among them.
 
 Who owns what is [`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md);
@@ -55,7 +55,7 @@ it here produces a checkpoint nobody else agreed to.
 
 Where a lane session genuinely needs a milestone decision, say which lane it is
 in and that the question belongs to the main checkout. That is
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md)'s route-to-the-owning-lane rule
+[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s route-to-the-owning-lane rule
 applied to a record rather than to a file.
 
 ## Why this is a skill and not only the agent

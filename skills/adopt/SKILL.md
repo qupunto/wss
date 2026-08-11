@@ -1,12 +1,12 @@
 ---
 name: adopt
-description: "Bring a project under this workflow — map what already exists to the records the skills expect, and write its `.claude/WSS.WORKFLOW.json`. SHORTHAND: `--wss-adopt`. Also trigger on \"set up the workflow here\", \"create the manifest\", \"declare <key> in the manifest\", or when a skill reports falling back to conventional filenames."
+description: "Bring a project under this workflow — map what already exists to the records the skills expect, and write its `.claude/WSS.WORKFLOW.json`. SHORTHAND: `--wss-adopt`. Also trigger on \"set up the workflow here\", \"create the manifest\", \"declare <key> in the manifest\", \"import a records archive\", or when a skill reports falling back to conventional filenames."
 ---
 
 # Adopting a project
 
-Every skill in this workflow reads `.claude/WSS.WORKFLOW.json`, and only this skill
-— through `manifest-writer`, which does the writing — ever creates one; without
+Every skill in this workflow reads `.claude/WSS.WORKFLOW.json`, and only this
+skill ever creates one; without
 it each skill degrades to conventional filenames and stays there. This skill is
 the way out, and the **only** one that runs before the project is under the
 contract at all.
@@ -15,8 +15,16 @@ contract at all.
 in it.** The manifest itself goes through
 [`manifest-writer`](../../workflow/writers/WSS.MANIFEST-WRITER.md), which is its sole writer — this
 skill decides what the values should be and hands them over. The keys it may ask
-for are [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md); who owns each record
-afterwards is [`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md).
+for are [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md); what the files those
+keys point at may be **called** is
+[`WSS.NAMING.md`](../../workflow/WSS.NAMING.md); who owns each record afterwards
+is [`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md).
+
+**The first two are one pass and two reads.** An adoption settles a key and the
+name of the file it resolves to in the same breath, and they are separate
+contracts: the key table says `WSS.record.stocktake` has no conventional
+fallback, and only the naming grammar says what a name invented for it must look
+like.
 
 ## What it is not
 
@@ -177,7 +185,7 @@ Everything answerable from the repo should already be answered by now.
   worktrees at once**, or the user says it will be. One entry per lane with its
   `scope` globs, and the splittable records redirected to lane files, plus that lane's `transfer` queue for
   **all** lanes or none — the resolution rule and the all-or-none constraint
-  are [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s. A single-worktree project
+  are [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s. A single-worktree project
   never needs this; do not raise it unprompted.
 - **`WSS.hazards.*`** — where the project's known traps are already written, as
   `file#anchor`. Do not write the traps themselves; the manifest holds pointers.
@@ -212,6 +220,14 @@ through 7 are an adoption's work, not an amendment's.
 
 For each record the project needs and does not have, create the file with its
 canonical heading and nothing else. Say which you created.
+
+**The name comes from the key table's fallback where there is one, and from
+[`WSS.NAMING.md`](../../workflow/WSS.NAMING.md) where there is not** — this is
+the second read the split key/naming contracts cost, and skipping it is how a
+project acquires a `stocktake.md` beside a tree of `WSS.` records. A file the
+project already has keeps its own name (step 3); only a name this step *invents*
+is governed by the grammar, and a genuinely ambiguous one is the owner's to
+rule, not this skill's.
 
 **Nothing else goes in them.** Not a placeholder task, not an example decision,
 not a "TODO: fill this in". The owning skill writes the first real line, and it
@@ -278,8 +294,7 @@ non-empty file, and a record step 9 has already seeded carries its heading —
 so the other order refuses the very files the archive exists to restore. A
 refusal therefore means this machine has real content the archive would
 replace: show both sides and let the user choose `--force`, never choose it
-for them. Ask exactly once — step 1's question, default no — and never press
-after a no: most adoptions have no other machine.
+for them.
 
 ## 10. Prove it, do not claim it
 

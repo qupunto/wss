@@ -270,32 +270,10 @@ narrative. Below roughly six items, keep it as a table on the guide page (G14).
 
 ## Assembling a site
 
-### Select
-
-1. Identify the project's shape → pick a profile below.
-2. Walk the tiers in order. For each page, ask **does this exist in the codebase today?**
-   Not "should it" — G8 forbids documenting intent as fact.
-3. Drop every tier that is empty. A CLI tool has no T4-web, no T6, and possibly no T5.
-4. Merge aggressively at small scale: a three-file service can carry T5+T6+T7 as three
-   `##` sections of one `backend.md` (G14). Split when a page exceeds roughly 250 lines or
-   two unrelated audiences.
-
-### Profiles
-
-**Which profile a project is, and the signals behind it, are
-[`WSS.PROJECT-SHAPE.md`](../../../workflow/WSS.PROJECT-SHAPE.md)'s** — one detector, so
-this skill and `--wss-stocktake` cannot reach different conclusions about the same repo.
-What a profile *implies for documentation* is this table's, and stays here.
-
-| Profile | Tiers, minimum viable set |
-|---|---|
-| **Web app** | T1, T2, `frontend`+`routing`+`state`, `design-system`, `i18n`, `auth`, `deploy`, `testing`, `annex/components` |
-| **Mobile app** | T1, T2, `mobile/*` (overview, navigation, offline, platform, release), `design-system`, `auth`, `api` (as consumer), `testing` |
-| **API / service** | T1, T2, T3, `api`, `services`, `data-layer`+`schema`+`migrations`, `auth`+`authorization`, `observability`, `deploy`, `testing` |
-| **Full-stack product** | All of the above, plus `environments`, `runbooks/`, `governance/privacy` |
-| **Library / SDK** | T1, T2, `api` (public surface), `versioning` under `release`, `contributing`, `annex/` reference — no T6, T8-deploy |
-| **Data / ETL** | T1, T2, T3, `data-layer`, `schema`, `migrations`, `jobs`, `analytics`, `observability`, `governance/data-governance` |
-| **Monorepo** | T1, T2 at root; per-package subtrees mirroring the relevant profile; one `architecture.md` owning cross-package boundaries |
+Placement and naming, which every mode needs. The two whole-site questions — which minimum
+page set a project profile implies, and how the sidebar is assembled from the tier order —
+are **→ `references/WSS.SITE-ASSEMBLY.md`**. Load it in Scaffold mode only: a New-page or
+Update decision consults one tier row above and answers neither question.
 
 ### Promotion
 
@@ -314,62 +292,9 @@ belongs to*, not how deep it sits in the sidebar.
 - **Never translate filenames** across language mirrors (G13).
 - One subject, one page. If two pages both explain caching, one of them is wrong (G6).
 
-### Sidebar assembly
-
-Tier order, with bold non-link group headers and a blank line between groups. Docsify nests
-via indentation:
-
-```markdown
-- [Home](/)
-- [Overview](/WSS.OVERVIEW.md)
-- [Glossary](/glossary.md)
-
-- **Foundations**
-- [Architecture](/architecture.md)
-- [Design decisions](/WSS.DECISIONS.md)
-
-- **Client**
-- [Frontend](/frontend.md)
-- [Routing](/routing.md)
-- [Design system](/design-system.md)
-  - [Tokens](/annex/design-tokens.md)
-
-- **Services & data**
-- [API](/api.md)
-- [Data layer](/data-layer.md)
-- [Schema](/schema.md)
-
-- **Platform**
-- [Authentication](/auth.md)
-- [Observability](/observability.md)
-
-- **Delivery**
-- [Deploy](/deploy.md)
-- [Runbooks](/runbooks/)
-
-- **Governance**
-- [Privacy](/governance/privacy.md)
-- [Licensing](/governance/licensing.md)
-
-- **Annex**
-- [Components](/annex/components.md)
-- [Endpoints](/annex/endpoints.md)
-```
-
-Group headers appear only once a group holds two or more pages — a bold header over a single
-link is noise. `index.md`'s Contents table mirrors these groups as `##` sections.
-
 ## Anti-patterns
 
-- **Tier-shaped emptiness** — a heading per tier with a sentence under each. Worse than
-  omitting the tier: it signals coverage that isn't there.
 - **Documenting the framework** — `routing.md` explaining what a router is. Document *this*
   project's use of it, and link out for the rest.
-- **Compliance theatre** — a `governance/` page restating a regulation without mapping it to
-  implementation and evidence.
 - **The orphan tier** — pages nobody links to and the sidebar forgot. Every page is reachable
   from `_sidebar.md` and `index.md` (G12).
-- **Duplicated caching** — the same concern explained under both T5 and T6 because it
-  spans them. Pick the owner, link from the other (G6).
-- **Frameworks in T3** — domain pages naming React or Postgres. That content belongs in
-  T4–T6.

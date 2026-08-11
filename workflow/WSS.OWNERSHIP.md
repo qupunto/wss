@@ -20,9 +20,9 @@ to each other on different axes. That negotiation is the symptom, not the fix.
 | **Primitive** — owns one record, or the history | its own file and nothing else | a flag, or any skill that dispatches to it |
 | **Orchestrator** — owns the session | usually **nothing** — and never another owner's record, never the history | a flag, or any skill that dispatches to it |
 
-**"Owns the session" is the definition. Writing code is not**, and the tier used
-to be defined that way because of a single row. Orchestrators write nothing at
-all: they decide, and hand every write to the primitive that owns the file.
+**"Owns the session" is the definition. Writing code is not.** Orchestrators
+write nothing at all: they decide, and hand every write to the primitive that
+owns the file.
 `--wss-start` is the one that writes source code, and it is the exception rather
 than the shape.
 
@@ -36,8 +36,7 @@ code*; read the matrix's "Sole writer of" column for what any given row actually
 writes, rather than inferring it from this row.
 
 **An orchestrator can be dispatched to, and a primitive can dispatch.** Neither
-is exotic: `--wss-release` invokes `--wss-full-check`, `--wss-stocktake` invokes `--wss-wrap`, `--wss-adopt`
-invokes `--wss-docs`, and the primitive `--wss-tools` reaches
+is exotic: `--wss-release` invokes `--wss-full-check`, and the primitive `--wss-tools` reaches
 [`writers/WSS.DOCS-WRITER.md`](writers/WSS.DOCS-WRITER.md) directly for the
 documentation page derived from its catalog. The tier says what a skill *owns*,
 not who is allowed to call it.
@@ -81,7 +80,7 @@ rows carry a path now instead of a skill name, and that path is how you reach
 them: follow the link and do what it says.
 
 `git-writer` has a second reason, particular to it: **a flag is how a user
-confers authorization**, and that skill must never confer any. Its grant is
+confers authorization**, and that procedure must never confer any. Its grant is
 always the caller's.
 
 An orchestrator that needs a record written **calls the primitive that owns it.**
@@ -132,8 +131,9 @@ while it stays easy to state.
 | publish | `--wss-release` | `release` | orchestrator | **nothing** — the entry goes through `changelog-writer`, the tag through `git-writer` | commit; push needs a fresh OK |
 | hand off | `--wss-wrap` | `wrap` | orchestrator | **nothing** — the handoff goes through `handoff-writer` | commit **and** push, the latter including fast-forwarding a lane worktree's branch onto `WSS.branch.integration` |
 | report upstream | `--wss-report` | `report` | orchestrator | **nothing with an owner** — it appends to the machine-local inbox, which any session in any project may write | none — opening the upstream issue needs a fresh OK in that turn |
-| synch lanes | — | `lane-record-sync` | orchestrator | **nothing with an owner** — every finding is appended to the addressed lane's transfer queue, which has no single writer; it drains `WSS.lanes.conflicts`, the queue it is the sole consumer of; and the run's entry goes through `audit-writer` | none — **and it has no flag by design.** Slash-invoked only, so it can never fire from a phrase, a batch or another skill. Its step 0 lands lane branches onto `WSS.branch.integration`, and its step 5 brings each lane worktree back onto it once the run has finished — both **fast-forward only, through `git-writer`, locally** — a ref moved onto existing commits, nothing authored, nothing pushed; divergence is reported, never resolved, and step 5 additionally skips any lane whose worktree is dirty. Its step 6 hands the close-out to `--wss-wrap`, which inherits that nothing and **asks for its own commit in that turn** — the same shape as `report upstream` above. A flagless row can confer no grant, because there is no hook block to state one and no flag for `git-writer` to trace back to; the user is present throughout a slash-only run, so asking costs one question. **The push is never on offer**: step 0's local landings would otherwise reach the remote as a side effect of tidying up |
+| synch lanes | — | `lane-record-sync` | orchestrator | **nothing with an owner** — every finding is appended to the addressed lane's transfer queue, which has no single writer; it drains `WSS.lanes.conflicts`, the queue it is the sole consumer of; and the run's entry goes through `audit-writer` | none — **and it has no flag by design.** Slash-invoked only, so it can never fire from a phrase, a batch or another skill. A flagless row can confer no grant, because there is no hook block to state one and no flag for `git-writer` to trace back to; the user is present throughout a slash-only run, so asking costs one question. Its git work is **local and fast-forward-only, through `git-writer`** — nothing authored, nothing pushed — and **the push is never on offer**, since those local landings would otherwise reach the remote as a side effect of tidying up. Its close-out hands to `--wss-wrap`, which inherits that nothing and **asks for its own commit in that turn** — the same shape as `report upstream` above |
 | retire | — | `retire` | orchestrator | **nothing** — the retire and reset scripts delete, the export script archives, and a deletion is not a record write; the dirty tree it leaves is the user's to commit or restore | none — **and it has no flag by design.** Slash-invoked only, and its own frontmatter blocks model invocation, so a deletion can never fire from a phrase, a batch or another skill; each destructive action runs only where the user checked its box in that turn |
+| toggle | — | `toggle` | orchestrator | **nothing with an owner** — it rewrites `skillOverrides` in the user's `settings.json`, which is settings rather than a record | none — **and it has no flag by design.** Slash-invoked only, and its frontmatter blocks model invocation, so a change to what sessions load can never fire from a phrase, a batch or another skill |
 
 `WSS.record.*` keys resolve through the project's `.claude/WSS.WORKFLOW.json`. A project
 without one falls back to conventional names and skips what it cannot resolve.
@@ -170,30 +170,14 @@ Read the rule above without this one and the overflow file falls through to
 "ordinary work", which is the opposite of what its owner says: `handoff-writer`
 claims it as sole writer, and the matrix must not quietly license anyone else.
 
-**A transfer queue has many writers, and that does not touch the invariant
-above.** `WSS.lanes.named.<lane>.transfer` is a lane's inbox: every *other* lane
-appends to it, and the owning lane's `--wss-start` is the only thing that
-consumes it, moving each entry into the record it names. So the queue is
-many-writer and every **record** still has exactly one — an entry becomes part
-of `WSS.record.todo` when that lane's own session puts it there, not when a sibling
-files it.
-
-**This is not a carve-out, because a queue is not a record.** A record holds
+**A transfer queue and the conflict inbox have many writers, and neither
+touches the invariant above, because neither is a record** — a record holds
 state and is read; a queue holds messages in flight and is empty in the steady
-state. [`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md) draws the line and holds the
-entry shape. The invariant is unchanged and still has no exceptions — which is
-the whole reason the queue was put beside `records` in the manifest rather than
-inside it.
-
-The same append-only argument the defect inbox rests on is what makes many
-writers safe here: an append is additive, so a wrong entry is merely wrong and
-nothing true is lost.
-
-**`WSS.lanes.conflicts` is the same shape with a different consumer.** One per
-project, written by any session that notices two lanes' records contradicting
-each other, and consumed by `lane-record-sync` — which re-verifies each
-claim before acting on it, per [the inspector rule](#the-inspector-writes-nothing)
-below. Neither queue has a row in the matrix, because neither is a record.
+state. Both queues' rules, and why neither has a row in the matrix, are
+[`WSS.LANE-CONTRACT.md`](WSS.LANE-CONTRACT.md)'s. Lane mode only — a
+`.claude/WSS.LANE` selector, or `WSS.lanes.named` in the manifest — plus the
+one reader that gate cannot detect: a session deciding whether to adopt lanes
+at all, which has no selector yet and follows the pointer anyway.
 
 **One handoff between owners is worth stating here, because it crosses two
 files.** `--wss-plan` marks a milestone completed in `WSS.record.releases`; that mark is
@@ -241,8 +225,8 @@ cut. The reporter hands over evidence, not a verdict.
 
 ## One writer, many readers — the sweep checkpoint
 
-`--wss-check`, `--wss-full-check`, `--wss-docs`, `--wss-tools` and the test run all narrow their scope
-by reading `.claude/WSS.SWEEPS.json`. **None of them writes it.** They hand their baseline and
+Every sweep — and the test run — narrows its scope by reading
+`.claude/WSS.SWEEPS.json`. **None of them writes it.** They hand their baseline and
 their coverage to `sweep-tracker`, which is its sole writer, exactly as an
 orchestrator hands a backlog change to `--wss-todo`.
 
@@ -301,8 +285,8 @@ places, and where the suite sits depends on how it was installed:
 | checkout | `~/.claude` — the repo *is* the working tree | the same directory |
 | plugin | `${CLAUDE_PLUGIN_ROOT}`, under `plugins/cache/` | `~/.claude`, separately |
 
-In a checkout the two coincide, which is why one path used to describe both.
-Under a plugin they do not, so **`~/.claude` names the suite only in a checkout.**
+In a checkout the two coincide. Under a plugin they do not, so **`~/.claude`
+names the suite only in a checkout.**
 The config directory — `WSS.BUG-REPORTS.md`, `projects/`, `settings.json` — is
 `~/.claude` in both.
 
@@ -389,26 +373,10 @@ Three grants recur, and the distinction between them is deliberate:
 ## Work scoped to another lane is announced first, then routed to that lane
 
 The second which-session-may-act rule, for projects worked on in worktree
-lanes. Where the manifest declares `WSS.lanes.named` and a `.claude/WSS.LANE` selector
-names this session's lane, a request whose scope falls under a *different*
-lane's `scope` globs is another worktree's work, and two things hold — both
-**before any file is touched**:
-
-- **Warn up front.** Name the session's lane, the owning lane, and where the
-  work will happen. The scope globs sit in the shared manifest, so the
-  mismatch is detectable the moment the request arrives — detect it then, not
-  at commit time, when the only remaining options are both wrong.
-- **The work happens in the owning lane's home.** Its worktree, its branch,
-  its records. Interactively, offer the switch to a session in that worktree;
-  where the user has the work proceed from here anyway, it proceeds *into*
-  the owning lane's worktree and branch — absolute paths — and its record
-  writes resolve through that lane's `records`, not this one's.
-  **Lane-foreign files are never committed to the current worktree's
-  branch**: a commit that mixes lanes undoes the partition the lanes exist to
-  provide, and the conflict it defers lands on whoever merges next.
-
-A request that straddles two lanes is a partition question, not a licence —
-split it, do this lane's share here, and route the rest.
+lanes, is [`WSS.LANE-CONTRACT.md`](WSS.LANE-CONTRACT.md)'s: announced up front,
+then done in the owning lane's worktree, branch and records — never committed
+to this one's. Lane mode only, and the same undetectable reader as above — a
+session deciding whether to adopt lanes at all — reads it too.
 
 ## Decide here, delegate the writing
 
@@ -472,8 +440,8 @@ independently.
    wrapper in `commands/`, so the menu entry, the flag and the route stay one
    token; `wss-doctor.sh` asserts every wrapper fires the flag its name promises.
    **A flag whose name already equals its skill's gets no wrapper** — it reaches
-   the menu as the skill — and neither does a scope-variant prefix
-   (`--wss-full-stocktake`). `wss-doctor.sh` cannot catch a redundant one, since it
+   the menu as the skill — and neither does a scope-variant prefix.
+   `wss-doctor.sh` cannot catch a redundant one, since it
    fires the flag its name promises; the cost is a duplicate menu entry.
    Wrappers exist only for flags whose skill carries its own rules — never for
    hook-served flags, whose whole behavior lives in the hook and would be

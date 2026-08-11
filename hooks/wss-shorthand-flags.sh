@@ -58,6 +58,22 @@ fi
 payload=$(cat 2>/dev/null)
 prompt=$(printf '%s' "$payload" | jq -r '.prompt // ""' 2>/dev/null)
 
+# A task-notification is not the user. The harness routes a background task's
+# completion notice back through UserPromptSubmit, so `.prompt` is sometimes the
+# harness's own banner wrapping a subagent's report — and a report legitimately
+# QUOTES flag names as data. On 2026-08-10 one such notification decomposed here
+# and injected ~10.3 KB of "unconditional instruction", --wss-start's commit
+# authorization included, with no user input (audit pass 13, F2; upstream
+# question filed as qupunto/wss#21). Every observed notification payload begins
+# at position 0 with the literal `<task-notification>` banner, so the refusal is
+# anchored to the START of the prompt: a user genuinely pasting a transcript
+# that merely CONTAINS the marker mid-message still fires normally. A flag
+# instruction arriving in the same event as that banner is void — nobody typed
+# it — so the hook stays silent rather than granting anything.
+case $prompt in
+  '<task-notification>'*) exit 0 ;;
+esac
+
 # The invariant this list must keep: NO FLAG IS A PREFIX OF ANOTHER. Where that
 # holds, a token can never be split into a shorter flag plus junk and the order
 # below does not matter. `--wss-stocktake` and `--wss-full-stocktake` look like they collide and
@@ -108,39 +124,13 @@ for ((i = 0; i < n; i++)); do collect "${tokens[$i]}"; done
 
 [ ${#ordered[@]} -eq 0 ] && exit 0
 
-# `--wss-stocktake` and `--wss-full-stocktake` are the same skill at two scopes, so they are
-# mutually exclusive and the wider one wins.
-if [ -n "${seen[--wss-full-stocktake]:-}" ]; then
-  unset 'seen[--wss-stocktake]'
-fi
-
-# `--wss-full-check` is a different SKILL from `--wss-check` rather than a wider scope of
-# it, but it runs --wss-check's method over --wss-check's files as one of its three
-# areas, so firing both sweeps the record twice. The wider one wins.
-#
-# `--wss-docs` and `--wss-tools` are deliberately NOT dropped, even though --wss-full-check
-# subsumes their SWEEPS. Both of those flags have a second, unrelated job —
-# writing a page, syncing the catalog — and `--wss-full-check --wss-docs auth` is a
-# health check followed by a request to document something. This hook cannot
-# tell that apart from a redundant sweep, and dropping a write request to save
-# one read is the wrong way to be wrong. The multi-flag preamble already tells
-# Claude to do a shared step once.
-if [ -n "${seen[--wss-full-check]:-}" ]; then
-  unset 'seen[--wss-check]'
-fi
-
-# Either stocktake flag absorbs `--wss-check`. stocktake runs --wss-check's
-# method over --wss-check's files as its record dimension and says so — "invoke one
-# or the other, never both" — so firing both sweeps the record twice, and the
-# second sweep reports the first one's writes as fresh drift.
-#
-# `--wss-full-check` is deliberately NOT dropped here, on the same reasoning that
-# spares --wss-docs and --wss-tools above. It is a different skill, not a wider scope:
-# it also covers the docs site and the tooling files, neither of which a
-# stocktake touches. Dropping it would silently narrow what the user asked for.
-if [ -n "${seen[--wss-stocktake]:-}" ] || [ -n "${seen[--wss-full-stocktake]:-}" ]; then
-  unset 'seen[--wss-check]'
-fi
+# The absorption rules — the wider flag eating the narrower one — no longer
+# live here. They moved BEHIND the resolve/disabled gates, just before the
+# emission loop: absorption at parse time assumed every absorber fires, and a
+# settings-disabled `--wss-stocktake` silently swallowed a live `--wss-check`
+# (audit pass 14 F1 — the pair injected nothing and no error said so). This
+# layer now only parses; anything that decides what fires belongs after the
+# gates are defined.
 
 # Only claim a flag whose skill actually resolves here — at user level, or in
 # this project. Injecting "follow the X skill" where X does not exist is an
@@ -667,6 +657,11 @@ Irreversible, in force before the skill loads:
 EOF
     ;;
   --wss-wrap)
+    # The no-leading-`+` refspec rule in this block is a working copy; the
+    # authority is workflow/writers/WSS.GIT-WRITER.md, which wins any
+    # disagreement. The phrasing here ('NO leading `+`') is pinned by
+    # tests/wss-hook-contract.sh — align a drift by fixing the copy to match
+    # the authority and the tests together, never by rewording casually.
     cat <<'EOF'
 The user included the `--wss-wrap` flag. Treat it exactly as "wrap this up, I am
 about to clear the session" — invoke the `wrap` skill immediately and
@@ -1002,6 +997,56 @@ if [ -n "${seen[--wss-alerts]:-}" ]; then
         alerts_msg='No argument given — sound alerts are currently OFF here. `--wss-alerts on|off` toggles.'
       fi ;;
   esac
+fi
+
+# A flag fires only if its skill resolves and is not disabled — the same two
+# gates the emission loop below applies. Absorption runs behind them because
+# an absorber that cannot fire must not eat its absorbee: at parse time that
+# assumption broke on a settings-disabled `--wss-stocktake`, which swallowed a
+# live `--wss-check` so the pair injected nothing (audit pass 14 F1).
+flag_fires() {
+  local fs
+  fs=$(skill_for "$1")
+  [ "$fs" = "-" ] && return 0
+  skill_exists "$fs" || return 1
+  skill_disabled "$fs" && return 1
+  return 0
+}
+
+# `--wss-stocktake` and `--wss-full-stocktake` are the same skill at two scopes, so they are
+# mutually exclusive and the wider one wins — where the wider one fires.
+if [ -n "${seen[--wss-full-stocktake]:-}" ] && flag_fires --wss-full-stocktake; then
+  unset 'seen[--wss-stocktake]'
+fi
+
+# `--wss-full-check` is a different SKILL from `--wss-check` rather than a wider scope of
+# it, but it runs --wss-check's method over --wss-check's files as one of its three
+# areas, so firing both sweeps the record twice. The wider one wins.
+#
+# `--wss-docs` and `--wss-tools` are deliberately NOT dropped, even though --wss-full-check
+# subsumes their SWEEPS. Both of those flags have a second, unrelated job —
+# writing a page, syncing the catalog — and `--wss-full-check --wss-docs auth` is a
+# health check followed by a request to document something. This hook cannot
+# tell that apart from a redundant sweep, and dropping a write request to save
+# one read is the wrong way to be wrong. The multi-flag preamble already tells
+# Claude to do a shared step once.
+if [ -n "${seen[--wss-full-check]:-}" ] && flag_fires --wss-full-check; then
+  unset 'seen[--wss-check]'
+fi
+
+# Either stocktake flag absorbs `--wss-check` — again only where the absorber
+# fires. stocktake runs --wss-check's method over --wss-check's files as its
+# record dimension and says so — "invoke one or the other, never both" — so
+# firing both sweeps the record twice, and the second sweep reports the first
+# one's writes as fresh drift.
+#
+# `--wss-full-check` is deliberately NOT dropped here, on the same reasoning that
+# spares --wss-docs and --wss-tools above. It is a different skill, not a wider scope:
+# it also covers the docs site and the tooling files, neither of which a
+# stocktake touches. Dropping it would silently narrow what the user asked for.
+if { [ -n "${seen[--wss-stocktake]:-}" ] && flag_fires --wss-stocktake; } ||
+   { [ -n "${seen[--wss-full-stocktake]:-}" ] && flag_fires --wss-full-stocktake; }; then
+  unset 'seen[--wss-check]'
 fi
 
 blocks=""

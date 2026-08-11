@@ -35,7 +35,16 @@ forms:
   **what each record holds, and what it must never hold.**
 - [`../../workflow/WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md) — **which keys a
   project's `.claude/WSS.WORKFLOW.json` may set**, and what each falls back to when
-  absent.
+  absent. What the files those keys point at may be **called** is not this
+  file's: [`../../workflow/WSS.NAMING.md`](../../workflow/WSS.NAMING.md) holds the
+  `WSS.`/`wss-` grammar and the test for whether a file is the suite's at all.
+  A pass settling both — `--wss-adopt`, `update` — reads both.
+
+On worktree lanes all three defer to
+[`../../workflow/WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md) — read in
+lane mode (a `.claude/WSS.LANE` selector, or `WSS.lanes.named` in the manifest),
+and when deciding whether to adopt lanes at all, the one reader that gate
+cannot detect.
 
 Where they resolve to on disk depends on how the suite was installed, and this is
 the one place the two forms genuinely differ:

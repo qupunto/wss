@@ -33,6 +33,7 @@ before a single skill runs.
 ├── wss-remove-lanes.sh        turns worktree-lane mode off for one checkout — never touches a record
 ├── wss-tree-survey.sh         prints what ONE adopted tree declares — read-only, output is local-only
 ├── wss-survey-all.sh          walks many roots and rolls the surveys up — read-only, output is local-only
+├── wss-audit-assets.sh        deterministic measurements for an audit pass — read-only, does not travel
 ├── wss-publish.sh             assembles and gates the public tree; deliberately never pushes
 │
 ├── hooks/                 the hook scripts, and the hooks.json a plugin needs
@@ -287,3 +288,7 @@ ownership matrix — two hand-written copies of the same fact.
 - `workflow/WSS.RECORD-CONTRACT.md` — what each record file holds and must not hold.
 - `workflow/WSS.MANIFEST.md` — which keys a project's `.claude/WSS.WORKFLOW.json` may
   set, and what each falls back to when absent.
+- `workflow/WSS.LANE-CONTRACT.md` — everything the suite holds about worktree
+  lanes, in one file because a project that declares no lanes never needs a line
+  of it. Read where lane mode is on, and when deciding whether to adopt lanes at
+  all; the other three defer to it on lanes and none restates it.

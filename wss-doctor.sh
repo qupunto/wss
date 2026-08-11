@@ -581,6 +581,39 @@ else
       [ $grant_drift -eq 0 ] && [ $grant_seen -gt 0 ] &&
         pass "every flag's grant matches between the hook and WSS.OWNERSHIP.md ($grant_seen checked)"
     fi
+
+    # The checks above all run flag -> skill: does what the hook serves resolve
+    # to something. Nothing ran the other way, and that direction is the one a
+    # READER travels — a description advertising `SHORTHAND: --wss-x` is a
+    # promise to the user, and if the hook does not serve it the flag reaches
+    # the model as ordinary prose. The skill then fires only where the model
+    # happens to read the description and infer it, which is the founding
+    # failure this whole script exists for: mostly working, nothing looking
+    # wrong. Only `--wss-`-prefixed tokens are read, so a description quoting
+    # `--strict` or another tool's flag is not a claim about this hook.
+    adv=0; adv_bad=0
+    for sd in "$CLAUDE_DIR"/skills/*/; do
+      [ -f "$sd/SKILL.md" ] || continue
+      sn=$(basename "$sd")
+      sdesc=$(awk 'NR==1&&/^---$/{f=1;next} f&&/^---$/{exit} f' "$sd/SKILL.md" |
+              awk '/^description:/{p=1;print;next} p&&/^[a-zA-Z_-]+:/{p=0} p')
+      [ -n "$sdesc" ] || continue
+      for adf in $(printf '%s' "$sdesc" | grep -oE '\-\-wss-[a-z-]+' | sort -u); do
+        adv=$((adv + 1))
+        case " $flags " in
+          *" $adf "*) ;;
+          *) fail "'$sn' advertises $adf, which wss-shorthand-flags.sh does not serve.
+        A user who types it gets no flag block and no error — the skill fires
+        only if the model reads the description and infers it."
+             adv_bad=$((adv_bad + 1)) ;;
+        esac
+      done
+    done
+    if [ $adv -eq 0 ]; then
+      pass "no skill description advertises a --wss- shorthand"
+    elif [ $adv_bad -eq 0 ]; then
+      pass "every advertised shorthand is served by the hook ($adv checked)"
+    fi
   fi
 fi
 
@@ -1373,6 +1406,227 @@ else
   pass "no check-method table pair to compare"
 fi
 
+# The pair above compares the two tables against EACH OTHER, and two tables that
+# never learned about a third method agree perfectly — a method file added
+# without a row is invisible to both, and stays invisible because nothing else
+# enumerates the directory. The reverse costs as little: a row naming a file
+# that has been renamed or removed reads exactly like a live method, which is
+# the failure the cross-reference checks exist for everywhere else. So the pair
+# is anchored to the directory it describes, in both directions. WSS.CHECKS.md
+# is the index rather than a method and is never a row.
+if [ -d "$CLAUDE_DIR/workflow/checks" ] && [ -n "${mt_b:-}" ]; then
+  mt_named=$(printf '%s\n' "$mt_b" | cut -d'|' -f1 | sort -u)
+  mt_ondisk=$(find "$CLAUDE_DIR/workflow/checks" -maxdepth 1 -name '*.md' -printf '%f\n' 2>/dev/null |
+              grep -vx 'WSS.CHECKS.md' | sort)
+  mt_unlisted=$(comm -13 <(printf '%s\n' "$mt_named") <(printf '%s\n' "$mt_ondisk") | tr '\n' ' ')
+  mt_ghost=$(comm -23 <(printf '%s\n' "$mt_named") <(printf '%s\n' "$mt_ondisk") | tr '\n' ' ')
+  if [ -n "$mt_unlisted" ]; then
+    fail "method file with no row in either check-method table: $mt_unlisted
+        Both tables compare clean, because neither knows it exists. Add the row
+        to workflow/checks/WSS.CHECKS.md and .claude/WSS.TOOLING.md."
+  fi
+  if [ -n "$mt_ghost" ]; then
+    fail "check-method table names a file that is not in workflow/checks/: $mt_ghost
+        A row for a method that moved or was retired reads as a live one."
+  fi
+  [ -z "$mt_unlisted" ] && [ -z "$mt_ghost" ] &&
+    pass "every method file has a row, and every row a file ($(printf '%s\n' "$mt_ondisk" | grep -c .) methods)"
+fi
+
+# The same table exists a THIRD time, in docs/annex/WSS.CLAUDE-TOOLING.md, and the
+# pair above guards only the first two — which is how that copy silently carried a
+# false cell until 641fa66 found it by hand.
+#
+# The ruling on it is the one the record-vs-queue pair above already carries for
+# docs/annex/lane-synching.md: the annex is the docs-site reader's CONDENSED copy,
+# so its cells are free to differ — a shorter "what it finds", a runner named
+# rather than linked, no href at all — and forcing them into step would collapse
+# two documents into one. What may not diverge is the row labels. Every method
+# the annex teaches must still be one workflow/checks/WSS.CHECKS.md asserts, or
+# the docs page is teaching a method the authority renamed or dropped. A method
+# the annex skips is condensation, not drift, and stays free.
+mt_annex="$CLAUDE_DIR/docs/annex/WSS.CLAUDE-TOOLING.md"
+if [ -f "$mt_annex" ] && [ -n "${mt_b:-}" ]; then
+  mt_auth=$(printf '%s\n' "$mt_b" | cut -d'|' -f1 | sort -u)
+  mt_anx=$(method_rows_ "$mt_annex" | cut -d'|' -f1 | sort -u)
+  if [ -z "$mt_anx" ]; then
+    fail "no check-method table found in docs/annex/WSS.CLAUDE-TOOLING.md — the
+        licence to condense is over the CELLS, not over the header, and a table
+        the parser cannot find agrees with everything. It needs a
+        '| Method | What it finds | Run by |' table like the other two."
+  else
+    mt_anx_extra=$(comm -13 <(printf '%s\n' "$mt_auth") <(printf '%s\n' "$mt_anx") | tr '\n' ' ')
+    if [ -z "$mt_anx_extra" ]; then
+      pass "the annex's check-method rows all exist in workflow/checks/WSS.CHECKS.md ($(printf '%s\n' "$mt_anx" | grep -c .) checked)"
+    else
+      fail "docs/annex/WSS.CLAUDE-TOOLING.md's check-method table carries methods
+        workflow/checks/WSS.CHECKS.md's does not: ${mt_anx_extra}
+        The annex condenses the authority's table, so the authority may hold
+        rows the annex skips — never the reverse. A method only the annex names
+        is one the authority renamed or dropped."
+    fi
+  fi
+else
+  pass "no check-method annex to compare"
+fi
+
+# ------------------------------------------------------------- who invokes whom
+
+head_ "Who invokes whom"
+
+# The catalog's caller->invokes table is the diagram of the whole suite in table
+# form, and until now nothing read it at all: `grep -n "Invokes\|Caller" wss-doctor.sh`
+# returned empty while the table carried 15 rows naming skills, writers, scripts,
+# check-method files and manifest roles. Two of its rows were repaired by hand in
+# one batch, which is the maintenance mode this check exists to end.
+#
+# What it does NOT assert, and cannot: that the caller actually invokes what its
+# row names. That fact lives in the caller's own procedure prose, which no parser
+# reads. There is a second hand-copy of the table in docs/annex/WSS.CLAUDE-TOOLING.md,
+# but it is licensed to condense on the ruling above, so it can only be compared
+# at label level and never settles a cell. So the assertion is the narrower one
+# that is still worth having: every referent the table names must RESOLVE — the
+# flag to a live flag, the writer to a writers/ file, the script to a script, the
+# method to a file in workflow/checks/, the role to a documented manifest role —
+# and every writer procedure on disk must be named by somebody. A renamed skill
+# or a retired script leaves a row that reads exactly like a live edge, and a new
+# writer with no row is the missing-row drift itself.
+invokes_cell_() { # file, column (2 = Caller, 3 = Invokes) — the backticked tokens
+  awk -v col="$2" '
+    /^\|[[:space:]]*Caller[[:space:]]*\|[[:space:]]*Invokes[[:space:]]*\|/ { t = 1; next }
+    t && /^\|[[:space:]]*[-:]/ { next }
+    t && /^\|/ {
+      n = split($0, f, "|")
+      if (n >= 5) {
+        s = f[col]
+        while (match(s, /`[^`]+`/)) {
+          tok = substr(s, RSTART + 1, RLENGTH - 2)
+          s = substr(s, RSTART + RLENGTH)
+          # A span may carry arguments for the referent — `wss-export-records.sh --all`
+          # — and the referent is the first word of it.
+          sub(/[[:space:]].*/, "", tok)
+          if (tok != "") print tok
+        }
+      }
+      next
+    }
+    t { t = 0 }
+  ' "$1" | sort -u
+}
+iw_cat="$CLAUDE_DIR/.claude/WSS.TOOLING.md"
+if [ -f "$iw_cat" ]; then
+  iw_callers=$(invokes_cell_ "$iw_cat" 2)
+  iw_targets=$(invokes_cell_ "$iw_cat" 3)
+  if [ -z "$iw_callers" ] || [ -z "$iw_targets" ]; then
+    # The blind-parser guard every table check here carries: a reader that has
+    # gone blind resolves nothing and therefore reports nothing wrong.
+    fail "no caller->invokes table found in .claude/WSS.TOOLING.md — the check
+        needs a '| Caller | Invokes | For |' table with backticked referents,
+        and a table that cannot be read resolves perfectly."
+  else
+    # Which `--` tokens are flags and which are a script's own arguments — `--all`,
+    # `--dir`, `--suite` all appear here — is decided by the flag namespace rather
+    # than by a hardcoded prefix: the longest prefix every entry of the hook's
+    # FLAGS array shares. An installation whose flags share nothing beyond the
+    # leading `--` gives no namespace to test against, and this one assertion is
+    # skipped rather than guessed at.
+    iw_ns=""
+    for f in ${flags:-}; do
+      if [ -z "$iw_ns" ]; then iw_ns="$f"
+      else while [ -n "$iw_ns" ] && [ "${f#"$iw_ns"}" = "$f" ]; do iw_ns="${iw_ns%?}"; done
+      fi
+    done
+    [ "${#iw_ns}" -le 2 ] && iw_ns=""
+    iw_scripts=$(find "$CLAUDE_DIR" -name '*.sh' -not -path '*/.git/*' -printf '%f\n' 2>/dev/null | sort -u)
+    iw_bad=""
+    iw_seen=0
+    for tok in $iw_callers $iw_targets; do
+      case $tok in
+        --*)
+          [ -z "$iw_ns" ] && continue
+          case $tok in "$iw_ns"*) ;; *) continue ;; esac
+          iw_seen=$((iw_seen + 1))
+          printf '%s\n' ${flags:-} | grep -qxF -- "$tok" ||
+            iw_bad="$iw_bad $tok(no such flag)" ;;
+        *.sh)
+          iw_seen=$((iw_seen + 1))
+          printf '%s\n' "$iw_scripts" | grep -qxF -- "$tok" ||
+            iw_bad="$iw_bad $tok(no such script)" ;;
+        *-writer|*-tracker)
+          iw_seen=$((iw_seen + 1))
+          iw_w="WSS.$(printf '%s' "$tok" | tr '[:lower:]' '[:upper:]').md"
+          [ -f "$CLAUDE_DIR/workflow/writers/$iw_w" ] ||
+            iw_bad="$iw_bad $tok(no workflow/writers/$iw_w)" ;;
+        WSS.agents.*)
+          iw_seen=$((iw_seen + 1))
+          iw_role=${tok#WSS.agents.}
+          grep -qF -- "\`$iw_role\`" "$CLAUDE_DIR/workflow/WSS.MANIFEST.md" 2>/dev/null ||
+            iw_bad="$iw_bad $tok(no such role in WSS.MANIFEST.md)" ;;
+        */*.md)
+          iw_seen=$((iw_seen + 1))
+          [ -f "$CLAUDE_DIR/$tok" ] || iw_bad="$iw_bad $tok(no such file)" ;;
+        wss-*)
+          iw_seen=$((iw_seen + 1))
+          [ -f "$CLAUDE_DIR/skills/$tok/SKILL.md" ] ||
+            iw_bad="$iw_bad $tok(no such skill)" ;;
+      esac
+    done
+    if [ -n "$iw_bad" ]; then
+      fail "the caller->invokes table names referents that resolve nowhere:${iw_bad}
+        Every edge in that table is a hand-written claim about a file. One that
+        no longer resolves reads exactly like a live edge, which is what the
+        table is read for."
+    else
+      pass "every referent in the caller->invokes table resolves ($iw_seen checked)"
+    fi
+
+    # The direction the table cannot fail in on its own: a writer procedure added
+    # without an edge is invisible, and stays invisible, because nothing else
+    # enumerates workflow/writers/. WSS.WRITERS.md is the index rather than a
+    # procedure and is never a referent — the same exemption WSS.CHECKS.md has above.
+    if [ -d "$CLAUDE_DIR/workflow/writers" ]; then
+      iw_named=$(printf '%s\n' $iw_targets | grep -e '-writer$' -e '-tracker$' |
+                 tr '[:lower:]' '[:upper:]' | sed 's/^/WSS./;s/$/.md/' | sort -u)
+      iw_ondisk=$(find "$CLAUDE_DIR/workflow/writers" -maxdepth 1 -name '*.md' -printf '%f\n' 2>/dev/null |
+                  grep -vx 'WSS.WRITERS.md' | sort)
+      iw_orphan=$(comm -13 <(printf '%s\n' "$iw_named") <(printf '%s\n' "$iw_ondisk") | tr '\n' ' ')
+      if [ -n "$iw_orphan" ]; then
+        fail "writer procedure that no caller->invokes row names: $iw_orphan
+        The table compares clean because it does not know it exists. Add the
+        edge to .claude/WSS.TOOLING.md's 'Who invokes whom'."
+      else
+        pass "every writer procedure is named by a caller ($(printf '%s\n' "$iw_ondisk" | grep -c .) procedures)"
+      fi
+    fi
+
+    # And the annex's copy of the same table, on the condensation ruling above:
+    # its callers must all be callers the catalog names, never the reverse.
+    iw_annex="$CLAUDE_DIR/docs/annex/WSS.CLAUDE-TOOLING.md"
+    if [ -f "$iw_annex" ]; then
+      iw_anx=$(invokes_cell_ "$iw_annex" 2)
+      if [ -z "$iw_anx" ]; then
+        fail "no caller->invokes table found in docs/annex/WSS.CLAUDE-TOOLING.md —
+        the annex may condense its cells and skip rows, but the table itself is
+        one the docs site teaches from, and one that cannot be read agrees with
+        everything."
+      else
+        iw_anx_extra=$(comm -13 <(printf '%s\n' "$iw_callers") <(printf '%s\n' "$iw_anx") | tr '\n' ' ')
+        if [ -z "$iw_anx_extra" ]; then
+          pass "the annex's callers all exist in the catalog's table ($(printf '%s\n' "$iw_anx" | grep -c .) checked)"
+        else
+          fail "docs/annex/WSS.CLAUDE-TOOLING.md names callers .claude/WSS.TOOLING.md
+        does not: ${iw_anx_extra}
+        The annex condenses the catalog, so the catalog may hold rows the annex
+        skips — never the reverse. A caller only the annex has is one the
+        catalog renamed or dropped."
+        fi
+      fi
+    fi
+  fi
+else
+  pass "no caller->invokes table to compare"
+fi
+
 # ------------------------------------------------------- the lane tables, twice
 
 head_ "Lane tables"
@@ -1438,7 +1692,7 @@ else
   pass "no four-rulings table pair to compare"
 fi
 
-# The record-vs-queue table (workflow/WSS.RECORD-CONTRACT.md and
+# The record-vs-queue table (workflow/WSS.LANE-CONTRACT.md and
 # docs/annex/lane-synching.md) is the cadence pair's shape instead: the
 # contract is the authority with the full wording, the annex a condensed copy
 # for the docs-site reader — both born that way in 8b28491, so forcing the
@@ -1462,13 +1716,13 @@ rvq_labels_() { # file — the label column of the "| | A record | A transfer qu
     t { t = 0 }
   ' "$1" | sort
 }
-rvq_contract="$CLAUDE_DIR/workflow/WSS.RECORD-CONTRACT.md"
+rvq_contract="$CLAUDE_DIR/workflow/WSS.LANE-CONTRACT.md"
 if [ -f "$rvq_contract" ] && [ -f "$rl_annex" ]; then
   rvq_a=$(rvq_labels_ "$rvq_contract")
   rvq_b=$(rvq_labels_ "$rl_annex")
   if [ -z "$rvq_a" ] || [ -z "$rvq_b" ]; then
     rvq_blind=""
-    [ -z "$rvq_a" ] && rvq_blind="workflow/WSS.RECORD-CONTRACT.md"
+    [ -z "$rvq_a" ] && rvq_blind="workflow/WSS.LANE-CONTRACT.md"
     [ -z "$rvq_b" ] && rvq_blind="${rvq_blind:+$rvq_blind and }docs/annex/lane-synching.md"
     fail "no record-vs-queue table found in $rvq_blind — the comparison needs a
         '| | A record | A transfer queue |' table in both files, and two
@@ -1479,7 +1733,7 @@ if [ -f "$rvq_contract" ] && [ -f "$rl_annex" ]; then
       pass "the annex's record-vs-queue rows all exist in the contract ($(printf '%s\n' "$rvq_b" | grep -c .) checked)"
     else
       fail "docs/annex/lane-synching.md's record-vs-queue table carries rows
-        workflow/WSS.RECORD-CONTRACT.md's does not: ${rvq_extra}
+        workflow/WSS.LANE-CONTRACT.md's does not: ${rvq_extra}
         The annex condenses the contract's table, so the contract may hold
         rows the annex skips — never the reverse. A label only the annex has
         is a property the authority renamed or dropped."
@@ -1487,6 +1741,245 @@ if [ -f "$rvq_contract" ] && [ -f "$rl_annex" ]; then
   fi
 else
   pass "no record-vs-queue table pair to compare"
+fi
+
+# ------------------------------------------------- the splittable set, restated
+
+head_ "Splittable set"
+
+# workflow/WSS.LANE-CONTRACT.md names which records may split by lane and says
+# the resolution rule is stated once, there. It is not: eight sites restate the
+# key list, each one a local read that saves a dispatching skill a lookup. The
+# ruling was to keep the copies and make the drift loud rather than cut them to
+# a pointer, so this is that check — gaining or losing a splittable key now
+# fails here instead of drifting silently through every copy at once.
+#
+# DISCOVERY BY MARKER, NOT A FILE LIST. Both the canon and its restatements are
+# found by their own wording, over md_files_(). A hardcoded list has to be right
+# about where the files live, and the tree is under a reorg that moves workflow/
+# and skills/ wholesale; it also has to be right about how many there are, and
+# the list this check was specified from was already two sites short of what the
+# tree held. A marker survives both, and the count below turns a walk that stops
+# matching into a FAILURE rather than a green run over an empty set.
+#
+# What discovery costs is a false-positive risk, so the exclusions are stated
+# rather than incidental. Scripts are out because md_files_() reads only *.md —
+# which is also what stops this check matching its own source and the test
+# fixtures. Records are out because they QUOTE the set rather than dispatch from
+# it: docs/ narrates the decision, WSS.TODO.md carried the entry this check came
+# from, WSS.CHANGELOG.md logs the change, .claude/ is per-checkout state, and
+# audits/ md_files_() already drops. The cost of the *.md line is that
+# hooks/wss-session-check.sh and wss-remove-lanes.sh are unchecked; neither
+# carries a marker, and neither restates the set — both cite
+# workflow/WSS.LANE-CONTRACT.md for it — so neither would match anyway.
+#
+# The three-key subsets elsewhere (`todo`, `openDecisions`, `roadmap` — the
+# transfer queue's targets) carry neither marker: they are a different claim
+# about a different thing, and flagging them as drift is the mistake that would
+# get this check weakened rather than obeyed.
+sp_files_() {
+  md_files_ | while IFS= read -r -d '' p; do
+    case ${p#"$CLAUDE_DIR"/} in
+      docs/* | .claude/* | audits/* | WSS.TODO.md | WSS.CHANGELOG.md) continue ;;
+    esac
+    printf '%s\0' "$p"
+  done
+}
+
+# Three of the eight sites wrap the key list across a line break, and one wraps
+# between "overrides" and "`WSS.record.X`". A line-based grep sees `todo` and
+# `openDecisions` and reports drift on a file that is perfectly correct, so the
+# whole file is whitespace-normalised first and the line number recovered from
+# an offset map afterwards — the citation still has to point at a real line.
+SPLITTABLE_PL='
+my $kl = qr/(?:`[A-Za-z]+`(?:,? (?:and )?)?)+/;
+for my $f (@ARGV) {
+  open(my $fh, "<", $f) or next;
+  my $t = ""; my @map; my $ln = 0;
+  while (my $l = <$fh>) {
+    $ln++;
+    $l =~ s/\s+/ /g; $l =~ s/^ //; $l =~ s/ $//;
+    push @map, [length($t), $ln];
+    $t .= $l . " ";
+  }
+  close $fh;
+  my @hit;
+  while ($t =~ /\*\*Splittable: ($kl)\*\*/g)            { push @hit, [$-[0], "canon", $1]; }
+  while ($t =~ /overrides `WSS\.record\.X` for ($kl)/g) { push @hit, [$-[0], "site",  $1]; }
+  while ($t =~ /only the splittable keys \(($kl)\)/gi)  { push @hit, [$-[0], "site",  $1]; }
+  for my $h (@hit) {
+    my $line = 1;
+    for my $m (@map) { last if $m->[0] > $h->[0]; $line = $m->[1]; }
+    my @k = ($h->[2] =~ /`([A-Za-z]+)`/g);
+    print join("\t", $h->[1], $f, $line, join(",", @k)), "\n";
+  }
+}
+'
+
+# The one site entitled to name fewer keys than the canon, and exactly which
+# ones. --wss-todo writes two records and states the resolution rule for those
+# two; the other two are not its business. Matched by path SUFFIX so the reorg
+# does not silently promote it back to a full-set site — and if the suffix ever
+# stops matching, the site fails as an unexplained subset rather than passing.
+# Every key it names is still checked against the canon below, so this list
+# grants a shorter list, never a stale one.
+#
+# BOTH spellings are required and neither is redundant. This doctor runs in two
+# trees: the source tree, where the skill is `skills/record/`, and the
+# published assembly, where wss-publish.sh has stripped the `wss-` prefix and
+# the same file is `skills/record/`. Listing only the source spelling does not
+# make the check lenient in the assembly — it makes it FAIL there, because an
+# unrecognised subset is reported as drift, which then also trips the suite's
+# blind-parser guard. That is a Gate 3 failure on a tree with nothing wrong
+# with it, and it is how v0.10.2's publication broke: the check landed in
+# 6c2c088, after the last green publish, so no gate ever ran it post-strip.
+# Same class as the Gate 2 backstop at wss-publish.sh:297 — read that comment
+# before touching either.
+sp_declared_subset_() { # rel-path, comma-joined keys
+  case $1 in
+    */wss:record/SKILL.md | record/SKILL.md \
+    | */record/SKILL.md | record/SKILL.md) [ "$2" = "todo,openDecisions" ] ;;
+    *) false ;;
+  esac
+}
+
+sp_rows=$(sp_files_ | xargs -0 -r perl -e "$SPLITTABLE_PL" 2>/dev/null || true)
+sp_canon_rows=$(printf '%s\n' "$sp_rows" | grep '^canon' || true)
+sp_site_rows=$(printf '%s\n' "$sp_rows" | grep '^site' || true)
+sp_canon_n=$(printf '%s' "$sp_canon_rows" | grep -c . || true)
+sp_n=$(printf '%s' "$sp_site_rows" | grep -c . || true)
+
+if [ "$sp_canon_n" -eq 0 ] && [ "$sp_n" -eq 0 ]; then
+  # Not a suite tree — an adopted project carries neither the contract nor
+  # anything restating it, and has nothing here to disagree about.
+  pass "no splittable-set contract here, and nothing restating one"
+elif [ "$sp_canon_n" -eq 0 ]; then
+  fail "$sp_n site(s) restate the splittable set and no contract states it.
+        The authority is the line reading '**Splittable: \`todo\`, ...**' in
+        workflow/WSS.LANE-CONTRACT.md. Either it moved somewhere this walk does
+        not reach, or its wording changed — and the copies are now the only
+        statement of the rule, which is what the contract exists to prevent."
+elif [ "$sp_canon_n" -gt 1 ]; then
+  fail "the splittable set is declared as canon in more than one place:
+        $(printf '%s\n' "$sp_canon_rows" | while IFS=$'\t' read -r _ f l _; do
+              printf '%s:%s ' "${f#"$CLAUDE_DIR"/}" "$l"; done)
+        One authority, or the restatements have two things to agree with.
+        workflow/WSS.LANE-CONTRACT.md owns it."
+elif [ "$sp_n" -eq 0 ]; then
+  # The whole safety of this check. Every site is found by wording, so a
+  # wording change makes the walk match nothing and report green forever while
+  # checking nothing at all.
+  fail "the splittable set is stated in $(printf '%s' "$sp_canon_rows" |
+          cut -f2 | sed "s|^$CLAUDE_DIR/||") and NOTHING restates it.
+        Every dispatching skill used to carry the key list so its reader need
+        not follow a link. Zero sites means the markers this walk looks for
+        ('overrides \`WSS.record.X\` for', 'only the splittable keys') have been
+        reworded or the files moved out of md_files_()'s reach — either way
+        this check is now walking an empty set and passing."
+else
+  sp_canon=$(printf '%s' "$sp_canon_rows" | cut -f4)
+  sp_canon_at="$(printf '%s' "$sp_canon_rows" | cut -f2 | sed "s|^$CLAUDE_DIR/||"):$(printf '%s' "$sp_canon_rows" | cut -f3)"
+  sp_full=0
+  sp_sub=0
+  sp_bad=0
+  while IFS=$'\t' read -r _ f ln keys; do
+    [ -n "$f" ] || continue
+    rel=${f#"$CLAUDE_DIR"/}
+    if [ "$keys" = "$sp_canon" ]; then
+      sp_full=$((sp_full + 1))
+      continue
+    fi
+    # A shorter list is allowed only where it is declared, and only if every
+    # key it names is still one the canon carries — otherwise a canon that
+    # dropped a key would leave the exemption pinning a key that no longer
+    # splits, which is the drift this check exists for wearing a permit.
+    sp_stale=0
+    for k in $(printf '%s' "$keys" | tr ',' ' '); do
+      case ",$sp_canon," in *",$k,"*) ;; *) sp_stale=1 ;; esac
+    done
+    if [ "$sp_stale" -eq 0 ] && sp_declared_subset_ "$rel" "$keys"; then
+      sp_sub=$((sp_sub + 1))
+      continue
+    fi
+    fail "$rel:$ln restates the splittable set as
+        '$keys' where $sp_canon_at states '$sp_canon'.
+        Either the contract gained or lost a key and this copy was not
+        followed, or this copy was edited alone. The contract is the authority;
+        a site that means to name a SUBSET has to be declared as one in
+        wss-doctor.sh's sp_declared_subset_, with which keys and why."
+    sp_bad=$((sp_bad + 1))
+  done < <(printf '%s\n' "$sp_site_rows")
+  [ "$sp_bad" -eq 0 ] &&
+    pass "every splittable-set restatement matches $sp_canon_at ($sp_full full, $sp_sub declared subset)"
+fi
+
+# ------------------------------------------------------------- one writer each
+
+head_ "Sole writers"
+
+# One record, one writer is the invariant the whole ownership matrix exists to
+# state, and until now nothing asserted it — the matrix was 30-odd rows of dense
+# prose checked by reading. A second row quietly claiming a record another row
+# already owns produces exactly the drift the invariant forbids: two procedures
+# each maintaining the half they know about, neither of them wrong about it.
+#
+# Two normalisations keep this from needing exceptions, and both follow the
+# matrix's own wording rather than working around it. A cell beginning "nothing"
+# disclaims ownership, so its prose may name records freely. And a row whose
+# skill dispatches to a `writers/` procedure is attributed to that procedure,
+# because the cell already says the record is the writer's and the skill "writes
+# nothing" — attributing it to the skill is what would make the writer's own row
+# read as a second claim.
+sole_writers_() { # file — "record<TAB>writer" for every row that claims one
+  awk '
+    /^\|[[:space:]]*Verb[[:space:]]*\|/ { t = 1; next }
+    t && /^\|[[:space:]]*[-:]/ { next }
+    t && /^\|/ {
+      n = split($0, f, "|")
+      if (n >= 7) {
+        skill = f[4]; own = f[6]; who = ""
+        if (match(skill, /writers\/[A-Za-z0-9.-]+\.md/)) who = substr(skill, RSTART, RLENGTH)
+        else if (match(skill, /`[^`]+`/)) who = substr(skill, RSTART + 1, RLENGTH - 2)
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", own)
+        if (own !~ /^\*\*nothing/)
+          while (match(own, /WSS\.(record|lanes)\.[a-zA-Z]+|WSS\.sweeps/)) {
+            print substr(own, RSTART, RLENGTH) "\t" who
+            own = substr(own, RSTART + RLENGTH)
+          }
+      }
+      next
+    }
+    t { t = 0 }
+  ' "$1" | sort -u
+}
+own_matrix="$CLAUDE_DIR/workflow/WSS.OWNERSHIP.md"
+if [ -f "$own_matrix" ]; then
+  sw=$(sole_writers_ "$own_matrix")
+  # The blind-parser guard every comparison here carries, and it has to be the
+  # HEADER rather than the row count: a matrix in which every row disclaims
+  # ownership legitimately yields no claims, and treating that as blindness
+  # would fail a correct file. A renamed header is the failure worth catching,
+  # because it leaves a parser reporting no conflicts over a table full of them.
+  if ! grep -qE '^\|[[:space:]]*Verb[[:space:]]*\|.*\|[[:space:]]*Sole writer of[[:space:]]*\|' "$own_matrix"; then
+    fail "no ownership matrix found in workflow/WSS.OWNERSHIP.md — the check needs
+        a '| Verb | Flag | ... | Sole writer of | ...' table, and a matrix that
+        cannot be read has no duplicate writers by construction"
+  elif [ -z "$sw" ]; then
+    pass "the ownership matrix is readable and no row claims a record"
+  else
+    sw_dup=$(printf '%s\n' "$sw" | cut -f1 | uniq -d)
+    if [ -z "$sw_dup" ]; then
+      pass "every record has exactly one writer ($(printf '%s\n' "$sw" | grep -c .) claims)"
+    else
+      for k in $sw_dup; do
+        fail "two writers claim $k: $(printf '%s\n' "$sw" | awk -F'\t' -v k="$k" '$1==k{printf "%s ", $2}')
+        One record, one writer. Whichever row is wrong, both currently read as
+        authoritative and each will maintain the half it knows about."
+      done
+    fi
+  fi
+else
+  pass "no ownership matrix to check"
 fi
 
 # --------------------------------------------------------------- audit reports
@@ -1621,6 +2114,7 @@ else
   KNOWN_KEYS='WSS.manifest WSS.branch WSS.record WSS.commands WSS.gate WSS.agents WSS.lanes WSS.audit
 WSS.onSchemaChange WSS.hazards WSS.commitTrailer WSS.sweeps WSS.localCI
 WSS.suite WSS.suite.version WSS.suite.commit
+WSS.docs WSS.docs.root WSS.docs.languages WSS.docs.devCommand
 WSS.branch.integration WSS.branch.publish WSS.branch.mergeMethod
 WSS.record.todo WSS.record.roadmap WSS.record.releases WSS.record.changelog WSS.record.handoff WSS.record.decisions
 WSS.record.decisionsIndex WSS.record.openDecisions WSS.record.behaviour WSS.record.reference
@@ -1650,7 +2144,7 @@ WSS.gate.coverage'
     unknown=$((unknown + 1))
   done < <(jq -r '
       (.WSS // empty | keys[] | "WSS.\(.)"),
-      (["branch","record","commands","agents","lanes","audit","suite"][] as $k
+      (["branch","record","commands","agents","lanes","audit","suite","docs"][] as $k
          | (.WSS[$k] // empty | keys[]? | "WSS.\($k).\(.)")),
       (.WSS.record.tooling // empty | keys[]? | "WSS.record.tooling.\(.)")
     ' "$manifest" 2>/dev/null | sort -u)
@@ -1675,6 +2169,100 @@ WSS.gate.coverage'
         \"version\" and \"commit\". update ignores a malformed stamp and
         detects from the tree — the stamp as written buys nothing."
     fi
+  fi
+
+  # The docs block. workflow/checks/WSS.DOCS-AUDIT.md resolves every one of its
+  # shell blocks from these three values, so a wrong one is silent in the worst
+  # way an audit can be: a root that resolves to nothing makes every check walk
+  # an empty set and report a clean site. Fail rather than warn — unlike the
+  # suite stamp, nothing here re-derives the truth from the tree once the key
+  # is present, because the key exists precisely to override the fallback.
+  if jq -e '.WSS.docs != null' "$manifest" >/dev/null 2>&1; then
+    docs_bad=0
+    droot=""
+    if ! jq -e '.WSS.docs | type == "object"' "$manifest" >/dev/null 2>&1; then
+      fail "WSS.docs is not an object. It carries \"root\", \"languages\" and
+        \"devCommand\" — see workflow/WSS.MANIFEST.md."
+      docs_bad=1
+    else
+      if jq -e '.WSS.docs | has("root")' "$manifest" >/dev/null 2>&1; then
+        if ! jq -e '.WSS.docs.root | type == "string" and length > 0' \
+              "$manifest" >/dev/null 2>&1; then
+          fail "WSS.docs.root is not a non-empty string. It names the directory
+        the site's markdown lives in, relative to the project root."
+          docs_bad=1
+        else
+          droot=$(jq -r '.WSS.docs.root' "$manifest")
+          if [ ! -d "$PWD/$droot" ]; then
+            fail "WSS.docs.root declares '$droot', which is not a directory here.
+        Every docs check then walks an empty set and reports a clean site —
+        the one failure an audit cannot survive. Fix the path, or drop the key
+        and let the fallback (docs/, doc/, documentation/, website/) resolve it."
+            docs_bad=1
+          fi
+        fi
+      fi
+      if jq -e '.WSS.docs | has("languages")' "$manifest" >/dev/null 2>&1; then
+        if ! jq -e '.WSS.docs.languages
+                      | type == "array" and length > 0
+                        and (map(type == "string" and length > 0) | all)' \
+              "$manifest" >/dev/null 2>&1; then
+          fail "WSS.docs.languages is not a non-empty array of non-empty strings.
+        Its first element is the ROOT language, whose pages sit at the docs
+        root; every later one is a subdirectory under it. Absent means
+        monolingual, which is what an empty list was trying to say."
+          docs_bad=1
+        else
+          # Every element AFTER the first is a translation living at
+          # <root>/<lang>/; the first IS the root language and lives at <root>
+          # itself. A declared translation whose directory does not exist is the
+          # same silent green the root check above exists to prevent —
+          # WSS.DOCS-AUDIT.md section 5 loops $TRANSLATIONS[], finds no pages to
+          # compare, and reports parity for a language that is not there.
+          #
+          # warn, never fail, and deliberately NOT setting docs_bad: a language
+          # declared before its first page is written is a legitimate
+          # intermediate state, and the pass line below claims only that the
+          # shape is declared rather than guessed, which stays true. That is the
+          # whole difference from a bad root, which nothing re-derives.
+          dlroot="$droot"
+          # Same fallback order as workflow/WSS.MANIFEST.md's for a root left
+          # undeclared — checking <lang>/ against a root this resolves
+          # differently from the audit would report on a tree neither walks.
+          # Only where the key is absent, though: a "root" that is present and
+          # malformed has already failed above, and falling back there would
+          # report the languages against a directory the audit will never walk.
+          if [ -z "$dlroot" ] &&
+             ! jq -e '.WSS.docs | has("root")' "$manifest" >/dev/null 2>&1; then
+            for d in docs doc documentation website; do
+              [ -d "$PWD/$d" ] && { dlroot=$d; break; }
+            done
+          fi
+          if [ -n "$dlroot" ] && [ -d "$PWD/$dlroot" ]; then
+            while IFS= read -r dlang; do
+              [ -n "$dlang" ] || continue
+              [ -d "$PWD/$dlroot/$dlang" ] && continue
+              warn "WSS.docs.languages declares '$dlang', but $dlroot/$dlang/ does not
+        exist. Only the FIRST element lives at the docs root; every later one is
+        a translation with its own directory, so the parity check in
+        workflow/checks/WSS.DOCS-AUDIT.md walks an empty set for this one and
+        reports parity for a language that is not there. Expected while the
+        pages are still to be written — otherwise the name or the order is wrong."
+            done < <(jq -r '.WSS.docs.languages | .[1:] | .[]' "$manifest" 2>/dev/null)
+          fi
+        fi
+      fi
+      if jq -e '.WSS.docs | has("devCommand")' "$manifest" >/dev/null 2>&1; then
+        if ! jq -e '.WSS.docs.devCommand | type == "string" and length > 0' \
+              "$manifest" >/dev/null 2>&1; then
+          fail "WSS.docs.devCommand is not a non-empty string. It is the shell
+        command that starts the site's dev server, for the render step no grep
+        replaces; absent means that step is skipped."
+          docs_bad=1
+        fi
+      fi
+    fi
+    [ "$docs_bad" -eq 0 ] && pass "WSS.docs resolves: the site shape is declared, not guessed"
   fi
 
   while IFS= read -r p; do
@@ -1731,8 +2319,8 @@ fi
 head_ "Worktree lanes"
 
 # `WSS.lanes.named` splits the four forward-looking records into per-lane files —
-# the resolution rule is workflow/WSS.MANIFEST.md's, the splittable set is
-# WSS.RECORD-CONTRACT.md's. Everything that can go wrong with a split is silent
+# the resolution rule and the splittable set are workflow/WSS.LANE-CONTRACT.md's.
+# Everything that can go wrong with a split is silent
 # from inside a session: a selector naming a lane nobody declared resolves to
 # the unsplit records, so two worktrees quietly share one file; a half-split
 # does the same for whichever lane was left out; a lane redirecting a record
@@ -1777,7 +2365,7 @@ else
         SIBLING of records, not a key inside it. Everything under records has
         exactly one writer and a queue has many, which is what the nesting
         says. Move it to WSS.lanes.named.$lname.transfer.
-        workflow/WSS.RECORD-CONTRACT.md."
+        workflow/WSS.LANE-CONTRACT.md."
         lane_bad=$((lane_bad + 1))
         continue ;;
       releases)
@@ -1785,7 +2373,7 @@ else
         splits. It holds the milestones, their versions and their marks, and
         --wss-release reads it and no other planning record; a per-lane copy
         is a release checkpoint one worktree cut for the whole project. Goals
-        split by lane, in roadmap. workflow/WSS.RECORD-CONTRACT.md."
+        split by lane, in roadmap. workflow/WSS.LANE-CONTRACT.md."
         lane_bad=$((lane_bad + 1))
         continue ;;
       *)
@@ -1793,7 +2381,7 @@ else
         record. Only todo, openDecisions, handoff and roadmap may split by
         lane: the append-only logs are single timelines, releases must be
         singular to stay a release checkpoint, and behaviour and reference
-        describe one system. workflow/WSS.RECORD-CONTRACT.md."
+        describe one system. workflow/WSS.LANE-CONTRACT.md."
         lane_bad=$((lane_bad + 1))
         continue ;;
     esac

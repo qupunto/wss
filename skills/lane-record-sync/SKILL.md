@@ -21,7 +21,8 @@ run is expensive, and it writes into every lane's inbox. Both are reasons it
 should never fire from a phrase in a sentence.
 
 Who owns what is [`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md); what a
-queue holds and what a record holds is
+queue holds, and every other lane rule, is
+[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md); what a record holds is
 [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md); the keys are
 [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md).
 
@@ -171,11 +172,10 @@ contradicting each other, and a conflict left unmediated is the one thing this
 skill must not carry forward silently.
 
 Once resolved, **file the outcome into every affected lane's transfer queue,
-marked `[critical → why]`.** The marker is legitimate because the user ruled on
-it in this turn, which is the whole condition
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md) puts on a lane
-receiving a critical item it did not raise — the same condition step 3's *accept
-as critical* satisfies.
+marked `[critical → why]`** — legitimate here because the user just ruled, which
+is the one condition
+[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
+`[critical → why]` section puts on the marker.
 
 **Never write another lane's records directly**, even where the correction is
 one line and obviously right, and even from the main checkout where the files
@@ -207,9 +207,8 @@ whether the next run asks again.**
 | **Decline** | no | **does not ask** — see below |
 
 **`[critical → why]` is written only where the user said so in this turn** —
-here, or at step 2's mediation. The standing rule is that *a lane* may not set
-another lane's priority; the user always may, and this gate is one of the two
-places they do it.
+this gate and step 2's mediation are the two places, per the contract section
+cited there.
 
 ### Defer and Decline are not the same answer
 
@@ -230,12 +229,6 @@ decision** — [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)
 was derived from and why it was rejected. One entry rather than one per item:
 they were ruled on together, and N entries would be N index lines for one
 sitting.
-
-**Read `WSS.record.decisionsIndex` in step 1 and do not re-present anything a
-previous run declined.** The index is one line per settled decision and is the
-cheap way in — the same lookup `--wss-plan` and `--wss-start` already use. Say in
-the run's opening how many derivations were suppressed that way, so a shrinking
-list is visible rather than mysterious.
 
 **A decline is not permanent by machinery, it is permanent by record.** Nothing
 here detects that the source record changed and the derivation became valid

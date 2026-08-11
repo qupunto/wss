@@ -1,6 +1,6 @@
 ---
 name: docs
-description: "Author and maintain a project's long-form documentation site, every claim anchored to an exact source path. Invoke on `--wss-docs`, `/wss:docs`, \"document this project / feature / module\", \"write docs for X\", \"update the docs after <change>\", \"set up docs\", or a request for an ADR, architecture write-up, runbook, glossary or onboarding guide."
+description: "Author and maintain a project's long-form documentation site, every claim anchored to an exact source path. Invoke on `--wss-docs`, `/wss:docs`, \"document this project / feature / module\", \"write docs for X\", \"update the docs after <change>\", \"set up docs\", or a request for an ADR, architecture write-up, runbook, glossary, translation or onboarding guide."
 ---
 
 # docs
@@ -80,10 +80,16 @@ ls .claude/skills/ 2>/dev/null                                       # a project
 cat docs/index.html docs/_sidebar.md 2>/dev/null                     # docsify?
 ```
 
+**A `WSS.docs` block in `.claude/WSS.WORKFLOW.json` is the authority wherever it is declared,
+and the probe above is only the fallback**: `root` names the site directory (absent, the first
+of `docs/`, `doc/`, `documentation/`, `website/` that exists), `languages` lists the root
+language first and each translation subdirectory at `<root>/<lang>/` after it (absent means
+monolingual), and `devCommand` is the live-render command (absent, that step is skipped).
+
 | Condition | Mode | Go to |
 |---|---|---|
 | A project-scoped docs skill exists | **Defer** — hand off, don't duplicate | — |
-| No docs directory anywhere | **Scaffold**, then write the first page | [Scaffold](#scaffold) |
+| No docs directory anywhere | **Scaffold**, then write the first page | [Plan](#plan), then [Scaffold](#scaffold), plus `references/WSS.SITE-ASSEMBLY.md` — the only mode that reads it |
 | Target has no page or section yet | **New page** (or new `##` section) | [Write](#write) |
 | Target is already documented, and code has changed | **Update** — rewrite the affected sections only | [Update](#update) |
 | Asked to check/verify/audit docs, or a refactor just landed | **Audit** | [`workflow/checks/WSS.DOCS-AUDIT.md`](../../workflow/checks/WSS.DOCS-AUDIT.md) |
@@ -170,25 +176,39 @@ this skill prefers it.
 
 ## Plan
 
-Before writing anything in Scaffold or New-page mode, decide the page set. `references/WSS.TAXONOMY.md`
-defines the canonical tiers (T1–T11), the pages under each, an include-when rule per page,
-and minimum viable sets per project profile (web, mobile, API, full-stack, library, data,
-monorepo).
+Two modes decide something before anything is written, and they ask different questions.
 
-1. Identify the project's shape and pick the closest profile.
+**New page is one line — decide the tier row, write the page, wire it up.** The site already
+exists, which is what makes the mode New page rather than Scaffold, so there is no page set to
+settle and no tier walk to do: [Write](#write) is that line end to end, and the mode table
+routes straight to it. `references/WSS.SITE-ASSEMBLY.md` is never loaded here, and nothing
+numbered below applies.
+
+**Scaffold decides a page *set*, and the numbered procedure is its alone.**
+`references/WSS.TAXONOMY.md` defines the canonical tiers (T1–T11), the pages under each, and
+an include-when rule per page; the minimum viable set per project profile is
+`references/WSS.SITE-ASSEMBLY.md`'s, which only this mode loads.
+
+1. Identify the project's shape ([`workflow/WSS.PROJECT-SHAPE.md`](../../workflow/WSS.PROJECT-SHAPE.md)),
+   pick the closest profile, and take its minimum viable set from
+   `references/WSS.SITE-ASSEMBLY.md`.
 2. Walk the tiers in order, keeping a page **only if the thing it documents exists in the
-   codebase today** — not if it should (G8).
+   codebase today** — not if it should (G8). Drop every tier that comes up empty: a CLI
+   tool has no T4-web, no T6, and possibly no T5.
 3. Merge at small scale, split at large: below ~6 items keep a table on the guide page;
    past ~250 lines or two audiences, split (G14, G15).
 4. **State the proposed page set before writing it**, in tier order, and say what you
    dropped and why. Then write pages one at a time, wiring each up as you go (G12).
-5. **A page set larger than one session is state, and this skill stores none.** Hand the
-   unwritten pages to `--wss-todo` so they outlive the session in the project's backlog, and
-   `--wss-track` them within it. Never keep the plan only in the reply — on a large site that is
-   how half a documented codebase silently becomes the whole record of what was intended.
 
-Never emit the whole tier list as headings-with-a-sentence. Tier-shaped emptiness signals
-coverage that isn't there and discredits the pages that are real.
+Never emit the whole tier list as headings-with-a-sentence — the walk's own failure mode, and
+no other mode walks it. Tier-shaped emptiness signals coverage that isn't there and discredits
+the pages that are real.
+
+**Whichever mode is owed them, pages decided and not yet written are state, and this skill
+stores none.** Hand the unwritten ones to `--wss-todo` so they outlive the session in the
+project's backlog, and `--wss-track` them within it. Never keep the plan only in the reply —
+on a large site that is how half a documented codebase silently becomes the whole record of
+what was intended.
 
 ## Guidelines
 
@@ -213,12 +233,19 @@ Only when no docs directory exists. The script creates the shell — never conte
 S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 [ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
 
-bash "$S"/skills/docs/assets/wss-scaffold.sh docs "<Project Name>" [root-lang [translation-lang ...]]
+bash "$S"/skills/docs/assets/wss-scaffold.sh "<Project Name>" [root-lang [translation-lang ...]]
 ```
 
+**The docs root is not an argument.** The script resolves it from `WSS.docs.root` and that
+key's declared fallback chain ([`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)), and
+announces the root it resolved — passing a literal `docs` here is how a project whose
+manifest says `website` gets scaffolded into the wrong tree. Override it only to scaffold
+somewhere the manifest does not yet describe, with `--root <dir>` before the project name.
+
 ```bash
-bash "$S"/skills/docs/assets/wss-scaffold.sh docs "Acme UI"        # monolingual
-bash "$S"/skills/docs/assets/wss-scaffold.sh docs "SIME UI" en ca  # root English, docs/ca/ Català
+bash "$S"/skills/docs/assets/wss-scaffold.sh "Acme UI"                # monolingual
+bash "$S"/skills/docs/assets/wss-scaffold.sh "SIME UI" en ca          # root English, <root>/ca/ Català
+bash "$S"/skills/docs/assets/wss-scaffold.sh --root website "Acme UI" # override the resolved root
 ```
 
 It refuses to touch an existing directory, skips `_navbar.md` unless multilingual, and
@@ -265,8 +292,9 @@ caller's context, at whatever size it has already reached.
 
 | File | Read it when |
 |---|---|
-| `references/WSS.GUIDELINES.md` | Any G-number is cited — G14, G15 and G17 are this skill's, the rest the writer's |
+| `references/WSS.GUIDELINES.md` | Always, in practice — G-numbers are cited here and in every other reference, so the gate is never false. It is a separate file because several consumers cite it and none owns it, not because it can be skipped; G14, G15 and G17 are this skill's, the rest the writer's |
 | `references/WSS.TAXONOMY.md` | Deciding what pages a project needs, and which tier a subject belongs to |
+| `references/WSS.SITE-ASSEMBLY.md` | **Scaffold mode only** — the minimum page set a profile implies, and how the sidebar is assembled. New page and Update decide one page against one tier row and never load it (loaded from taxonomy, skip otherwise) |
 | `references/WSS.TIER-MOBILE.md` | The project has a mobile app (loaded from taxonomy, skip otherwise) |
 | `references/WSS.TIER-GOVERNANCE.md` | A compliance, legal, or regulatory obligation applies |
 | `references/WSS.SITE-SETUP.md` | Scaffolding, or changing docsify config |

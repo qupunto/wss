@@ -4,7 +4,7 @@ End-to-end journeys through the suite. The domain here is the workflow itself:
 this project's "business model" is what happens between a person typing a flag
 and a record being true afterwards.
 
-> **Verified at `c527d2e`.** The stamp moves when someone re-reads this flow
+> **Verified at `cf85f85`.** The stamp moves when someone re-reads this flow
 > against source, never when the source changes — so a diff on this page means
 > exactly one thing: somebody checked.
 

@@ -8,6 +8,73 @@ reasoning behind each change, is `WSS.CHANGELOG.md`. This file is deliberately
 free of that: if an entry here only makes sense to someone editing the suite, it
 belongs in the other one.
 
+## 0.10.3 — 2026-08-11
+
+**This release is `0.10.2` plus one fix — `0.10.2` never reached you.** Its
+publication stopped at the final safety check and nothing was ever pushed, so
+everything listed under it below arrives here instead. If you are updating, this
+is the one to take; there is no `0.10.2` to have missed.
+
+**What stopped it.** The step that prepares this repository for publication
+rewrites the suite's own commands into their installed form. It mistook a piece
+of pattern-matching syntax for one of those commands and rewrote it, which broke
+the suite's health check inside the copy being published — while leaving the
+original untouched. The check then reported a problem that did not exist, and
+the release refused to go out. That refusal was the system working: the copy was
+never pushed anywhere.
+
+Fixed, and deliberately fixed narrowly. The obvious broader fix would have
+introduced the same kind of mistake in written documentation instead, so the
+wider repair is recorded as outstanding work rather than rushed into a patch.
+
+**Nothing you have written, declared or typed is affected**, and nothing needs
+doing beyond an ordinary update.
+
+## 0.10.2 — 2026-08-11
+
+**You can now tell the suite where your documentation site is.** Until now the
+checks that read your docs assumed one particular layout — a folder called
+`docs`, one language, one dev-server command — and quietly did the wrong thing
+for anyone whose site was arranged differently. You can now say where the site
+lives, which languages it has and which is the main one, and how to start its
+dev server. None of it is required: if you say nothing, the suite looks for
+`docs`, `doc`, `documentation` and `website` in that order, treats the site as
+single-language, and skips the steps it cannot run instead of guessing. Setup
+will offer to write these for you.
+
+**Scaffolding a docs site no longer needs to be told the folder.** It works out
+where your site goes and tells you where it settled.
+
+**Two more standing checks, and one that can argue in your favour.** The
+periodic sweeps gain a look for writing that is true today but built to go stale
+— a second copy of something nothing keeps in step, a claim no reader can test —
+and a look for parts of the suite paying more of your context than their job
+needs. A third check asks whether a command will actually be reached when you
+describe your problem in your own words. It is the only one that can conclude a
+description is too short: everything else pushes one way, and nothing was
+measuring whether what survived still worked.
+
+**The rules are easier to find.** Working across several worktrees, and the
+convention for what the suite's own files are called, each have their own page
+now instead of being spread across three. Nothing about either rule changed —
+only where you read it.
+
+**A settings file no longer arrives with our model choice in it.** The suite
+ships a `settings.json`, and a machine-local model preference had been committed
+into it — installing the suite would have overridden whichever model you had
+chosen. It is gone, and that kind of preference now lives in a file that never
+ships.
+
+**Fixes.** A translation folder that was declared but empty used to pass the
+translation check instead of failing it. A disabled command could still swallow
+another one you had typed alongside it. Several internal notes and counts that
+had gone out of date were corrected or removed.
+
+**No action needed.** Nothing you have declared, written or typed changes
+meaning in this release. If you are on `0.10.0` or later you are current after
+an ordinary update; if you are on anything older, `0.10.0`'s note below still
+applies and you need to reinstall rather than update.
+
 ## 0.10.1 — 2026-08-10
 
 **You can now ask a project to describe itself.** `wss-tree-survey.sh`, run by

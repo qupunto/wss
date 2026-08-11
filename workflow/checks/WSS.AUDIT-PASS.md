@@ -49,9 +49,57 @@ goes wherever audit coverage is currently thinnest.
   distinguishable from "never looked at".
 - **The last step** — dedup every finding against `WSS.record.audits`, and place
   the verdict against the series' continuity, dimension by dimension.
+- **Anchored ratings** — every score states, in place, the standard its 10
+  would satisfy, so the number is a distance from a defined ceiling rather
+  than an impression; and every rated dimension ends with the concrete moves
+  that would raise it. (Owner's rule.)
+- **The proposals annex** — after the last step, an annex of improvement
+  proposals ranked by leverage over effort, each naming its machinery cost and
+  residual maintenance. Proposals only: nothing in the annex is applied by the
+  pass itself. (Owner's rule.)
 
 A pass that adds a feature adds it here, in the same change — this list is the
 next pass's checklist.
+
+## How the measuring is paid for
+
+A delegated survey is dominated by deterministic counting, which pays model
+tokens for arithmetic. The split below is part of the method, not an
+optimisation a pass may skip:
+
+- **`./wss-audit-assets.sh --base <previous pass's HEAD>` emits the
+  deterministic measurements** — the header block's mechanical facts, the
+  per-skill size table, the always-on components, sweep distances, record
+  counts. Run it instead of delegating any survey whose questions are counts.
+  The script deliberately does not run `wss-publish.sh`: the publish arc is a
+  gate the pass exercises itself, watching it.
+- **The two judgment surveys — delta-claim falsification and chain
+  classification — go to subagents on the smallest capable model tier at low
+  effort**, never the session model, with the verdict format pinned in the
+  brief: `file:line` citations, byte counts, no file dumps. Judgment here
+  means reading and classifying; the disposition of what comes back stays
+  with the pass.
+- **What never leaves the pass's own context:** fixtures, verdicts, findings,
+  scores, the dedup step, and the filing.
+- **Named maintenance:** a measurement the script silently stops emitting is
+  caught by nothing except the dedup step against the previous report's
+  header block — check the script's output covers the previous pass's
+  mechanical features before trusting it.
+
+## The chain-measurement convention
+
+Stated here so a pass's chain numbers are reproducible by the next one. A
+flag's same-window chain is measured as:
+
+- **the flag's heaviest unconditional mode** (full adoption, not amendment;
+  write mode, not read) — a lighter mode may be reported too, labelled;
+- **transitive through every procedure invoked in-window**, including a
+  writer's own unconditional references — a read dispatched to a subagent
+  context counts zero;
+- **condition-gated reads excluded** (mode gates, lane gates, provider
+  gates), each exclusion citing the line that gates it;
+- **row-scoped authority lookups excluded** (reading one row of the
+  ownership matrix is not reading the file).
 
 ## Filing
 
@@ -60,3 +108,11 @@ its index row goes to `WSS.record.audits` through `audit-writer`, in the same
 change — `wss-doctor.sh` fails a report file that has no row. Rows and report
 are frozen once written; remediation is recorded by the decision log and the
 history, never by editing the pass.
+
+**A finding that is a class rather than an instance names the sweep that owns
+it.** Where the pass finds context bloat, writing structured to go false, or a
+trigger that will misroute — and finds it across files rather than in one — the
+report says to run `tools`' token-economy, rot-resistance or routing job.
+That recommendation is one of those jobs' standing triggers, and it is what
+stops a pass fixing one instance and leaving the class for the next pass to
+re-find.

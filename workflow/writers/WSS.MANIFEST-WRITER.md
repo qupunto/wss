@@ -2,10 +2,7 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md). Sole writer of `.claude/WSS.WORKFLOW.json`, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
-**Sole writer of `.claude/WSS.WORKFLOW.json`.** Everything else in this workflow that
-needs a key set, corrected or removed calls this procedure; who owns what is
-[`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md), and which keys
-may exist at all is [`WSS.MANIFEST.md`](../WSS.MANIFEST.md), which is the
+Which keys may exist at all is [`WSS.MANIFEST.md`](../WSS.MANIFEST.md), the
 authority this procedure validates against.
 
 **It decides nothing.** The caller arrives having already settled what the value
@@ -94,9 +91,25 @@ Three checks, and all three are cheap:
   queue, which many lanes write and `records` never does. It carries the same
   all-lanes-or-none rule and its path must exist.
   [`WSS.MANIFEST.md`](../WSS.MANIFEST.md) is the authority on both.
+
+  **`WSS.docs` holds one path and two things that are not paths.** `root` is a
+  **directory** and must exist — a file at that path passes a bare `-e` and then
+  every docs check walks nothing. `languages` is an array whose **first element
+  is the root language**, so a caller handing over a translation-first list is
+  handing over an inverted parity check, not a reordering: confirm the order
+  rather than writing it as given. `devCommand` is a command, so there is nothing
+  to stat; refuse it only when it is not a non-empty string.
+
+  **Leave `root` out where the fallback already resolves it** — `docs/`, `doc/`,
+  `documentation/`, `website/`, first existing. Writing a key that restates the
+  default is not harmless here: it is a second place the site's location has to
+  be kept true. Same for a `languages` list of one, which says exactly what
+  absence says.
 - **The name is the existing one where one fits.** Two names for one concept is
-  the failure `WSS.MANIFEST.md` exists to end — `indexCheck` where every consumer
-  wants `indexRegen`.
+  the failure `WSS.MANIFEST.md` exists to end. Check the key against that
+  contract's tables before coining one: a name that is merely *near* a
+  documented key is the case to catch, and a genuine distinction —
+  `indexRegen` rewrites, `indexCheck` verifies without writing — is not one.
 
 **A key that fails any of these is left out**, and the caller is told which and
 why. A missing key degrades gracefully and every skill says so in one line; a

@@ -23,7 +23,7 @@ A project may run any number of lane roadmaps and still have exactly one release
 checkpoint. Reading a roadmap here would undo that.
 
 Where a `.claude/WSS.LANE` selector names a lane, `WSS.lanes.named.<lane>.records.todo`
-overrides `WSS.record.todo` — [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s
+overrides `WSS.record.todo` — [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
 resolution rule; the changelog and the release list never split.
 
 ## The `--wss-release` shorthand
@@ -220,10 +220,18 @@ when the manifest trails the newest tag.
 is one line and the agent already drafted it. Then have `git-writer` commit it —
 the history is its record, and this skill does not write one by hand.
 
+**A resumed release re-checks the entry, not just the tag.** Where an entry for
+the confirmed version already exists, compare the commit it was written at
+against the range the tag will contain. If the range has grown since, re-invoke
+`changelog-writer` before tagging: an entry describes a range, and a tag placed
+past the commits it summarised ships work no entry mentions.
+
 **Then the public changelog, if the project keeps one.** Where a conventional
 `CHANGELOG.md` exists *and is not what `WSS.record.changelog` points at*, it is the
-user-facing log and it needs its own entry for this version. Write it here —
-it is not a record, so no writer owns it.
+user-facing log and it needs its own entry for this version. **It goes through
+`changelog-writer` too**, not written here: the file is not a record, but this
+skill writes nothing at all ([`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md#the-matrix)),
+and the writer is the one place both entries' split is stated.
 
 It is a **different entry, not a copy**. `WSS.record.changelog` says which contract
 moved and why; this one says what someone using the project would notice, in

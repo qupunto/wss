@@ -20,9 +20,9 @@ regeneration.
 `WSS.record.decisions`, `WSS.record.decisionsIndex`, `WSS.record.openDecisions`, and
 `WSS.commands.indexRegen`. Where a `.claude/WSS.LANE` selector names a lane,
 `WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for `todo` and
-`openDecisions` — [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s resolution
+`openDecisions` — [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s resolution
 rule; `WSS.record.decisions` never splits, and under lanes it is fed by promotion,
-per [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md). The fallbacks
+per the same file. The fallbacks
 when a key is absent are
 [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s, not this file's — say which ones
 you used. `WSS.record.decisionsIndex` is the one with no fallback: without it, append
@@ -127,9 +127,9 @@ Three rules that survive the medium, and are the ones most easily lost:
 
 - **The reasoning still goes to `WSS.record.decisions`, never into the item.** An
   issue body is not a decision log. Link to the decision from the item — and
-  note that the file form's closing line, "Deferred — see the decision log",
-  stops being a pointer the moment it is read on github.com rather than three
-  files away. Give a URL or a repo-relative path that resolves from there.
+  note that the file form's closing line, "Deferred (owner|session) — see the
+  decision log", stops being a pointer the moment it is read on github.com
+  rather than three files away. Give a URL or a repo-relative path that resolves from there.
 - **Never fall back to a local file when the provider cannot be reached.** Say
   the item was not filed and name it, so it can be filed by hand. A project that
   declared a provider and finds a stray `WSS.TODO.md` appearing now has two
@@ -149,23 +149,25 @@ would bite the implementer. **Not the argument for or against.**
 - [ ] **Short name.**
       What it is, concretely. Which files/tables/endpoints.
       Constraints or gotchas that would bite the implementer.
-      Deferred — see the decision log.
+      Deferred (owner|session) — see the decision log.
 ```
+
+**The closing line names whose judgment deferred it, written at filing time.**
+`Deferred (owner)` when the user made the call; `Deferred (session)` when this
+session judged it premature. Whose judgment a deferral names is the whole
+eligibility test at the next batch start — an owner deferral is a decision not
+to reverse, a session deferral is a question addressed to the next
+`--wss-start` — and a bare "Deferred" forces every batch to open the decision
+log to re-derive an attribute the log entry already states.
 
 If a decision blocks it, mark it `[blocked → <what's undecided>]` pointing at
 `WSS.record.openDecisions`.
 
-**`[critical → why]` is the one priority marker**, same line, same shape. It
-means `--wss-start` takes this before section order applies. Everything else is
-unmarked — there is no "high" and no "mid", because dependency ordering already
-outranks priority when a batch is partitioned, and a grade that changes nothing
-is a judgment call paid for on every write.
-
-**Do not mark an entry critical in another lane's transfer queue.** Filing into
-a sibling lane's inbox is a request; marking it critical is setting that lane's
-order for them. The marker is written only where the **user** said so in that
-turn, which in practice means `lane-record-sync`'s two gates —
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s queue section.
+**`[critical → why]` is the one priority marker** — same line, same shape, no
+other grades, and never written into another lane's transfer queue. The rules —
+who may set it, why two levels, how consumers read it — are
+[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
+`[critical → why]` section.
 
 **Watch for state claims this entry falsifies.** Before writing, grep
 `WSS.record.todo` and `WSS.record.openDecisions` for the claims the new entry makes

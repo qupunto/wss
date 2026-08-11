@@ -12,7 +12,7 @@ and `WSS.commitTrailer`
 names the session trailer. Without a manifest, fall back to the current branch
 and say in one line that you did. Where a `.claude/WSS.LANE` selector names a lane,
 `WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for `todo`, `openDecisions`,
-`handoff` and `roadmap` — [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s
+`handoff` and `roadmap` — [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
 resolution rule — so a lane worktree wraps into its own four files.
 `WSS.record.releases` is never among them, which is why step 6 below asks the
 milestone question only from the main checkout.
@@ -105,8 +105,8 @@ so skip the file entirely and say nothing about it.
    check, not a bulk save — most of what qualifies should already have
    been captured live during the work, following its own triggers.
 3. **Invoke `handoff-writer` for the full currency pass — this is the important
-   one.** `WSS.record.handoff` is the only file a fresh session loads automatically,
-   so it is the entire handoff, and it is that skill's to write. Ask it for the
+   one.** `WSS.record.handoff` is what a fresh session inherits, and it is that
+   skill's to write. Ask it for the
    full pass rather than a single correction, and do it *before* the summary, so
    what you tell the user matches what the next session will actually see.
 4. **Give a tight closing summary** — a few sentences, not a report:
@@ -191,18 +191,18 @@ so skip the file entirely and say nothing about it.
    cheapest place to watch the number move:
 
    ```bash
-   S=$(jq -r '.WSS.sweeps // empty' .claude/WSS.WORKFLOW.json 2>/dev/null)
-   S=${S:-.claude/WSS.SWEEPS.json}   # same resolution as the hook and the doctor
-   if [ -f "$S" ]; then
-     jq -r '.entries // {} | to_entries[] | "\(.key)\t\(.value.baseline // "")"' "$S" 2>/dev/null |
-     while IFS=$'\t' read -r n b; do s=${b%+dirty}
-       if   [ -z "$s" ];                                 then echo "$n: no baseline"
-       elif ! git cat-file -e "$s^{commit}" 2>/dev/null; then echo "$n: no such commit"
-       elif git merge-base --is-ancestor "$s" HEAD;      then echo "$n: $(git rev-list --count "$s"..HEAD)"
-       else echo "$n: off this history"; fi
-     done | paste -sd, - | sed 's/,/, /g'
-   fi
+   S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+   [ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
+   bash "$S"/skills/overview/assets/wss-sweep-distance.sh --compact
    ```
+
+   **That script is the only implementation of this measurement**, shared with
+   `--wss-overview`, which runs it `--verbose` through `wss-probe.sh` for its
+   per-entry block. The two renderings are formatting; the resolution of
+   `WSS.sweeps`, the `+dirty` strip and the states below are computed once, in a
+   file `tests/wss-hook-contract.sh` covers. Where the script cannot be
+   reached, say the sweep line could not be read — do not re-derive it here, and
+   do not let a missing report hold up the wrap.
 
    Print the line, name it as commits behind each baseline, and stop. **It is a
    report and not a gate**: no figure here blocks a wrap, fails one, asks the
@@ -228,9 +228,9 @@ so skip the file entirely and say nothing about it.
      to nothing at all prints `no such commit`; an entry with no baseline field
      prints `no baseline`. None of the three is an error.
    - **Only `entries` is read**, matching what `sweep-tracker` resolves. A stamp
-     landing at the root of the checkpoint file instead of under `entries` has
-     happened, and it is invisible to the tracker; a reporter that saw further
-     than the writer would report freshness the sweep machinery does not have.
+     landing at the root of the checkpoint file instead of under `entries` is
+     invisible to the tracker; a reporter that saw further than the writer
+     would report freshness the sweep machinery does not have.
 
    The checkpoint is `sweep-tracker`'s file
    ([`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md)) — this step reads it

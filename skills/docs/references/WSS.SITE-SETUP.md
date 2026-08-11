@@ -9,12 +9,19 @@ that's the reason for choosing it over a static-site generator.
 ```bash
 S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 [ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
-bash "$S"/skills/docs/assets/wss-scaffold.sh docs "<Project Name>" [root-lang [translation-lang ...]]
+bash "$S"/skills/docs/assets/wss-scaffold.sh "<Project Name>" [root-lang [translation-lang ...]]
 ```
 
 `assets/wss-scaffold.sh` is the single source of truth for the generated shell — this page
 explains its output and rationale, it does not restate the files. Read the script if you
 need the exact bytes. It refuses to run against an existing directory.
+
+**The root is resolved, not passed.** The script reads `WSS.docs.root` and falls back down
+that key's declared chain ([`WSS.MANIFEST.md`](../../../workflow/WSS.MANIFEST.md)),
+printing the root it settled on; `--root <dir>`, before the project name, overrides it.
+Every `docs/` below is **one tree's root** — the site of a project that declares none and
+takes the first fallback — and every `ca` is **that tree's** translation code, not a path
+or a language this script requires.
 
 Resulting shape:
 
@@ -51,10 +58,11 @@ will otherwise be "cleaned up" and re-broken later.
 
 ## Wiring it into the project
 
-The script prints these; it does not do them.
+The script prints these; it does not do them. **The two blocks are one project's** — its
+root, its package manager, its port. What the script prints carries this project's:
 
 ```jsonc
-// package.json
+// package.json — ILLUSTRATIVE: one tree's root and package manager
 "scripts": {
   "docs:dev": "docsify serve docs --port 4000 --open"
 }
@@ -70,9 +78,11 @@ to the dependency table in `WSS.OVERVIEW.md` once that page exists.
 ## Point `README.md` at it
 
 The README stays short and delegates, but carries its own section table so GitHub visitors
-can navigate without running anything:
+can navigate without running anything. **The block below is one project's README** — a
+bilingual English/Català site at `docs/`, run with pnpm — not a template to copy verbatim:
 
 ````markdown
+
 ## Documentation
 
 All documentation lives in [`docs/`](docs/index.md). It's bilingual — English and Català,

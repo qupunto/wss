@@ -1,6 +1,6 @@
 ---
 name: overview
-description: "Report where a project stands at a glance — record counts per lane, sweep freshness, pending warnings, the nearest milestones, branch and lane — read fresh at invocation, writing nothing. SHORTHAND: `--wss-overview`. Also trigger on \"where does the project stand\", \"state of the repo\", \"project status at a glance\"."
+description: "Report where a project stands at a glance — record counts per lane, sweep freshness, pending warnings, the nearest milestones, branch and lane. SHORTHAND: `--wss-overview`. Also trigger on \"where does the project stand\", \"state of the repo\", \"project status at a glance\"."
 ---
 
 # The project at a glance
@@ -20,13 +20,16 @@ S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 bash "$S"/skills/overview/assets/wss-probe.sh
 ```
 
+<!-- load-bearing: the only route to contracts that survives publication — see the decision log before removing -->
 The two resolution lines are [`contracts`](../contracts/SKILL.md)'
 canonical form.
 
 The probe is read-only and offline. It resolves `.claude/WSS.WORKFLOW.json`
 itself — conventional fallbacks, the `.claude/WSS.LANE` selector, `WSS.lanes.named`
 overrides, all per [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md) — counts every
-record, runs `wss-doctor.sh`, computes each sweep baseline's distance from HEAD,
+record, runs `wss-doctor.sh`, computes each sweep baseline's distance from HEAD
+— by calling `wss-sweep-distance.sh` beside it, the one implementation of that
+measurement, which `--wss-wrap` step 7 runs `--compact` for its closing line —
 locates the roadmap's first goal with open blocks, and locates the release
 list's first milestone not marked completed. **The roadmap is lane-resolved
 and the release list never is** — one release checkpoint per project, however
@@ -48,7 +51,7 @@ The probe stops where mechanics stop. On top of its output:
 
 - **Finish the lines it marks "not counted here" or "not checked".** A
   provider-backed backlog is counted through
-  [`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md)
+  [`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md#after-writing-in-the-same-session-do-not-read-with---label)
   — mind its read-after-write rule — or reported *not checked* when `gh`,
   the network, or the provider is unreachable. Never dropped: an absent line
   reads as clean.

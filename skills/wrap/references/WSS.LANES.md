@@ -49,7 +49,9 @@ All three steps go through `git-writer` under `--wss-wrap`'s grant:
    git push origin <worktree-branch>:<WSS.branch.integration>
    ```
 
-   **No leading `+`, ever.** That is the entire safety property, and it is why
+   **No leading `+`, ever** — a working copy; the authority on the rule is
+   `git-writer` (`workflow/writers/WSS.GIT-WRITER.md`), which wins any
+   disagreement. That is the entire safety property, and it is why
    this is not a merge: git resolves the push as a fast-forward or **refuses it
    server-side**. There is no working tree involved, no conflict to hit, and
    nothing half-applied to clean up. The lane normally *is* the integration

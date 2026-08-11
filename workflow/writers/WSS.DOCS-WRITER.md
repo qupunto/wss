@@ -3,13 +3,18 @@
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md). Sole writer of the documentation site, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
 **Sole writer of every file under the site** — pages, annex pages, `_sidebar.md`,
-`index.md`, the translation mirrors, and the diagrams inside any of them. Every
-skill that needs a page written or corrected calls this procedure; who owns what
-else is [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
+`index.md`, the translation mirrors, and the diagrams inside any of them.
 
 **Project facts come from `.claude/WSS.WORKFLOW.json`.** Where the manifest names
 files at fixed locations, those paths are the authority and you update them in
-place. Without a manifest, fall back to `docs/` and say so in one line.
+place. **The site's own location is `WSS.docs.root`**, and the case to get right
+is a manifest that exists without declaring it: absent the key — with or without
+a manifest — the fallback is the **first existing** of `docs/`, `doc/`,
+`documentation/`, `website/`, which is contract in
+[`WSS.MANIFEST.md`](../WSS.MANIFEST.md) rather than a convention to narrow here.
+Say in one line which you took. **`WSS.docs.languages` orders the mirrors you
+write**: its first element is the root language, whose pages sit at `<root>/`,
+and every later element is a subdirectory at `<root>/<lang>/`.
 
 ## It decides nothing
 
@@ -114,8 +119,12 @@ resolves, every fence is tagged, and every asserted value and every cited anchor
 §8's accuracy pass, over the pages you touched rather than the whole site, which
 is the caller's scope to widen.
 
-Then render it with the project's docs script and load the page. A page that
-verifies clean and does not render is still broken.
+Then render it and load the page: the `docs:dev` script
+[`WSS.SITE-SETUP.md`](../../skills/docs/references/WSS.SITE-SETUP.md)
+proposes, `WSS.docs.devCommand` where the project declares one, or any static
+server over the docs root. **A project may have none of the three**, and then
+say so in the reply rather than claiming a render that did not happen. A page
+that verifies clean and does not render is still broken.
 
 **A workflow page's verified-at stamp is written here and nowhere else** — it
 records the commit the page's claims were just checked against, so it moves on a

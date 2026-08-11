@@ -1,6 +1,6 @@
 ---
 name: full-check
-description: "Verify a project is in order end to end — run its mechanical checks, re-read every record, docs page and tooling file at FULL scope ignoring every checkpoint, triage the defect inbox, prune prose, refresh the catalog. SHORTHAND: `--wss-full-check`. Also trigger on \"check everything\", \"triage the bug reports\", \"I don't trust the record any more\"."
+description: "Verify a project's records, docs and tooling are in order — run its mechanical checks, re-read them all at FULL scope ignoring every checkpoint, triage the defect inbox, prune prose, refresh the catalog. SHORTHAND: `--wss-full-check`. Also trigger on \"check everything\", \"triage the bug reports\", \"I don't trust the record any more\"."
 ---
 
 # The full health check
@@ -20,7 +20,7 @@ format is [`WSS.SWEEP-CHECKPOINT.md`](../../workflow/WSS.SWEEP-CHECKPOINT.md).
 what you cannot resolve, and say so in one line rather than guessing. Where a
 `.claude/WSS.LANE` selector names a lane, `WSS.lanes.named.<lane>.records.X` overrides
 `WSS.record.X` for `todo`, `openDecisions`, `handoff` and `roadmap` —
-[`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s resolution rule. Other lanes'
+[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s resolution rule. Other lanes'
 files are still records with the same owners; sweep them too where the check
 covers the whole record.
 
@@ -38,11 +38,12 @@ wrong rather than merely old when they stop matching reality:
 | the docs site | every check in `--wss-docs` audit mode, including the page-by-page accuracy pass |
 | `WSS.record.toolbelt` | a row whose package is no longer a dependency, an adopted capability since hand-built or replaced, a pointer into `WSS.record.decisions` that no longer resolves |
 | `WSS.record.tooling.catalog` and its sources | skills and agents that no longer exist, mutable claims that should be deleted, prose that changes nothing |
+| `WSS.record.audits` | its opening prose only — a header claim contradicted by reality, a pointer that no longer resolves; the per-report rows are frozen history, per [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s header split. Findings dispatch to `audit-writer` |
 
 **Where `WSS.record.todo` names a provider it is still covered, and read in full.**
 The questions are the same — items already done, claims about state — but the
 backlog is a set of open issues rather than a file, per
-[`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md).
+[`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md#what-the-sweeps-do-with-it).
 There is no narrowing to apply and none is wanted here anyway: this flag ignores
 checkpoints by definition. Where `gh` cannot reach it, say the backlog was not
 checked and why; never read a local file in its place.
@@ -116,9 +117,7 @@ fix, and they do not write.
 contracts and scripts, found by sessions working in other projects, which were
 forbidden to fix them and filed instead, per
 [`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md#a-file-belonging-to-the-installation-is-never-edited-from-a-project-session).
-Several readers count the open entries and surface them, but counting is all any
-of them does: the session that filed one is long cleared, so triage here is what
-closes it.
+The session that filed one is long cleared, so triage here is what closes it.
 
 **In scope only when this project *is* that configuration directory.** From
 anywhere else, filing is the whole action a session may take —

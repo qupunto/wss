@@ -2,6 +2,13 @@
 
 Skeletons. Fill them with real, verified content — never ship a placeholder.
 
+Everything in `<angle brackets>` is yours to replace. Where a skeleton instead shows a
+concrete path, filename or language — `docs/` as the root, `src/routes/$lang/…`, `ca` —
+that is **one project's tree**, kept concrete because a skeleton made entirely of
+placeholders teaches nothing about what a filled one looks like. The root is
+`WSS.docs.root`'s ([`WSS.MANIFEST.md`](../../../workflow/WSS.MANIFEST.md)) and the rest is
+this project's own.
+
 ## Guide page (top-level `docs/<concern>.md`)
 
 ````markdown
@@ -177,8 +184,9 @@ Flat list, `/`-rooted paths, blank line + bold non-link entry to open a group:
 ```
 
 Order by tier, which is reading order for a newcomer — never alphabetical. Group headers
-appear once a group holds two or more pages. `references/WSS.TAXONOMY.md` owns the full tier
-order and a complete grouped sidebar example; don't re-derive it here.
+appear once a group holds two or more pages. The full tier order is the taxonomy's to own,
+but the hand-off names the tier and the existing sidebar carries the order — the writer
+has nothing to load.
 
 ## `docs/_navbar.md`
 
