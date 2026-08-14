@@ -142,7 +142,7 @@ manifest="$PWD/.claude/WSS.WORKFLOW.json"
 
 # A worktree of a lane-split project carries `.claude/WSS.LANE` (gitignored), and
 # `WSS.lanes.named.<lane>.records.X` in the manifest then overrides `WSS.record.X` for
-# the splittable records — workflow/WSS.MANIFEST.md states the rule once.
+# the splittable records — workflow/WSS.LANE-CONTRACT.md states the rule once.
 # Read the selector here so every record read below resolves the same way:
 # nudging a lane worktree about the unsplit files would miss the lane's own
 # pending decisions, and the handoff injection must serve the lane's card.

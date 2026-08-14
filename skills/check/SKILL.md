@@ -22,7 +22,7 @@ Delegation is a lookup, not a judgement —
 | `WSS.record.decisionsIndex` — a stale generated index, per check 4 | `--wss-todo` / `--wss-log`, which owns `WSS.commands.indexRegen` |
 | `WSS.record.roadmap` — every lane's copy — and `WSS.record.releases` | `--wss-plan` |
 | `WSS.record.toolbelt` | `--wss-scout` |
-| `WSS.record.stocktake` | `audit-writer` |
+| `WSS.record.stocktake`, `WSS.record.audits` | `audit-writer` |
 | `WSS.record.changelog` | `changelog-writer` |
 | `WSS.record.tooling.catalog`, `WSS.record.tooling.sources` | `--wss-tools` |
 | the docs site's annex page derived from `WSS.record.tooling.catalog` | `docs-writer` |
@@ -33,7 +33,7 @@ whole procedure would have to run.**
 
 Resolve the paths through the lane selector first: where `.claude/WSS.LANE` names a
 lane, `WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for `todo`,
-`openDecisions`, `handoff` and `roadmap` — [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s
+`openDecisions`, `handoff` and `roadmap` — [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
 resolution rule. A finding in a lane file dispatches to the same owner the
 unsplit record has; the lane changes the path, never the writer.
 
@@ -63,7 +63,7 @@ cannot know what the project actually keeps.
 ## When `WSS.record.todo` is a provider
 
 An object with a `provider` key means the backlog is not a file —
-[`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md) is the
+[`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md#what-the-sweeps-do-with-it) is the
 contract. It is swept the same way and findings dispatch to `--wss-todo` as always.
 
 **One thing the checkpoint cannot do for it.** Incremental narrowing works by

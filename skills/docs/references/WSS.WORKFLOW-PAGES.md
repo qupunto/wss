@@ -99,9 +99,10 @@ defects**. The page never carries "this is wrong" — it describes what the
 system does, exactly as the behaviour record must (G7 marks what is not live;
 G16 says code wins). Each defect found while writing is dispatched to
 `--wss-todo` **in the same session**, so the page stays a description and the
-finding reaches a record `--wss-start` actually reads. There is no mechanical
-check for defect-shaped prose — it false-positives on ordinary explanation —
-so this is a procedure rule, and it can afford to be one because the route it
+finding reaches a record `--wss-start` actually reads. This stays a procedure
+rule rather than a check because defect-shaped prose is not mechanically
+separable from ordinary explanation — any detector for it false-positives on
+the page's own rationale — and it can afford to be one because the route it
 names costs a single call.
 
 ## What stays hand-written
@@ -109,9 +110,10 @@ names costs a single call.
 A project may generate the endpoint spine — path, method, guards, schema,
 response codes, the service symbol each handler calls are all derivable from
 route files or a live OpenAPI document — and where one builds that generator it
-is project tooling, run at verification time so the regenerated facts and the
-stamp move together. **There is deliberately no manifest key for it**: a
-key earns its place only when a global skill reads it
-([`WSS.MANIFEST.md`](../../../workflow/WSS.MANIFEST.md)'s first rule), and none
-does until a real generator exists to run. What no generator covers: the
-ordered steps *inside* a service, and any table assembled from several files.
+is **project tooling, declared nowhere globally**, run at verification time so
+the regenerated facts and the stamp move together. A manifest key would take a
+global skill that reads it
+([`WSS.MANIFEST.md`](../../../workflow/WSS.MANIFEST.md)'s first rule), and a
+generator each project writes for itself is read by none. What no generator
+covers: the ordered steps *inside* a service, and any table assembled from
+several files.

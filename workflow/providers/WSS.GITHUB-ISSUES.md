@@ -42,6 +42,7 @@ report, a discussion — and this workflow does not touch it.
 | deleting an item once it is done | **closing** the issue |
 | `[blocked → what is undecided]` | the same marker, first line of the body |
 | a `## Later` section, or any deferral by placement | `[later → why]`, first line of the body, same as blocked |
+| `[critical → why]` | the same marker, first line of the body |
 
 **Two things a file backlog carries in its shape do not survive the move, and
 both are load-bearing for `--wss-start`.**

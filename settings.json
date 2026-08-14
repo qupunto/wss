@@ -32,7 +32,7 @@
     "defaultMode": "auto"
   },
   "skillOverrides": {
-    "adopt": "user-invocable-only",
+    "adopt": "name-only",
     "contracts": "name-only",
     "full-check": "name-only",
     "lane-record-sync": "name-only",

@@ -3,6 +3,14 @@
 A multilingual site keeps the default language at `docs/` root and each translation in a
 sibling folder named by language code: `docs/ca/`, `docs/es/`.
 
+**Every example on this page is one project's tree** — an English root at `docs/` with a
+Català translation at `docs/ca/`, later joined by `docs/es/`. That is the tree
+`WSS.docs.root: "docs"` and `WSS.docs.languages: ["en", "ca"]` describe
+([`WSS.MANIFEST.md`](../../../workflow/WSS.MANIFEST.md)); read `docs` and `ca` below as
+that project's root and codes, and substitute this one's. The **shape** — root language at
+the root, one folder per translation, filenames identical across all of them — is what
+transfers, and it is the same shape at any root under any language codes.
+
 ```
 docs/
 ├── index.md            # English (default, served at /)
@@ -60,7 +68,8 @@ translated heading and replace spaces with `-` exactly as for English.
 Cheapest way to check every anchor in a translated file resolves:
 
 ```bash
-# list the anchors a file links to, and the slugs its target actually defines
+# ILLUSTRATIVE — one tree's paths, not a command to run as written. The shape is:
+# the anchors a file links to, then the slugs its target actually defines.
 grep -oE '\]\([^)]*#[^)]+\)' docs/ca/auth.md
 grep -n '^#' docs/ca/auth.md
 ```
@@ -96,6 +105,9 @@ grep -n '^#' docs/ca/auth.md
 ```
 
 ## Adding a language
+
+The seven steps are the procedure; the paths, codes and package manager in them are still
+that one tree's — adding `es` to a site rooted at `docs/`. Substitute and the order holds.
 
 1. Copy the default-language tree: `cp -r docs/ca docs/es` (copy an existing translation,
    not the English — it's already structured as a mirror)

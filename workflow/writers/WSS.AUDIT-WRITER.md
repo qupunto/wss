@@ -2,10 +2,8 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md). Sole writer of `WSS.record.stocktake` and `WSS.record.audits`, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
-**Sole writer of `WSS.record.stocktake` — the stocktake log.** Everything else in
-this workflow that needs an entry written or an `Outcome` updated calls this
-procedure; who owns what is [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md), and what
-this file may and may not hold is
+`WSS.record.stocktake` is **the stocktake log**, written a whole entry at a time
+or one `Outcome` at a time; what this file may and may not hold is
 [`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md). **Frozen records spell the
 log's former key, `WSS.record.audits`** — that key now names the audit index
 below, and the decision log carries the split.

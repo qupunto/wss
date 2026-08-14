@@ -534,8 +534,10 @@ these are steps inside those. They are **procedure files under
 (Four *skills* are also flagless. Three — `/wss:lane-record-sync`, `/wss:retire`
 and `/wss:toggle` — for the opposite reason: they are invoked only by you, never
 by a phrase or another skill. The fourth, `contracts`, is flagless for a
-third reason again: it is model-invoked on demand, so it is neither typed nor
-dispatched.)
+third reason again: it is reached by **citation** — a reader following a pointer
+into it — rather than typed or dispatched, which is why
+`skills/overview/SKILL.md:23` marks the one such citation that survives
+publication as load-bearing.)
 `workflow/writers/WSS.WRITERS.md` is the index and the ownership matrix names each
 one's record; four are worth knowing by name:
 

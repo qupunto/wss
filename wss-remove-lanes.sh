@@ -24,9 +24,11 @@
 #   tidying and silently removes the guard that stops two agents writing one
 #   schema.
 #
-#   Every lane RECORD FILE stays on disk — each lane's todo, openDecisions,
-#   handoff and roadmap, its transfer queue, and the conflicts inbox. They hold
-#   a backlog, unmade decisions and goals. This script does not delete a record
+#   Every lane RECORD FILE stays on disk — each lane's splittable records, its
+#   transfer queue, and the conflicts inbox. Which records are splittable is
+#   stated in workflow/WSS.LANE-CONTRACT.md ("Which records may split, and
+#   which must never"), and is deliberately not restated here. They hold a
+#   backlog, unmade decisions and goals. This script does not delete a record
 #   under any flag. Merge them into the unsplit records first if you want them
 #   carried over; `wss-retire-workflow.sh --write --records` is the tool that
 #   deletes records, deliberately behind its own second flag.
@@ -44,7 +46,8 @@ while [ $# -gt 0 ]; do
     --write)          WRITE=1 ;;
     --allow-orphans)  ALLOW_ORPHANS=1 ;;
     --dir)            shift; DIR="${1:?--dir needs a path}" ;;
-    -h|--help)        sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    # header block only: from line 2 to the last consecutive leading-# line
+    -h|--help)        awk 'NR==1{next} !/^#/{exit} {print}' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
   shift

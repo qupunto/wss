@@ -154,7 +154,7 @@ $RECORDS
 EOF
 
 # Lane records are the same records under other names — split per lane by
-# WSS.MANIFEST.md's resolution rule, with the same owners and the same content
+# WSS.LANE-CONTRACT.md's resolution rule, with the same owners and the same content
 # hazard. wss-export-records.sh and wss-retire-workflow.sh both enumerate
 # `WSS.lanes.named.*.records.*`; this script did not, and a forked lane-split
 # project shipped every lane's backlog, open decisions and handoff un-blanked

@@ -1,8 +1,9 @@
 # The checks
 
 **Methods, not skills.** Each file here is one way of finding inconsistency in
-something the project has written down. A skill that needs to run one **reads
-the file and applies it** over a scope the skill itself resolves.
+something the project has written down — or the structure that will produce one.
+A skill that needs to run one **reads the file and applies it** over a scope the
+skill itself resolves.
 
 ## Why they are not in the skills that own them
 
@@ -30,8 +31,11 @@ the next one.
 | [`WSS.DOCS-AUDIT.md`](WSS.DOCS-AUDIT.md) | a docs site's internal correctness — paths, links, anchors, enumerations, page-level accuracy against source | `--wss-docs`, `--wss-full-check` |
 | [`WSS.TOOLING-CLAIMS.md`](WSS.TOOLING-CLAIMS.md) | mutable claims inside the tooling files, which are deleted rather than corrected | `--wss-tools`, `--wss-full-check` |
 | [`WSS.MECHANICAL-GAUNTLET.md`](WSS.MECHANICAL-GAUNTLET.md) | a non-green result from the project's own verifications — doctor, typecheck, suite, CI — and what each outcome means | `--wss-full-check`, `--wss-stocktake` |
-| [`WSS.PROSE-PRUNE.md`](WSS.PROSE-PRUNE.md) | prose in a skill, agent or tooling file whose removal changes nothing about what Claude does | `--wss-tools`, `--wss-full-check` |
+| [`WSS.PROSE-PRUNE.md`](WSS.PROSE-PRUNE.md) | prose in a skill, agent or tooling file whose removal changes nothing about what Claude does | `--wss-tools`; `--wss-full-check` orders that job rather than reading this file |
 | [`WSS.AUDIT-PASS.md`](WSS.AUDIT-PASS.md) | what an independent audit pass must carry — the cumulative rubric, and how focuses rotate | the audit ritual, on the owner's ask; no flag |
+| [`WSS.TOKEN-ECONOMY.md`](WSS.TOKEN-ECONOMY.md) | a skill, agent or tooling file paying more context than its job needs — each lens with a proven in-tree example and the drawback to outweigh | `--wss-tools` |
+| [`WSS.ROT-RESISTANCE.md`](WSS.ROT-RESISTANCE.md) | writing that is true today and structured to go false — an uncompared copy, a file with two writers, a claim nothing can test, a drift nothing would report | `--wss-tools` |
+| [`WSS.ROUTING-HEALTH.md`](WSS.ROUTING-HEALTH.md) | a skill that will not be reached when it should be, or will be when it should not — the one check that can push a description longer | `--wss-tools` |
 
 **Scope never comes from here.** Incremental narrowing is the runner's, out of
 [`WSS.SWEEP-CHECKPOINT.md`](../WSS.SWEEP-CHECKPOINT.md), and a full-scope run is a runner

@@ -2,12 +2,9 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md). Sole writer of `WSS.record.changelog`, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
-**Sole writer of `WSS.record.changelog`.** Everything else in this workflow that
-needs it changed calls this procedure; who owns what is
-[`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md), and what this
-file may and may not hold is
-[`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md), which is the
-authority if the two ever disagree.
+What this file may and may not hold is
+[`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md), the authority where the
+two disagree.
 
 **Project facts come from `.claude/WSS.WORKFLOW.json`**: `WSS.record.changelog` is the
 file, falling back to `WSS.CHANGELOG.md` — say in one line that you used the
@@ -29,8 +26,9 @@ is **not** a record, is not declared in the manifest, and is **not** blanked —
 which is the entire point. It is the one that survives publication and the one
 changelog tooling resolves by name.
 
-**This procedure writes the record, and never the public file on its own.** A
-release writes both, through `--wss-release`. The test for which entry goes
+**This procedure writes the record, and the public file only when a release asks
+for it.** `--wss-release` invokes it once for each — it writes nothing itself.
+Outside a release, the public file is not this procedure's to touch. The test for which entry goes
 where: *if it only makes sense to someone editing the project, it is the
 record's.* A public entry names the behaviour that changed and never the file
 that changed.

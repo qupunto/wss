@@ -1,6 +1,6 @@
 ---
 name: start
-description: "Pick up the project's pending work and do it — settle the open decisions first, select a batch from the backlog, partition it into lanes that cannot collide, and run those lanes in parallel. SHORTHAND: `--wss-start`. Also trigger on \"carry on with what's pending\", \"pick up the next thing\", \"keep going with the backlog\"."
+description: "Pick up the project's pending work and do it — settle the open decisions first, select a batch from the backlog, partition it into lanes that cannot collide, and run those lanes in parallel. SHORTHAND: `--wss-start`. Also trigger on \"carry on with what's pending\", \"pick up the next thing\", \"keep going with the backlog\". COMMITS, NEVER PUSHES."
 ---
 
 # Starting the next block of work
@@ -10,7 +10,7 @@ description: "Pick up the project's pending work and do it — settle the open d
 fall back to conventional names, skip what you cannot resolve, and say so in one
 line rather than guessing. Where a `.claude/WSS.LANE` selector names a lane,
 `WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for `todo`, `openDecisions`,
-`handoff` and `roadmap` — [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s
+`handoff` and `roadmap` — [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
 resolution rule —
 and that lane's `scope` globs bound the batch: partition within them, and treat
 work outside them as another worktree's.
@@ -130,7 +130,7 @@ dependency-ordered already). Not everything in it is eligible.
 
 **`WSS.record.todo` may be a provider rather than a file** — an object with a
 `provider` key, per
-[`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md). Read
+[`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md#reading-it). Read
 it through that contract, and mind its `--limit`: a list command that silently
 returns the first thirty of forty-five items hands this phase a batch chosen
 from a truncated backlog, which looks exactly like a batch chosen from the whole
@@ -144,9 +144,9 @@ batch rather than failing:
 - **Rank has to come from content, not position.** Read the items and judge
   severity and dependency yourself. The first row is the most recent, and the
   most recent is frequently the least urgent. **`[critical → why]` still
-  applies and is read out of the body**, exactly as `[blocked → …]` is — that
-  is why the marker lives in the body rather than in a section heading, and it
-  is the only ordering signal that survives here.
+  applies and is read out of the body**, exactly as `[blocked → …]` is — the
+  only ordering signal that survives here, which is the point of the placement
+  the contract above mandates.
 - **Deferral is a marker, not a place.** The "explicitly deferred" exclusion
   below is written for a `## Later` section that does not exist here; under a
   provider it is `[later → why]` on the first line of the body, alongside

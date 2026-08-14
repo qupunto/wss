@@ -15,8 +15,13 @@ trees this skill exists for, from a manifest that predates that name. The
 authorities this skill answers to:
 
 - [`workflow/WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md) — the `WSS.suite`
-  stamp key, the current key set, and the file-naming convention with its
-  "would this file exist if the suite were not installed?" test.
+  stamp key and the current key set.
+- [`workflow/WSS.NAMING.md`](../../workflow/WSS.NAMING.md) — the file-naming
+  convention with its "would this file exist if the suite were not installed?"
+  test. **Both, not either.** A migration renames files *and* rewrites keys in
+  one pass, and these are two contracts: reading only the key table leaves every
+  rename unjudged, and reading only the grammar renames a file the manifest
+  still points at under its old name.
 - [`workflow/WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md) — what
   each record holds, the `- migrate:` line shape in the release list, and the
   never-rewrite rule for append-only records.
@@ -66,8 +71,8 @@ What to look for:
   (the sweeps cache, the old `.claude/lane` selector), and **per-worktree
   untracked selector files** — enumerate `git worktree list` and mend each,
   because no pull ever fixes those.
-- **Generators and their output**: scripts with embedded record paths
-  (`WSS.commands.indexRegen` is the known case), and committed *generated*
+- **Generators and their output**: scripts with embedded record paths —
+  `WSS.commands.indexRegen`'s among them — and committed *generated*
   artifacts downstream of renamed strings — regenerate through the project's
   own generators, never hand-edit the output.
 - **Citations across live surfaces** — record-to-record links, docs pages,
@@ -106,11 +111,17 @@ tell the user where the archive landed before proceeding.
 ### The boundary judgments
 
 - **Which files take the `WSS.` prefix** is decided per file by
-  `WSS.MANIFEST.md`'s test — *would this file exist if the suite were not
-  installed?* A README, a `CLAUDE.md` serving as handoff, a changelog, a docs
-  site's own files keep their names; suite-shaped records take the
-  convention. Ask when a file class is genuinely ambiguous, and decide per
-  class, not per file.
+  [`WSS.NAMING.md`](../../workflow/WSS.NAMING.md)'s test — *would this file
+  exist if the suite were not installed?* A README, a `CLAUDE.md` serving as
+  handoff, a changelog, a docs site's own files keep their names; suite-shaped
+  records take the convention. Ask when a file class is genuinely ambiguous,
+  and decide per class, not per file — the ruling is the owner's, and that file
+  is where it gets written down.
+- **Every rename is checked back against the key table.** A file this skill
+  renames that a `WSS.record.*` path names must move in the manifest in the same
+  mend, through `manifest-writer`. The grammar and the key set are separate
+  files, and a mend that reads only one of them is how a tree ends up correctly
+  named and unresolvable.
 - **Append-only records are never rewritten.** Old names inside historical
   text stay exactly as written — logs keep their original spelling. Every
   verification grep this skill runs for an old name therefore **excludes the
@@ -124,8 +135,7 @@ tell the user where the archive landed before proceeding.
   regenerates do not share a commit; the history is the record of what the
   migration did.
 - **A partial migration never exits clean.** Report exactly which mends
-  landed and which did not, and leave the stamp unwritten —
-  `wss-reset-records.sh` learned this the hard way, and a stamp over a
+  landed and which did not, and leave the stamp unwritten — a stamp over a
   half-migrated tree is worse than none.
 - **Finish with the doctor.** Run `wss-doctor.sh` and show its output; the
   migration is not complete over a failing doctor.

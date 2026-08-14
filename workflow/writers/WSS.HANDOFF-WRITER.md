@@ -2,29 +2,18 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md). Sole writer of `WSS.record.handoff` and its overflow document, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
-**Sole writer of `WSS.record.handoff`.** Everything else in this workflow that
-needs the handoff changed calls this procedure; who owns what is
-[`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md), and what this
-file may and may not hold is
-[`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md), which is the
-authority if the two ever disagree.
+What this file may and may not hold is
+[`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md), the authority where the
+two disagree.
 
 **Project facts come from `.claude/WSS.WORKFLOW.json`**: `WSS.record.handoff` is the
 file, and the other `WSS.record.*` keys are what it points *at*. Without a manifest
-the fallback is `CLAUDE.md` — say in one line that you used it, because a silent
+the fallback is `WSS.HANDOFF.md` — say in one line that you used it, because a silent
 fallback is how a project ends up with two handoff files. Where a `.claude/WSS.LANE`
 selector names a lane, `WSS.lanes.named.<lane>.records.handoff` overrides
-`WSS.record.handoff` — [`WSS.MANIFEST.md`](../WSS.MANIFEST.md)'s resolution rule — and the
+`WSS.record.handoff` — [`WSS.LANE-CONTRACT.md`](../WSS.LANE-CONTRACT.md)'s resolution rule — and the
 lane's handoff is the one this procedure writes from that worktree; the
 session hook injects the same file.
-
-**Refuse that fallback when the working directory is `~/.claude`.** There
-`CLAUDE.md` is not a project's handoff, it is the user's global instruction file
-loaded into every session of every project, and a per-session handoff written
-into it is both destructive and paid for everywhere forever. So when the cwd is
-`~/.claude` and no manifest declares `WSS.record.handoff`: **write nothing**, and
-hand back the two fixes — run `--wss-adopt`, or declare `WSS.record.handoff` in
-`.claude/WSS.WORKFLOW.json` — for the caller to pick between.
 
 **No flag of its own**, on the same reasoning as `sweep-tracker`: nobody wants
 "write the handoff", they want a wrap, a landed batch, or an audit. This is the
@@ -38,11 +27,8 @@ callee, rather than by a clause somewhere describing when a skill should do less
 than its whole procedure.
 
 **The grant is always the caller's**, per
-[`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md). This skill has no flag, so it
-confers nothing on its own: dispatched from `--wss-check`, which grants nothing, it
-writes the file and does not commit; called from `--wss-start`, which grants commit
-but not push, it writes the file and the caller commits. **It never pushes and
-never decides to.**
+[`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md). It has no flag, so it
+confers nothing on its own. **It never pushes and never decides to.**
 
 ## Why not a subagent
 

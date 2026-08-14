@@ -7,8 +7,8 @@ The rules that make these docs verifiable rather than decorative.
 **Present tense, third person, describing the system.** "The plugin regenerates
 `routeTree.gen.ts` on every change." Not "we generate" and not "you will see".
 
-Second person is allowed **only** inside numbered how-to steps: "Create
-`src/routes/$lang/route-name.tsx`", "Run `pnpm lint` before committing".
+Second person is allowed **only** inside numbered how-to steps — *illustrations from one project's
+tree:* "Create `src/routes/$lang/route-name.tsx`", "Run `pnpm lint` before committing".
 
 **No filler.** Cut "it is important to note that", "basically", "simply", "as you can
 see", "in order to". Cut sentences that restate the heading.
@@ -165,15 +165,13 @@ bare `│` line to group related entries.
 ### Diagrams
 
 `architecture.md` exists to show shape, so it needs a picture. Draw it here; an ad-hoc
-one anywhere else is `--wss-diagram`, which routes back to `docs` rather than to a
-skill of its own — choosing a form and laying out boxes is behaviour Claude already has,
-so it is served by a hook block that costs nothing until the flag is typed, where a
-skill's description would be paid for in every session.
+one anywhere else is `--wss-diagram`, which routes back to `docs`.
 
 Three rules apply. The first ships a broken page rather than a missing one when you get
-it wrong: **check what will render it.** ASCII in a plain fence is the default, and **docsify
-needs a plugin the default `index.html` does not load**, so a Mermaid fence chosen without
-checking shows raw markup to every reader. The second: every box and arrow is a claim, so draw
+it wrong: **check what will render it.** ASCII in a plain fence is the default because it
+needs nothing; a Mermaid fence renders only where the site loads a plugin for it, so read
+the site's `index.html` before choosing one — chosen unchecked, it shows raw markup to
+every reader. The second: every box and arrow is a claim, so draw
 from what you read and leave out a direction you cannot establish. The third: stop before the
 graph stops being readable — a table is often the better answer.
 

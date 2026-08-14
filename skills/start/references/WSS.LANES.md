@@ -48,10 +48,10 @@ Per entry, in file order:
   here, delete it with one line saying why rather than leaving it to be re-read
   every run. Say so in the orientation; the filing lane is entitled to know its
   request was declined.
-- **Carry `[critical → why]` across unchanged**, and never add one. A lane may
-  not set another lane's priority; only the **user** may, which in practice
-  means an entry arrives marked from one of `lane-record-sync`'s two gates —
-  a mediated conflict, or an *accept as critical* ruling.
+- **Carry `[critical → why]` across unchanged**, and never add one — only the
+  user sets that marker, through the two gates
+  [`WSS.LANE-CONTRACT.md`](../../../workflow/WSS.LANE-CONTRACT.md)'s
+  `[critical → why]` section names.
 
 **Eligibility follows provenance; priority follows the marker.** An entry that
 came through `lane-record-sync`'s approval gate was already ruled on by the
@@ -73,5 +73,5 @@ with what is unaffected. Do not resolve it: a session in one lane cannot mediate
 between two, and picking whichever reading unblocks this batch is how one lane's
 assumption becomes the project's by default. `lane-record-sync` is the only
 consumer, and it re-verifies the claim rather than acting on it —
-[`WSS.RECORD-CONTRACT.md`](../../../workflow/WSS.RECORD-CONTRACT.md) holds the
+[`WSS.LANE-CONTRACT.md`](../../../workflow/WSS.LANE-CONTRACT.md) holds the
 entry shape. Filing is the whole action; say that you filed it.

@@ -76,17 +76,15 @@ itself.
 
 - **Delete the machinery** — manifest, sweep cache, lane selector. All
   regenerable by `--wss-adopt`; losing them costs nothing.
-- **Delete the records** — everything the dry run's records tier listed:
-  backlog, roadmap, releases, the decision log and index, open decisions,
-  audits, relocated handoffs with their hazards siblings, and the lane
-  records and queues. The project's own knowledge.
+- **Delete the records** — everything the dry run's records tier listed,
+  line by line. The project's own knowledge.
 - **Wipe the records** — `wss-reset-records.sh`: content blanked, structure
   and workflow kept. A fresh start, not an exit.
 - **Remove the installation** — the suite's own files, whichever form step 0
   found, last. Say which form it means for *this* machine before the user
-  checks it: a plugin install is one harness command, a checkout is 100-odd
-  tracked files under the config directory. It is the only box that reaches
-  outside `$PWD`.
+  checks it: a plugin install is one harness command, a checkout is every file
+  `git ls-files` names under the config directory. It is the only box that
+  reaches outside `$PWD`.
 
 Whatever is checked, say now what **always survives**: the reference/README,
 changelog and tooling files, a handoff at `CLAUDE.md`, the project's

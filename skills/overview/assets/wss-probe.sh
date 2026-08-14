@@ -111,28 +111,14 @@ count_line "handoff !important blocks" "$(resolve_record handoff CLAUDE.md)" '!i
 
 echo
 echo "== sweeps =="
-SWEEPS="$(mget '.WSS.sweeps' '.claude/WSS.SWEEPS.json')"
-SWEEPS="${SWEEPS:-.claude/WSS.SWEEPS.json}"
-if [ ! -f "$SWEEPS" ]; then
-  echo "no checkpoint file at $SWEEPS — no sweep has ever run here"
-elif [ "$HAVE_JQ" = 0 ]; then
-  echo "checkpoint exists at $SWEEPS but jq is unavailable — not read"
+# One implementation, shared with --wss-wrap's closing line: wss-sweep-distance.sh
+# beside this file, --verbose here and --compact there. It resolves WSS.sweeps
+# itself, to the same rule mget follows.
+DISTANCE="$(dirname "${BASH_SOURCE[0]}")/wss-sweep-distance.sh"
+if [ -f "$DISTANCE" ]; then
+  bash "$DISTANCE" --verbose
 else
-  jq -r '.entries | to_entries[] | [.key, .value.baseline, (.value.at // "-"), (.value.method // "-"), (.value.result // "")] | @tsv' \
-      "$SWEEPS" 2>/dev/null | \
-  while IFS=$'\t' read -r name baseline at method result; do
-    base="${baseline%+dirty}"
-    mark=""; [ "$base" != "$baseline" ] && mark=", dirty at stamp"
-    extra=""; [ -n "$result" ] && extra=", result $result"
-    ahead="$(git rev-list --count "$base"..HEAD 2>/dev/null)"
-    if [ -n "$ahead" ]; then
-      printf '%s: baseline %s (%s, %s%s%s) — %s commits behind HEAD\n' \
-        "$name" "$base" "$at" "$method" "$mark" "$extra" "$ahead"
-    else
-      printf '%s: baseline %s is not a commit in this repository — sweep in full\n' "$name" "$baseline"
-    fi
-  done
-  [ -z "$(jq -r '.entries | keys[]?' "$SWEEPS" 2>/dev/null)" ] && echo "checkpoint exists but holds no entries"
+  echo "wss-sweep-distance.sh is missing beside this probe — sweep freshness not read"
 fi
 
 echo

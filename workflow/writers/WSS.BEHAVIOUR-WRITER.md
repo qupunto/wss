@@ -2,12 +2,9 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md). Sole writer of `WSS.record.behaviour`, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
-**Sole writer of `WSS.record.behaviour`.** Everything else in this workflow that
-needs it changed calls this procedure; who owns what is
-[`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md), and what this
-file may and may not hold is
-[`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md), which is the
-authority when this file and that one disagree.
+What this file may and may not hold is
+[`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md), the authority where the
+two disagree.
 
 Resolve the path from `.claude/WSS.WORKFLOW.json`. Without a manifest the fallback is
 in [`WSS.MANIFEST.md`](../WSS.MANIFEST.md) — **say which you used.** A

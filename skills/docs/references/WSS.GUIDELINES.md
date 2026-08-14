@@ -1,11 +1,12 @@
 # The documentation guidelines
 
-**The shared authority on how a page is written.** Three consumers cite these
-numbers and none of them owns the list: `--wss-docs` decides what the site should
+**The shared authority on how a page is written**, cited from every stage and
+owned by none of them: `--wss-docs` decides what the site should
 contain, [`WSS.DOCS-WRITER.md`](../../../workflow/writers/WSS.DOCS-WRITER.md)
 writes it, and [`WSS.DOCS-AUDIT.md`](../../../workflow/checks/WSS.DOCS-AUDIT.md)
-checks it afterwards. They live here, beside the reference files that cite them
-most, rather than inside any one of the three.
+checks it afterwards. The numbers live here, beside the reference files that cite
+them most, rather than inside any one consumer — a list a consumer owned would be
+renumbered to suit it, and the citations elsewhere would go quiet rather than break.
 
 Numbered so they can be cited in review. **G1, G2, and G8 are what make these docs worth
 having**; the rest are mechanics.

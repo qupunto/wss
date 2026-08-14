@@ -13,8 +13,6 @@ That file is the authority; this one is the procedure. Read it before writing an
 entry — the four rules there are what stop a checkpoint from licensing a skip
 nobody earned.
 
-Who owns what is [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
-
 **Why this is a procedure rather than a paragraph in each sweep** is argued in
 [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md#one-writer-many-readers--the-sweep-checkpoint),
 which is the authority on it.

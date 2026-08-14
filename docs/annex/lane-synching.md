@@ -115,14 +115,10 @@ case the append-only records already accept.
 
 ## Priority: one marker
 
-`[critical → why]`, on the first line of an entry's body, the same place and
-shape as `[blocked → …]` and `[later → …]`. `--wss-start` takes critical items
-before any section ordering applies. Everything else is unmarked.
-
-Two levels rather than four because dependency ordering already outranks
-priority when a batch is partitioned, so finer grades mostly lose to it — and
-every extra grade is a judgment call paid on every write, with "mid" and
-"unmarked" meaning the same thing in practice.
+One priority marker, `[critical → why]`, and everything else unmarked. Its
+shape and placement, why two levels rather than a ladder, and what
+`--wss-start` does with it are `workflow/WSS.LANE-CONTRACT.md`'s
+`[critical → why]` section. What belongs on this page is the rule about lanes:
 
 **A lane may not mark its own request critical in another lane's queue.** The
 marker is written only where the **user** said so in that turn — a mediated

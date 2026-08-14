@@ -292,6 +292,75 @@ printf '%s' "$out" | grep -q -- 'included the `--wss-wrap` flag' \
 overrides user ""
 overrides project ""
 
+# ------------------------------------------------ absorption behind the gates
+
+head_ "A gated-out absorber does not eat the flag it absorbs"
+
+# Absorption used to run at parse time, before the resolve/disabled gates, so
+# an absorber that could never fire still took its absorbee down with it: a
+# settings-disabled `--wss-stocktake` swallowed a live `--wss-check` and the
+# pair injected nothing, with no error anywhere (audit pass 14 F1). Absorption
+# now runs behind the same gates as emission; both directions are pinned here.
+
+stocktake_override() { # level — write one entry, or remove the file when empty
+  mkdir -p "$TMP/home/.claude"
+  if [ -z "$1" ]; then
+    rm -f "$TMP/home/.claude/settings.json"
+  else
+    jq -nc --arg l "$1" '{skillOverrides:{"stocktake":$l}}' \
+      > "$TMP/home/.claude/settings.json"
+  fi
+}
+
+for wide in --wss-stocktake --wss-full-stocktake; do
+  stocktake_override user-invocable-only
+  out=$(run "$wide --wss-check")
+  printf '%s' "$out" | grep -q -- 'included the `--wss-check` flag' \
+    && ok "--wss-check survives a disabled $wide" \
+    || bad "--wss-check was eaten by $wide, which cannot fire"
+done
+
+# The other direction must not regress: an absorber that DOES fire still
+# absorbs, which the earlier absorption tests assert only with no overrides
+# file present — this one pins it immediately after the disabled runs.
+stocktake_override ""
+out=$(run "--wss-stocktake --wss-check")
+if printf '%s' "$out" | grep -q -- "--wss-stocktake" && \
+   ! printf '%s' "$out" | grep -q -- 'included the `--wss-check` flag'; then
+  ok "an enabled --wss-stocktake still absorbs --wss-check"
+else
+  bad "absorption regressed for an enabled absorber"
+fi
+
+# ---------------------------------------------------- task-notification guard
+
+head_ "A task-notification is not the user"
+
+# The harness routes a background task's completion notice back through
+# UserPromptSubmit, with its `<task-notification>` banner at position 0 of
+# `.prompt` and a subagent report — which legitimately quotes flag names as
+# data — inside it. On 2026-08-10 one such payload decomposed and injected
+# ~10.3 KB of unconditional instruction, --wss-start's commit grant included,
+# with no user input (audit pass 13, F2). The hook refuses any prompt that
+# BEGINS with the banner, and only that: the refusal must not cost a real
+# prompt, which is the other direction asserted here.
+
+notif=$'<task-notification>\n<task-id>t0test123</task-id>\n<tool-use-id>toolu_00TESTONLY</tool-use-id>\n<output-file>/tmp/none.output</output-file>\n<status>completed</status>\n<summary>Agent "reader" finished</summary>\n<result>Findings: the report quotes --wss-wrap and --wss-start and --wss-release as data.\n--wss-wrap\n</result>'
+out=$(run "$notif")
+if [ -z "$out" ]; then
+  ok "notification-shaped payload quoting flags injects nothing"
+else
+  bad "a task-notification fired flags: injected $(printf '%s' "$out" | wc -c) bytes on text no user wrote"
+fi
+
+# The guard must not dull the hook: the same flags, typed by a user, still fire.
+fires "--wss-wrap --wss-start" "--wss-wrap"
+
+# And the refusal is anchored to the START of the prompt, not a substring scan:
+# a user pasting a transcript that merely contains the banner mid-message is
+# still a user asking for the flag they typed.
+fires "here is the transcript: <task-notification> fired earlier --wss-wrap" "--wss-wrap"
+
 # ------------------------------------------------------------- session-check
 
 head_ "SessionStart check is silent when there is nothing to say"
@@ -423,7 +492,7 @@ else
 
   # The lane selector. A worktree of a lane-split project carries .claude/WSS.LANE,
   # and WSS.lanes.named.<lane>.records.handoff then overrides WSS.record.handoff —
-  # WSS.MANIFEST.md's resolution rule. Both directions matter: the selected lane
+  # WSS.LANE-CONTRACT.md's resolution rule. Both directions matter: the selected lane
   # must get ITS card, and a selector that resolves to nothing must DEGRADE to
   # the unsplit record rather than kill the hook — wss-doctor.sh is where a bad
   # selector fails loudly, never here.
@@ -1234,6 +1303,217 @@ OWNFIX
   says "$mtblind" "no check-method table found in workflow/checks/WSS.CHECKS.md" \
     "a method table the parser cannot find is a FAILURE, not a silent agreement"
 
+  # The comparison above is between the two tables, so it is blind in the one
+  # direction that matters most: a method neither table lists makes them agree
+  # perfectly. Both fixtures below leave the pair in agreement and change only
+  # the directory, so an agreeing verdict cannot carry either assertion.
+  mtorphan="$TMP/doc-methods-orphan"
+  mtfix "$mtorphan" "the classes of drift" "the classes of drift"
+  printf '# unlisted\n' > "$mtorphan/workflow/checks/WSS.PROSE-PRUNE.md"
+  docommit "$mtorphan"
+  says "$mtorphan" "method file with no row in either check-method table: WSS.PROSE-PRUNE.md" \
+    "a method file neither table lists is a FAILURE, though the two tables agree"
+  mtghost="$TMP/doc-methods-ghost"
+  mtfix "$mtghost" "the classes of drift" "the classes of drift"
+  rm "$mtghost/workflow/checks/WSS.DOCS-AUDIT.md"
+  docommit "$mtghost"
+  says "$mtghost" "check-method table names a file that is not in workflow/checks/: WSS.DOCS-AUDIT.md" \
+    "a row for a method file that is gone is a FAILURE, not a live method"
+
+  # The same table a THIRD time, in the docs annex, on the condensation ruling:
+  # cells free, labels not. The agreeing fixture below therefore differs from the
+  # authority in EVERY cell it keeps — a shorter description, no href, a runner
+  # named rather than linked — and drops a row as well, so an agreeing verdict
+  # proves the licence rather than proving the annex is a copy.
+  mtanx() { # dir, annex method name
+    mtfix "$1" "the classes of drift" "the classes of drift"
+    mkdir -p "$1/docs/annex"
+    { printf '# Claude tooling\n\n## The shared check methods\n\n'
+      printf '| Method | What it finds | Run by |\n|---|---|---|\n'
+      printf '| `%s` | drift | alpha |\n' "$2"
+    } > "$1/docs/annex/WSS.CLAUDE-TOOLING.md"
+    docommit "$1"
+  }
+  mtanxok="$TMP/doc-methods-annex-ok"
+  mtanx "$mtanxok" "WSS.RECORD-DRIFT.md"
+  printf '%s' "$(doc "$mtanxok")" | grep -q "the annex's check-method rows all exist in workflow/checks/WSS.CHECKS.md (1 checked)" \
+    && ok "the annex may condense a method's cells and skip a row entirely" \
+    || bad "the annex comparison reached no verdict, or it read condensation as drift"
+  mtanxdrift="$TMP/doc-methods-annex-drift"
+  mtanx "$mtanxdrift" "WSS.PROSE-PRUNE.md"
+  says "$mtanxdrift" "check-method table carries methods" \
+    "a method only the annex names is a FAILURE — the authority renamed or dropped it"
+  mtanxblind="$TMP/doc-methods-annex-blind"
+  mtanx "$mtanxblind" "WSS.RECORD-DRIFT.md"
+  edit_ "$mtanxblind/docs/annex/WSS.CLAUDE-TOOLING.md" 's/^| Method | What it finds | Run by |$/| Check | What it finds | Run by |/'
+  docommit "$mtanxblind"
+  says "$mtanxblind" "no check-method table found in docs/annex/WSS.CLAUDE-TOOLING.md" \
+    "the licence covers the cells, not the header — an unreadable annex table is a FAILURE"
+
+  # The caller->invokes table, which nothing read at all until this check. It
+  # names five KINDS of referent and each resolves through its own rule, so each
+  # gets its own deliberately-broken fixture below — a shared one would leave
+  # four of the five rules asserted by nothing. The base fixture renames the
+  # hook's flags into a namespace, because which `--` token is a flag and which
+  # is a script's own argument is decided by the longest prefix the FLAGS array
+  # shares, and `--alpha`/`--beta` share nothing to decide with.
+  iwfix() { # dir, invokes-cell of the first row, second row's caller
+    docfix "$1"
+    mkdir -p "$1/.claude" "$1/workflow/writers" "$1/workflow/checks" "$1/skills/wss-gamma"
+    edit_ "$1/wss-shorthand-flags.sh" 's/--alpha/--wss-alpha/g; s/--beta/--wss-beta/g'
+    edit_ "$1/workflow/WSS.OWNERSHIP.md" 's/--alpha/--wss-alpha/g; s/--beta/--wss-beta/g'
+    edit_ "$1/commands/alpha.md" 's/--alpha/--wss-alpha/g'
+    printf '# gamma\n'   > "$1/workflow/writers/WSS.GAMMA-WRITER.md"
+    printf '# delta\n'   > "$1/workflow/writers/WSS.DELTA-TRACKER.md"
+    printf '# index\n'   > "$1/workflow/writers/WSS.WRITERS.md"
+    printf '# thing\n'   > "$1/workflow/checks/WSS.THING.md"
+    printf '# manifest\n\nRoles: `audit`, `release`.\n' > "$1/workflow/WSS.MANIFEST.md"
+    printf '# wss-gamma\n\nDoes the gamma thing.\n' > "$1/skills/wss-gamma/SKILL.md"
+    printf '#!/usr/bin/env bash\ntrue\n' > "$1/wss-thing.sh"
+    { printf '# Tooling\n\n### Who invokes whom\n\n'
+      printf '| Caller | Invokes | For |\n|---|---|---|\n'
+      printf '| `--wss-alpha` | %s | reasons |\n' "$2"
+      printf '| `%s` | `delta-tracker`, `WSS.agents.audit` | reasons |\n' "$3"
+    } > "$1/.claude/WSS.TOOLING.md"
+    docommit "$1"
+  }
+  iwrow='`gamma-writer`, `--wss-beta`, `wss-thing.sh --all` (`--dir`), `workflow/checks/WSS.THING.md`'
+  iwok="$TMP/doc-invokes-ok"
+  iwfix "$iwok" "$iwrow" "wss-gamma"
+  printf '%s' "$(doc "$iwok")" | grep -q "every referent in the caller->invokes table resolves (8 checked)" \
+    && ok "the invokes table resolves a flag, a writer, a script, a method file and a skill" \
+    || bad "the invokes resolver reached no verdict, or counted a kind it should have skipped"
+  printf '%s' "$(doc "$iwok")" | grep -q "every writer procedure is named by a caller (2 procedures)" \
+    && ok "the writers/ anchor counts the procedures and exempts the index" \
+    || bad "the writers/ anchor reached no verdict, or counted WSS.WRITERS.md as a procedure"
+
+  # `--all` in the script's own span must stay an argument. If the resolver ever
+  # treats it as a flag this fixture fails, which is the only thing asserting
+  # that arguments and flags are told apart at all.
+  iwflag="$TMP/doc-invokes-flag"
+  iwfix "$iwflag" '`gamma-writer`, `--wss-delta`, `wss-thing.sh --all` (`--dir`), `workflow/checks/WSS.THING.md`' "wss-gamma"
+  says "$iwflag" "--wss-delta(no such flag)" \
+    "a row naming a flag the hook does not carry is a FAILURE"
+  iwscript="$TMP/doc-invokes-script"
+  iwfix "$iwscript" "$iwrow" "wss-gamma"
+  rm "$iwscript/wss-thing.sh"; docommit "$iwscript"
+  says "$iwscript" "wss-thing.sh(no such script)" \
+    "a row naming a script that is gone is a FAILURE"
+  iwwriter="$TMP/doc-invokes-writer"
+  iwfix "$iwwriter" "$iwrow" "wss-gamma"
+  rm "$iwwriter/workflow/writers/WSS.GAMMA-WRITER.md"; docommit "$iwwriter"
+  says "$iwwriter" "gamma-writer(no workflow/writers/WSS.GAMMA-WRITER.md)" \
+    "a row naming a writer procedure that is gone is a FAILURE"
+  iwpath="$TMP/doc-invokes-path"
+  iwfix "$iwpath" "$iwrow" "wss-gamma"
+  rm "$iwpath/workflow/checks/WSS.THING.md"; docommit "$iwpath"
+  says "$iwpath" "workflow/checks/WSS.THING.md(no such file)" \
+    "a row naming a check method that is gone is a FAILURE"
+  iwskill="$TMP/doc-invokes-skill"
+  iwfix "$iwskill" "$iwrow" "wss-gamma"
+  rm -r "$iwskill/skills/wss-gamma"; docommit "$iwskill"
+  says "$iwskill" "wss-gamma(no such skill)" \
+    "a CALLER that resolves to no skill is a FAILURE, not just a callee"
+  iwrole="$TMP/doc-invokes-role"
+  iwfix "$iwrole" "$iwrow" "wss-gamma"
+  edit_ "$iwrole/.claude/WSS.TOOLING.md" 's/WSS.agents.audit/WSS.agents.nosuch/'
+  docommit "$iwrole"
+  says "$iwrole" "WSS.agents.nosuch(no such role" \
+    "a row naming a manifest role WSS.MANIFEST.md does not document is a FAILURE"
+
+  # The direction the table cannot fail in on its own: this fixture leaves every
+  # row resolving and adds only the file, so the verdict can come from nothing
+  # but the writers/ anchor.
+  iworphan="$TMP/doc-invokes-orphan"
+  iwfix "$iworphan" "$iwrow" "wss-gamma"
+  printf '# epsilon\n' > "$iworphan/workflow/writers/WSS.EPSILON-WRITER.md"
+  docommit "$iworphan"
+  says "$iworphan" "writer procedure that no caller->invokes row names: WSS.EPSILON-WRITER.md" \
+    "a writer procedure no row names is a FAILURE, though every row resolves"
+  iwblind="$TMP/doc-invokes-blind"
+  iwfix "$iwblind" "$iwrow" "wss-gamma"
+  edit_ "$iwblind/.claude/WSS.TOOLING.md" 's/^| Caller | Invokes | For |$/| Caller | Calls | For |/'
+  docommit "$iwblind"
+  says "$iwblind" "no caller->invokes table found in .claude/WSS.TOOLING.md" \
+    "a table the resolver cannot find is a FAILURE, not a table that resolves perfectly"
+
+  # And the annex's copy of it, on the same condensation ruling as the methods:
+  # a caller the annex skips is fine, one only the annex has is not.
+  iwanx() { # dir, annex caller
+    iwfix "$1" "$iwrow" "wss-gamma"
+    mkdir -p "$1/docs/annex"
+    { printf '# Claude tooling\n\n## Who invokes whom\n\n'
+      printf '| Caller | Invokes | For |\n|---|---|---|\n'
+      printf '| `%s` | `gamma-writer` | reasons |\n' "$2"
+    } > "$1/docs/annex/WSS.CLAUDE-TOOLING.md"
+    docommit "$1"
+  }
+  iwanxok="$TMP/doc-invokes-annex-ok"
+  iwanx "$iwanxok" "--wss-alpha"
+  printf '%s' "$(doc "$iwanxok")" | grep -q "the annex's callers all exist in the catalog's table (1 checked)" \
+    && ok "the annex may skip a caller row the catalog carries" \
+    || bad "the annex caller comparison reached no verdict, or read condensation as drift"
+  iwanxdrift="$TMP/doc-invokes-annex-drift"
+  iwanx "$iwanxdrift" "--wss-epsilon"
+  says "$iwanxdrift" "does not: --wss-epsilon" \
+    "a caller only the annex names is a FAILURE — the catalog renamed or dropped it"
+
+  # One record, one writer — the invariant the whole matrix exists to state.
+  # Every fixture below differs only in the second row's "Sole writer of" cell,
+  # so a verdict can come from nothing else.
+  swfix() { # dir, second row's sole-writer cell
+    docfix "$1"
+    { printf '# Ownership\n\n## The matrix\n\n'
+      printf '| Verb | Flag | Skill | Tier | Sole writer of | Authorization the flag grants |\n'
+      printf '|---|---|---|---|---|---|\n'
+      printf '| alpha | `--alpha` | `alpha-skill` | primitive | `WSS.record.todo` | commit, **not** push |\n'
+      printf '| beta | `--beta` | `beta-skill` | primitive | %s | — |\n' "$2"
+    } > "$1/workflow/WSS.OWNERSHIP.md"
+    docommit "$1"
+  }
+  swok="$TMP/doc-writers-distinct"
+  swfix "$swok" '`WSS.record.roadmap`'
+  printf '%s' "$(doc "$swok")" | grep -q "every record has exactly one writer" \
+    && ok "two rows claiming different records is clean" \
+    || bad "the sole-writer check reached no verdict on a matrix with two distinct claims"
+  swdup="$TMP/doc-writers-collide"
+  swfix "$swdup" '`WSS.record.todo`'
+  says "$swdup" "two writers claim WSS.record.todo: alpha-skill beta-skill" \
+    "two rows claiming one record is a FAILURE, and it names both writers"
+  swnil="$TMP/doc-writers-disclaim"
+  swfix "$swnil" '**nothing** — it dispatches to `--alpha`, which writes `WSS.record.todo`'
+  printf '%s' "$(doc "$swnil")" | grep -q "every record has exactly one writer" \
+    && ok "a row that disclaims ownership may name another skill's record in its prose" \
+    || bad "a nothing-with-an-owner cell was counted as a second claim"
+  swblind="$TMP/doc-writers-unreadable"
+  swfix "$swblind" '`WSS.record.roadmap`'
+  edit_ "$swblind/workflow/WSS.OWNERSHIP.md" 's/| Sole writer of |/| Writes |/'
+  docommit "$swblind"
+  says "$swblind" "no ownership matrix found in workflow/WSS.OWNERSHIP.md" \
+    "a matrix header the parser cannot find is a FAILURE, not an absence of conflicts"
+
+  # A description advertising a shorthand the hook does not serve. Every other
+  # flag check runs flag -> skill; this is the direction a reader travels, and
+  # the failure is silent — the flag reaches the model as prose.
+  advfix() { # dir, alpha-skill description
+    docfix "$1"
+    printf -- '---\ndescription: "%s"\n---\n\n# alpha-skill\n\nDoes the alpha thing.\n' \
+      "$2" > "$1/skills/alpha-skill/SKILL.md"
+    docommit "$1"
+  }
+  advbad="$TMP/doc-shorthand-unserved"
+  advfix "$advbad" 'Does the alpha thing. SHORTHAND: --wss-nope. Also trigger on \"do the alpha thing\".'
+  says "$advbad" "'alpha-skill' advertises --wss-nope, which wss-shorthand-flags.sh does not serve" \
+    "a description advertising a shorthand the hook does not serve is a FAILURE"
+  # The filter reads only --wss- tokens, so a description quoting another tool's
+  # flag is not a claim about this hook. Without this the check becomes a
+  # false-positive generator and gets weakened rather than obeyed.
+  advok="$TMP/doc-shorthand-foreign"
+  advfix "$advok" 'Does the alpha thing, passing --strict and --alpha along.'
+  printf '%s' "$(doc "$advok")" | grep -q "advertises --" \
+    && bad "a non---wss- flag in a description was read as an advertised shorthand" \
+    || ok "a description quoting another tool's flag is not read as a shorthand claim"
+
   # The two lane-table pairs, one comparison each. The four-rulings pair must
   # agree in every cell except a trailing "— see below" pointer, so the clean
   # fixture carries the pointer on one side only: an agreeing verdict proves
@@ -1248,11 +1528,11 @@ OWNFIX
       printf '| **Accept** | yes, unmarked | — |\n'
       printf '| **Decline** | no | %s |\n' "$2"
     } > "$1/skills/lane-record-sync/SKILL.md"
-    { printf '# The record contract\n\n'
+    { printf '# The lane contract\n\n'
       printf '| | A record | A transfer queue |\n|---|---|---|\n'
       printf '| Writers | exactly one | **any lane** |\n'
       printf '| Write mode | append-only or rewritten in place | append-only, always |\n'
-    } > "$1/workflow/WSS.RECORD-CONTRACT.md"
+    } > "$1/workflow/WSS.LANE-CONTRACT.md"
     { printf '# Lane synching\n\n'
       printf '| | A record | A transfer queue |\n|---|---|---|\n'
       printf '| Writers | exactly one | any lane |\n'
@@ -1289,6 +1569,104 @@ OWNFIX
   docommit "$lnblind"
   says "$lnblind" "no four-rulings table found in docs/annex/lane-synching.md" \
     "a rulings table the parser cannot find is a FAILURE, not a silent agreement"
+
+  # The splittable set: one contract line, and every site that restates the key
+  # list for a reader who would otherwise follow a link. EVERY site in this
+  # fixture wraps across a line break, and each wraps somewhere different — the
+  # anchor split in one, the key list split in another, the parenthesis split in
+  # the third. A line-based grep sees `todo` and `openDecisions` and calls three
+  # correct files drift, so an agreeing verdict here is the whole proof that the
+  # walk normalises newlines before it compares.
+  spfix() { # dir, canon list, full list, subset list
+    docfix "$1"
+    mkdir -p "$1/skills/record" "$1/skills/gamma-skill"
+    { printf '# The lane contract\n\n## Which records may split\n\n'
+      printf -- '**Splittable: %s** — forward-looking records.\n' "$2"
+    } > "$1/workflow/WSS.LANE-CONTRACT.md"
+    { printf '# alpha-skill\n\nDoes the alpha thing. Where a selector names a lane,\n'
+      printf 'the manifest overrides\n'
+      printf -- '`WSS.record.X` for %s — the resolution rule.\n' "$3"
+    } > "$1/skills/alpha-skill/SKILL.md"
+    { printf '# beta-skill\n\nDoes the beta thing. The manifest overrides\n'
+      printf -- '`WSS.record.X` for %s\n%s — the resolution rule.\n' "${3% *}" "${3##* }"
+    } > "$1/skills/beta-skill/SKILL.md"
+    { printf '# gamma-skill\n\nWrites the manifest. Only the splittable keys\n'
+      printf -- '(%s) may appear in a lane map.\n' "$3"
+    } > "$1/skills/gamma-skill/SKILL.md"
+    { printf '# record\n\nWrites two records, and overrides\n'
+      printf -- '`WSS.record.X` for %s — the resolution rule.\n' "$4"
+    } > "$1/skills/record/SKILL.md"
+    docommit "$1"
+  }
+  spcanon='`todo`, `openDecisions`, `handoff`, `roadmap`'
+  spfull='`todo`, `openDecisions`, `handoff` and `roadmap`'
+  spsub='`todo` and `openDecisions`'
+
+  spok="$TMP/doc-split-agree"
+  spfix "$spok" "$spcanon" "$spfull" "$spsub"
+  printf '%s' "$(doc "$spok")" | grep -q "every splittable-set restatement matches workflow/WSS.LANE-CONTRACT.md:5 (3 full, 1 declared subset)" \
+    && ok "three restatements wrapped three different ways all agree with the contract" \
+    || bad "the splittable-set comparison reached no verdict, or read a line break as drift"
+
+  # A key edited at one site and nowhere else — the drift the check exists for.
+  spdrift="$TMP/doc-split-drift"
+  spfix "$spdrift" "$spcanon" "$spfull" "$spsub"
+  edit_ "$spdrift/skills/beta-skill/SKILL.md" 's/`handoff`/`behaviour`/'
+  docommit "$spdrift"
+  says "$spdrift" "skills/beta-skill/SKILL.md:3 restates the splittable set as" \
+    "a key that drifted at one restatement site is a FAILURE, and it names the site"
+
+  # The contract gaining a key, with every copy left behind. Nothing here names
+  # a key the contract does not carry, so a rule that only rejected unknown keys
+  # would pass this — the half of the risk a subset-tolerant check cannot see.
+  spgain="$TMP/doc-split-gained"
+  spfix "$spgain" '`todo`, `openDecisions`, `handoff`, `roadmap`, `toolbelt`' "$spfull" "$spsub"
+  says "$spgain" "restates the splittable set as" \
+    "a contract that GAINS a key while the copies stand still is a FAILURE"
+
+  # The zero-match walk. Every site is found by its wording, so a reworded
+  # marker leaves the check reporting green over an empty set forever.
+  spnone="$TMP/doc-split-nosites"
+  spfix "$spnone" "$spcanon" "$spfull" "$spsub"
+  for spf in alpha-skill beta-skill record; do
+    edit_ "$spnone/skills/$spf/SKILL.md" 's/overrides/resolves the paths/'
+  done
+  edit_ "$spnone/skills/gamma-skill/SKILL.md" 's/Only the splittable keys/Only the lane keys/'
+  docommit "$spnone"
+  says "$spnone" "NOTHING restates it" \
+    "a walk that matches no restatement site is a FAILURE, not a silent agreement"
+
+  # And the mirror: copies with no authority left to agree with, which is what a
+  # contract moved out of the walk's reach looks like from here.
+  spnocanon="$TMP/doc-split-nocanon"
+  spfix "$spnocanon" "$spcanon" "$spfull" "$spsub"
+  edit_ "$spnocanon/workflow/WSS.LANE-CONTRACT.md" 's/\*\*Splittable:/**Splits into:/'
+  docommit "$spnocanon"
+  says "$spnocanon" "restate the splittable set and no contract states it" \
+    "restatements with no contract to check against is a FAILURE"
+
+  spdual="$TMP/doc-split-two-canons"
+  spfix "$spdual" "$spcanon" "$spfull" "$spsub"
+  printf -- '\n**Splittable: `todo`, `openDecisions`** — a second authority.\n' \
+    >> "$spdual/skills/gamma-skill/SKILL.md"
+  docommit "$spdual"
+  says "$spdual" "declared as canon in more than one place" \
+    "two files claiming to be the authority is a FAILURE"
+
+  # The subset permit is one named site with one named list, not tolerance for
+  # anything shorter. Without this the check passes every drift that drops a key.
+  spundeclared="$TMP/doc-split-undeclared-subset"
+  spfix "$spundeclared" "$spcanon" "$spfull" "$spsub"
+  edit_ "$spundeclared/skills/alpha-skill/SKILL.md" 's/, `handoff` and `roadmap`//'
+  docommit "$spundeclared"
+  says "$spundeclared" "skills/alpha-skill/SKILL.md:4 restates the splittable set as" \
+    "a site naming a subset it was never declared for is a FAILURE"
+
+  # A config directory with neither the contract nor a copy of it is an adopted
+  # project, not a broken suite, and the check must stay quiet there.
+  printf '%s' "$out" | grep -q "no splittable-set contract here, and nothing restating one" \
+    && ok "a tree with no splittable-set contract and no restatement is clean" \
+    || bad "the splittable-set check fired on a config directory that has no lane contract"
 
   # --strict's entire job is an exit code, so nothing but an exit code tests it.
   # Both directions: a clean run must stay 0 under it, or it is just `exit 1`.
@@ -2721,6 +3099,121 @@ printf '%s' "$out" | grep -q 'buys nothing' \
   && ok "a stamp missing its commit WARNS — it anchors nothing" \
   || bad "a malformed stamp passed silently"
 
+# ------------------------------------------------------------- the docs block
+
+head_ "WSS.docs declares a site shape, or is refused"
+
+# workflow/checks/WSS.DOCS-AUDIT.md resolves every shell block it runs from
+# these three keys. A wrong one is the worst failure an audit has: a root that
+# resolves to nothing makes every check walk an empty set and report a clean
+# site. So unlike the WSS.suite stamp — which update re-derives from the
+# tree and therefore only warns about — a malformed docs block FAILS.
+dp="$TMP/docs-proj"
+rm -rf "$dp"; mkdir -p "$dp/.claude" "$dp/website" "$dp/website/ca"
+: > "$dp/notadir"
+
+# Run the doctor over $dp with the given manifest body, ANSI stripped.
+drun_docs() {
+  printf '%s\n' "$1" > "$dp/.claude/WSS.WORKFLOW.json"
+  (cd "$dp" && CLAUDE_CONFIG_DIR="$TMP/bare" CLAUDE_DIR="$TMP/bare" \
+     bash "$DOCTOR" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
+}
+
+out=$(drun_docs '{"WSS":{"manifest":"workflow/v2","docs":{"root":"website","languages":["en","ca"],"devCommand":"npm run docs:dev"}}}')
+printf '%s' "$out" | grep -q 'WSS.docs resolves' \
+  && ok "a complete, resolving docs block passes" \
+  || bad "a valid WSS.docs block did not get its pass line"
+printf '%s' "$out" | grep -q "sets 'WSS.docs" \
+  && bad "WSS.docs warned as a key nothing reads — KNOWN_KEYS missed it or a sub-key" \
+  || ok "WSS.docs and its three sub-keys are documented keys, not unknown ones"
+
+# The root is a DIRECTORY. `-e` would pass a file and every later check would
+# then walk nothing, which is exactly the silent shape being guarded.
+for body in \
+  '{"WSS":{"manifest":"workflow/v2","docs":{"root":42}}}' \
+  '{"WSS":{"manifest":"workflow/v2","docs":{"root":""}}}' ; do
+  printf '%s' "$(drun_docs "$body")" | grep -q 'WSS.docs.root is not a non-empty string' \
+    && ok "a non-string WSS.docs.root is refused" \
+    || bad "a non-string WSS.docs.root passed: $body"
+done
+for body in \
+  '{"WSS":{"manifest":"workflow/v2","docs":{"root":"nope"}}}' \
+  '{"WSS":{"manifest":"workflow/v2","docs":{"root":"notadir"}}}' ; do
+  printf '%s' "$(drun_docs "$body")" | grep -q 'which is not a directory here' \
+    && ok "a WSS.docs.root that is not a directory is refused" \
+    || bad "a root resolving to nothing (or to a file) passed: $body"
+done
+
+# The list is ordered — first element is the root language — so an empty list
+# has no root language to name and is refused rather than read as monolingual.
+for body in \
+  '{"WSS":{"manifest":"workflow/v2","docs":{"languages":"en"}}}' \
+  '{"WSS":{"manifest":"workflow/v2","docs":{"languages":["en",3]}}}' \
+  '{"WSS":{"manifest":"workflow/v2","docs":{"languages":[]}}}' ; do
+  printf '%s' "$(drun_docs "$body")" | grep -q 'WSS.docs.languages is not a non-empty array' \
+    && ok "a malformed WSS.docs.languages is refused" \
+    || bad "a malformed languages list passed: $body"
+done
+
+# A declared translation needs its directory, or section 5 of the docs audit
+# compares against nothing and reports parity for a language that is not there.
+# Both directions are asserted: the happy-path block above declares ["en","ca"]
+# with website/ca/ present and must stay silent, and the same block warns once
+# the directory is taken away.
+printf '%s' "$out" | grep -q "WSS.docs.languages declares" \
+  && bad "a translation whose directory EXISTS was warned about" \
+  || ok "a declared translation with its directory present raises nothing"
+
+rmdir "$dp/website/ca"
+out=$(drun_docs '{"WSS":{"manifest":"workflow/v2","docs":{"root":"website","languages":["en","ca"]}}}')
+printf '%s' "$out" | grep -q "warn  WSS.docs.languages declares 'ca', but website/ca/ does not" \
+  && ok "a declared translation with no directory warns" \
+  || bad "a missing translation directory passed silently — the docs audit would report parity for it"
+printf '%s' "$out" | grep -q "FAIL  WSS.docs.languages declares" \
+  && bad "the missing-translation complaint is a FAIL; declaring a language before its pages exist is legitimate" \
+  || ok "a missing translation directory is a warn, never a FAIL"
+printf '%s' "$out" | grep -q 'WSS.docs resolves' \
+  && ok "the warn does not gate the WSS.docs pass line — the shape is still declared, not guessed" \
+  || bad "a missing translation directory suppressed the pass line, so it set docs_bad"
+
+# The FIRST element is the root language and lives at the docs root itself, so
+# it is the one element that must NOT be looked for in a subdirectory. Here
+# neither website/ca/ nor website/en/ exists and only 'en' — the second — may
+# be named.
+out=$(drun_docs '{"WSS":{"manifest":"workflow/v2","docs":{"root":"website","languages":["ca","en"]}}}')
+printf '%s' "$out" | grep -q "declares 'en', but website/en/" \
+  && ok "the second language is checked for its own subdirectory" \
+  || bad "a missing translation directory went unreported when it was second in the list"
+printf '%s' "$out" | grep -q "declares 'ca'" \
+  && bad "the FIRST language was checked for website/ca/ — it is the root language and lives at the docs root" \
+  || ok "the root language is exempt: its pages sit at the docs root, not in a subdirectory"
+mkdir -p "$dp/website/ca"
+
+printf '%s' "$(drun_docs '{"WSS":{"manifest":"workflow/v2","docs":{"devCommand":5}}}')" \
+  | grep -q 'WSS.docs.devCommand is not a non-empty string' \
+  && ok "a non-string WSS.docs.devCommand is refused" \
+  || bad "a non-string devCommand passed"
+
+printf '%s' "$(drun_docs '{"WSS":{"manifest":"workflow/v2","docs":"docs"}}')" \
+  | grep -q 'WSS.docs is not an object' \
+  && ok "a scalar WSS.docs is refused before its sub-keys are read" \
+  || bad "a scalar WSS.docs passed, or crashed the sub-key checks"
+
+# FAIL, not warn — and asserted on the marker rather than on the exit code,
+# which a bare temp project already moves for its missing records. An exit-code
+# assertion here would pass against a doctor that only warned.
+printf '%s' "$(drun_docs '{"WSS":{"manifest":"workflow/v2","docs":{"root":"nope"}}}')" \
+  | grep -q 'FAIL  WSS.docs.root declares' \
+  && ok "an unresolvable docs root is a FAIL, not a warn — nothing re-derives it" \
+  || bad "the docs root complaint is not carrying the FAIL marker wss-session-check greps for"
+
+# Absence is the contract, not a fault: the fallbacks in WSS.MANIFEST.md cover
+# every key, so a manifest with no docs block must say nothing about docs.
+out=$(drun_docs '{"WSS":{"manifest":"workflow/v2"}}')
+printf '%s' "$out" | grep -q 'WSS.docs' \
+  && bad "a manifest with no docs block still produced a WSS.docs line" \
+  || ok "no docs block is silent — the declared fallbacks cover it"
+
 head_ "The alert hook cues only when asked to"
 
 ALERT="$(dirname "$HOOK")/wss-alert.sh"
@@ -3109,22 +3602,212 @@ else
   esac
 fi
 
+# -------------------------------------------------- overview wss-sweep-distance.sh
+
+head_ "wss-sweep-distance.sh is the one sweep-distance implementation"
+
+# --wss-overview quotes it --verbose through wss-probe.sh; --wss-wrap step 7 runs
+# it --compact for its closing line. It exists BECAUSE those were two copies of
+# the same nine lines, one of them living in prose nothing executed, free to
+# disagree with nothing noticing. So the assertions here are of two kinds: the
+# states themselves, and that both renderings report the same distance for the
+# same entry. Every path must exit 0 — the line is a report and not a gate, and a
+# non-zero exit is the first thing that turns a report into one.
+DIST="$_root/skills/overview/assets/wss-sweep-distance.sh"
+if [ ! -f "$DIST" ]; then
+  bad "wss-sweep-distance.sh missing at $DIST — both callers now depend on it"
+else
+  sd="$TMP/sweepdist"
+  rm -rf "$sd"; mkdir -p "$sd/.claude"
+  git init -q "$sd" 2>/dev/null
+  git -C "$sd" config user.email t@test; git -C "$sd" config user.name t
+  git -C "$sd" config commit.gpgsign false
+  printf 'x\n' > "$sd/f.txt"
+  git -C "$sd" add -A >/dev/null 2>&1
+  git -C "$sd" commit -q -m first >/dev/null 2>&1
+  sdbase=$(git -C "$sd" rev-parse HEAD)
+  sdbranch=$(git -C "$sd" rev-parse --abbrev-ref HEAD)
+
+  # A commit on another branch: a real sha, resolvable, that HEAD does not
+  # descend from — a force-push or a stamp made on a lane worktree.
+  git -C "$sd" checkout -q -b sidebranch
+  git -C "$sd" commit -q --allow-empty -m side >/dev/null 2>&1
+  sdoff=$(git -C "$sd" rev-parse HEAD)
+  git -C "$sd" checkout -q "$sdbranch"
+  for _ in 1 2 3; do git -C "$sd" commit -q --allow-empty -m c >/dev/null 2>&1; done
+
+  drun() { # mode — prints output, sets drc
+    out=$(cd "$sd" && bash "$DIST" "$1" 2>/dev/null); drc=$?
+    printf '%s' "$out"
+  }
+
+  # No checkpoint at all. The verbose form says so in words; the compact one
+  # stays silent, because a project that has never swept has no distance and a
+  # zero would claim freshness it has not earned.
+  drc=0; out=$(drun --verbose)
+  case $out in
+    *"no sweep has ever run here"*) ok "no checkpoint is said in words, verbose" ;;
+    *) bad "the no-checkpoint message is gone from --verbose" ;;
+  esac
+  [ "$drc" = 0 ] && ok "no checkpoint still exits 0 — a report, not a gate" \
+                 || bad "no checkpoint exited $drc, which makes the line a gate"
+  drc=0; out=$(drun --compact)
+  [ -z "$out" ] && ok "no checkpoint prints nothing at all, compact" \
+                || bad "the compact form invented a line with no checkpoint: $out"
+  [ "$drc" = 0 ] || bad "no checkpoint exited $drc in compact mode"
+
+  # A checkpoint whose entries map is empty is the same fact, said differently.
+  jq -n '{entries:{}}' > "$sd/.claude/WSS.SWEEPS.json"
+  out=$(drun --verbose)
+  case $out in
+    *"checkpoint exists but holds no entries"*) ok "an empty entries map is named" ;;
+    *) bad "an empty entries map went silent instead of saying so" ;;
+  esac
+  out=$(drun --compact)
+  [ -z "$out" ] && ok "an empty entries map prints nothing, compact" \
+                || bad "the compact form invented a line from no entries: $out"
+
+  # The four per-entry states, in one checkpoint, in one pass. `plain` is three
+  # commits behind; `dirty` is the SAME sha carrying the +dirty suffix a sweep
+  # over an unclean tree stamps, and must report the same three; `gone`, `off`
+  # and `none` are the three that are not a number and must never render as one.
+  jq -n --arg b "$sdbase" --arg o "$sdoff" '{entries:{
+      plain: {baseline:$b, at:"2026-02-01", method:"full", result:"green"},
+      dirty: {baseline:($b + "+dirty"), at:"2026-02-02", method:"incremental"},
+      gone:  {baseline:"notacommitatall", at:"2026-02-03"},
+      off:   {baseline:$o, at:"2026-02-04"},
+      none:  {at:"2026-02-05"}}}' > "$sd/.claude/WSS.SWEEPS.json"
+
+  drc=0; comp=$(drun --compact)
+  [ "$drc" = 0 ] && ok "a checkpoint full of broken baselines still exits 0" \
+                 || bad "broken baselines exited $drc — that is a gate"
+  case $comp in
+    *"plain: 3"*) ok "compact reports the distance as a bare number" ;;
+    *) bad "compact lost the distance: $comp" ;;
+  esac
+  # THE +dirty assertion. Without the strip git resolves nothing and this entry
+  # reads `no such commit` — a swept tree reported as unswept, every session.
+  case $comp in
+    *"dirty: 3"*) ok "a +dirty baseline is stripped and counts the same as the bare sha" ;;
+    *) bad "the +dirty suffix was not stripped: $comp" ;;
+  esac
+  case $comp in
+    *"gone: no such commit"*) ok "a sha that resolves to nothing says so" ;;
+    *) bad "an unresolvable sha did not say 'no such commit': $comp" ;;
+  esac
+  # THE ancestry assertion. rev-list would happily count from a divergent sha,
+  # and what it counts is everything on HEAD's side of the split — catastrophic
+  # drift reported when the only fact is that the sha sits elsewhere.
+  case $comp in
+    *"off: off this history"*) ok "a baseline HEAD does not descend from is named, not counted" ;;
+    *) bad "a non-ancestor baseline was counted instead of named: $comp" ;;
+  esac
+  case $comp in
+    *"off: "[0-9]*) bad "a non-ancestor baseline rendered as a number: $comp" ;;
+    *) ok "and no number appears against it" ;;
+  esac
+  # An absent baseline field is the trap: `git rev-list --count ..HEAD` counts
+  # ZERO, so a missing baseline would report perfect freshness.
+  case $comp in
+    *"none: no baseline"*) ok "an entry with no baseline says so rather than reporting 0" ;;
+    *) bad "a missing baseline did not say 'no baseline': $comp" ;;
+  esac
+  case $comp in
+    *"none: 0"*) bad "a missing baseline rendered as 0 commits behind — false freshness" ;;
+    *) ok "and it never renders as 0" ;;
+  esac
+  # One line, entries joined — this is what the wrap prints, whole.
+  [ "$(printf '%s\n' "$comp" | wc -l)" = 1 ] && ok "compact is exactly one line" \
+    || bad "compact spread over $(printf '%s\n' "$comp" | wc -l) lines"
+  case $comp in
+    *", "*) ok "and its entries are comma-joined" ;;
+    *) bad "the compact line lost its separator: $comp" ;;
+  esac
+
+  verb=$(drun --verbose)
+  case $verb in
+    *"plain: baseline $sdbase (2026-02-01, full, result green) — 3 commits behind HEAD"*)
+      ok "verbose carries baseline, stamp, method, result and distance" ;;
+    *) bad "the verbose entry line drifted: $(printf '%s' "$verb" | grep '^plain')" ;;
+  esac
+  case $verb in
+    *"dirty at stamp"*) ok "verbose marks a +dirty baseline as dirty at stamp" ;;
+    *) bad "the dirty-at-stamp marker is gone from verbose" ;;
+  esac
+  case $verb in
+    *"off: baseline $sdoff is off this history"*)
+      ok "verbose names the off-history case too, rather than counting it" ;;
+    *) bad "verbose counted a non-ancestor baseline: $(printf '%s' "$verb" | grep '^off')" ;;
+  esac
+
+  # The whole point of the file. Two renderings, one computation: every number
+  # the compact line reports must be the number the verbose block reports for
+  # that same entry. This is the assertion the two hand-written copies could not
+  # have, and it is what would go red if either rendering re-derived anything.
+  agree=1
+  for k in plain dirty; do
+    cn=$(printf '%s' "$comp" | tr ',' '\n' | sed -n "s/^ *$k: //p")
+    vn=$(printf '%s\n' "$verb" | sed -n "s/^$k: .* — \([0-9]*\) commits behind HEAD$/\1/p")
+    [ -n "$cn" ] && [ "$cn" = "$vn" ] || { agree=0; bad "$k: compact says '$cn', verbose says '$vn'"; }
+  done
+  [ "$agree" = 1 ] && ok "both renderings report the same distance for the same entry"
+
+  # WSS.sweeps is honoured where declared, and the conventional path is the
+  # fallback — the same rule wss-session-check.sh and wss-doctor.sh follow. An
+  # UNDECLARED key is not the absent case: a project that swept without
+  # declaring it still gets its line.
+  mv "$sd/.claude/WSS.SWEEPS.json" "$sd/.claude/elsewhere.json"
+  printf '{"WSS":{"sweeps":".claude/elsewhere.json"}}\n' > "$sd/.claude/WSS.WORKFLOW.json"
+  out=$(drun --compact)
+  case $out in
+    *"plain: 3"*) ok "a declared WSS.sweeps path is read where it points" ;;
+    *) bad "the declared checkpoint path was ignored: $out" ;;
+  esac
+  printf '{"WSS":{"record":{"todo":"WSS.TODO.md"}}}\n' > "$sd/.claude/WSS.WORKFLOW.json"
+  mv "$sd/.claude/elsewhere.json" "$sd/.claude/WSS.SWEEPS.json"
+  out=$(drun --compact)
+  case $out in
+    *"plain: 3"*) ok "an undeclared WSS.sweeps falls back to the conventional path" ;;
+    *) bad "an undeclared key was treated as no checkpoint: $out" ;;
+  esac
+
+  # Only `entries` is read, matching what sweep-tracker resolves. A reporter
+  # that saw further than the writer would report freshness the machinery has not.
+  jq -n --arg b "$sdbase" '{plain:{baseline:$b}, entries:{}}' \
+    > "$sd/.claude/WSS.SWEEPS.json"
+  out=$(drun --compact)
+  [ -z "$out" ] && ok "a stamp outside entries is invisible here, as it is to the tracker" \
+                || bad "a root-level stamp was read: $out"
+
+  # An unknown mode is the one non-zero exit: a caller's mistake, not a finding
+  # about the sweeps.
+  (cd "$sd" && bash "$DIST" --whatever >/dev/null 2>&1)
+  [ $? -eq 2 ] && ok "an unknown mode exits 2 rather than guessing a rendering" \
+               || bad "an unknown mode did not exit 2"
+fi
+
 # --------------------------------------------------------- docs wss-scaffold.sh
 
 head_ "wss-scaffold.sh builds the site shell once and refuses an existing one"
 
 # The shell is three files; the refusal is the contract — an existing site is
 # the authority on its own conventions and must never be overwritten.
+# The docs root is NOT a positional: it is resolved from WSS.docs.root and that
+# key's declared fallback chain, so no invocation below passes one. The project
+# name is the first positional, and `--root` is the only override.
 SCAF="$_root/skills/docs/assets/wss-scaffold.sh"
 if [ ! -f "$SCAF" ]; then
   bad "wss-scaffold.sh missing at $SCAF"
 else
   sc="$TMP/scaf"; rm -rf "$sc"; mkdir -p "$sc"
-  (cd "$sc" && bash "$SCAF" docs "Demo Project" >/dev/null 2>&1); rc=$?
+  out=$(cd "$sc" && bash "$SCAF" "Demo Project" 2>&1); rc=$?
   [ "$rc" -eq 0 ] && [ -f "$sc/docs/index.html" ] && [ -f "$sc/docs/_sidebar.md" ] \
     && [ -f "$sc/docs/index.md" ] \
-    && ok "an empty target gets the shell: index.html, _sidebar.md, index.md" \
+    && ok "no manifest and nothing existing: the fallback chain lands on docs/" \
     || bad "the monolingual shell did not scaffold (rc=$rc)"
+  printf '%s' "$out" | grep -q 'docs root: docs' \
+    && ok "and the resolved root is announced, never silent" \
+    || bad "the run never said which root it resolved"
   [ ! -f "$sc/docs/_navbar.md" ] \
     && ok "one language means no language switcher" \
     || bad "a monolingual site grew a _navbar.md"
@@ -3133,7 +3816,7 @@ else
     || bad "the project name never made it into index.html"
 
   printf 'HANDS OFF\n' > "$sc/docs/keep.md"
-  out=$(cd "$sc" && bash "$SCAF" docs "Demo Project" 2>&1); rc=$?
+  out=$(cd "$sc" && bash "$SCAF" "Demo Project" 2>&1); rc=$?
   [ "$rc" -eq 1 ] && ok "an existing docs dir exits 1" \
                   || bad "an existing docs dir exited $rc, not 1"
   printf '%s' "$out" | grep -q 'refusing to scaffold' \
@@ -3143,11 +3826,45 @@ else
     && ok "and touched nothing in the existing site" \
     || bad "the refused run still wrote into the existing dir"
 
-  (cd "$sc" && bash "$SCAF" docs2 "Demo Project" en ca >/dev/null 2>&1); rc=$?
+  (cd "$sc" && bash "$SCAF" --root docs2 "Demo Project" en ca >/dev/null 2>&1); rc=$?
   [ "$rc" -eq 0 ] && [ -f "$sc/docs2/ca/index.md" ] \
     && grep -q 'Català' "$sc/docs2/_navbar.md" 2>/dev/null \
     && ok "translations get their folder and an endonym-labelled navbar" \
     || bad "the multilingual shell lost a language folder or its navbar (rc=$rc)"
+
+  # A declared root and the scaffolder disagreeing in silence is the defect this
+  # resolution exists to prevent: both invocations "succeed" when they diverge.
+  sm="$TMP/scaf-manifest"; rm -rf "$sm"; mkdir -p "$sm/.claude"
+  printf '{"WSS":{"docs":{"root":"website"}}}\n' > "$sm/.claude/WSS.WORKFLOW.json"
+  (cd "$sm" && bash "$SCAF" "Demo Project" >/dev/null 2>&1); rc=$?
+  [ "$rc" -eq 0 ] && [ -f "$sm/website/index.html" ] && [ ! -d "$sm/docs" ] \
+    && ok "a manifest-declared root is scaffolded into, with no argument at all" \
+    || bad "WSS.docs.root: website did not reach the scaffolder (rc=$rc)"
+
+  (cd "$sm" && bash "$SCAF" --root elsewhere "Demo Project" >/dev/null 2>&1); rc=$?
+  [ "$rc" -eq 0 ] && [ -f "$sm/elsewhere/index.html" ] \
+    && ok "--root overrides the manifest" \
+    || bad "--root did not override WSS.docs.root (rc=$rc)"
+
+  out=$(cd "$sm" && bash "$SCAF" --nope "Demo Project" 2>&1); rc=$?
+  [ "$rc" -eq 2 ] && printf '%s' "$out" | grep -q 'unknown option' \
+    && ok "an unknown flag exits 2 rather than becoming a project name" \
+    || bad "an unknown flag exited $rc, not 2"
+
+  # A manifest the scaffolder cannot parse must be a loud fallback, never a dead
+  # run: jq exits non-zero on a parse error, and letting that reach the `$(...)`
+  # assignment under `set -e` killed the script with an empty screen and a bare
+  # exit code. Scaffolding does not require a well-formed manifest — it requires
+  # being told the manifest could not be consulted.
+  sb="$TMP/scaf-broken"; rm -rf "$sb"; mkdir -p "$sb/.claude"
+  printf '{ "WSS": { "docs": { "root": "website" ' > "$sb/.claude/WSS.WORKFLOW.json"
+  out=$(cd "$sb" && bash "$SCAF" "Demo Project" 2>&1); rc=$?
+  [ "$rc" -eq 0 ] && [ -f "$sb/docs/index.html" ] \
+    && ok "an unparseable manifest still scaffolds, down the fallback chain" \
+    || bad "an unparseable manifest broke the run (rc=$rc)"
+  printf '%s' "$out" | grep -q 'not valid JSON' \
+    && ok "and says so, rather than failing to an empty screen" \
+    || bad "an unparseable manifest was ignored in silence"
 fi
 
 # ------------------------------------------------------------ the lane-mode gate
