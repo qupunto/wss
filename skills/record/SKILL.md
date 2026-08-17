@@ -1,6 +1,6 @@
 ---
 name: record
-description: "The project's record of work and why. `--wss-todo` parks what is not being built now: task to the backlog, reasoning to the decision log. `--wss-log` records a decision already made. Also on \"park this\", a decision announced as settled (\"we're going with X\"), pasted standup notes, or when you judge something premature. Not on a decision mentioned in passing."
+description: "The project's record of work and why. `--wss-todo` parks what is not being built now: task to the TODO LIST, reasoning to the decision log. `--wss-log` records a decision already made. Also on \"park this\", a decision announced as settled (\"we're going with X\"), pasted standup notes, or when you judge something premature. Not on a decision mentioned in passing."
 ---
 
 # The project record
@@ -19,19 +19,19 @@ regeneration.
 **Project facts come from `.claude/WSS.WORKFLOW.json`**: `WSS.record.todo`,
 `WSS.record.decisions`, `WSS.record.decisionsIndex`, `WSS.record.openDecisions`, and
 `WSS.commands.indexRegen`. Where a `.claude/WSS.LANE` selector names a lane,
-`WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for `todo` and
-`openDecisions` — [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s resolution
+`WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for whichever of
+those are splittable — [`WSS.LANE-CONTRACT.md`](../../wss/workflow/WSS.LANE-CONTRACT.md)'s resolution
 rule; `WSS.record.decisions` never splits, and under lanes it is fed by promotion,
 per the same file. The fallbacks
 when a key is absent are
-[`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md)'s, not this file's — say which ones
+[`WSS.MANIFEST.md`](../../wss/workflow/WSS.MANIFEST.md)'s, not this file's — say which ones
 you used. `WSS.record.decisionsIndex` is the one with no fallback: without it, append
 to the decision log and say the index was not regenerated.
 
 This skill is the **sole writer** of every one of them. Who owns everything else is
-[`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md); what each
+[`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md); what each
 record may and may not hold is
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md), which is the authority
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md), which is the authority
 if this file and that one ever disagree.
 
 ## Routing: which file, and why it matters
@@ -51,14 +51,14 @@ Is it settled?
 not need it" is a **decision** → `decisions`. "We cannot start because nobody has
 chosen between A and B" is an **open decision** → `openDecisions`.
 
-**An entry never lives in both** — [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s
+**An entry never lives in both** — [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s
 rule 3, which is where the rule and its reasoning live. Executing it here means
 deleting the entry from `openDecisions` and appending the outcome, including the
 options rejected, to `decisions`.
 
 **An open-decision entry is one `## <the choice>` heading**, with the options,
 tradeoffs, recommendation and what it blocks in the body below. The shape is
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s, not a style
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s, not a style
 choice: the SessionStart staleness nudge counts entries by `## ` heading, and
 an entry written as a bold paragraph is invisible to it.
 
@@ -66,14 +66,12 @@ an entry written as a bold paragraph is invisible to it.
 
 **Trigger on "here are my notes", "notes from the standup", "we discussed X, Y
 and Z", "minutes from the call", or a pasted block of unstructured decisions and
-actions.** The user is handing over a conversation they had somewhere else, and
-the job is to route every line in it through the table above.
+actions.**
 
-This is the one place the skill takes input it did not shape. Notes arrive
-mixed: a decision, an action, a thing someone will "look into", a complaint, and
-a date. Route each independently — **one note does not produce one entry**, and
-the commonest mistake is filing the whole block as a single decision because it
-arrived as a single paragraph.
+This is the one place the skill takes input it did not shape. Route every line
+through the table above, each independently — **one note does not produce one
+entry**, and the commonest mistake is filing the whole block as a single
+decision because it arrived as a single paragraph.
 
 **Three passes, in this order:**
 
@@ -104,12 +102,55 @@ user correct it.
 routing; the writing is `--wss-todo` and `--wss-log` exactly as above, under whatever
 grant the caller arrived with. Intake confers nothing of its own.
 
+## Which of the two records
+
+`WSS.record.todo` is the **TODO LIST**: what is genuinely queued, what a batch
+may pick up, what someone is waiting on. `WSS.record.backlog` is everything
+else worth writing down — the non-blocking, non-critical findings a session
+turned up on its way to something else.
+
+**The test is one question: is anything waiting on this?** If a person, a
+release, another entry or a broken thing is waiting, it is queued and goes to
+the TODO LIST. If the honest answer is "someone should look at this sometime",
+it is a backlog entry. `[critical → why]` and `[blocked → …]` are TODO-LIST
+markers and never appear in the backlog: an entry carrying either was queued by
+definition. When unsure, file to the backlog — promotion is one deliberate move
+and an over-queued list is the failure this split exists to remove.
+
+## Writing to `WSS.record.backlog`
+
+An ordinary register, rewritten in place, headed `# Backlog`, grouped under
+`## ` sections by area. One entry:
+
+```
+- **Short name.** What was noticed, concretely — which files, which behaviour.
+  Why it is not queued, in one clause.
+  Noticed (owner|session) YYYY-MM-DD.
+```
+
+**No checkbox.** That is the discriminator, and it is load-bearing: a `- [ ]`
+means queued, every counter in the suite counts checkboxes, and a backlog full
+of them reads to every consumer as a TODO list. **No technical breakdown** —
+file paths and the shape of the fix are what promotion writes, and writing them
+here does the queued item's work for an item nobody scheduled.
+
+**Promotion is a MOVE, never a copy, and only on a person's explicit say-so.**
+Delete the entry from `WSS.record.backlog` and write it into `WSS.record.todo`
+in that record's own format in the SAME edit: add the `- [ ]`, add the technical
+detail the entry deliberately lacked, drop the `Noticed` line. An entry in both
+files is the same failure as an entry in both `openDecisions` and `decisions`.
+Never promote as a side effect of reading the backlog for something else, and
+never promote in bulk — cherry-picking is the whole mechanism.
+
+Demotion — TODO LIST back to backlog — is the same move reversed, and equally a
+person's call.
+
 ## Writing to `WSS.record.todo`
 
 **Read the value first: it may not be a file.** Where `WSS.record.todo` is an object
-carrying a `provider` key, the backlog lives somewhere else and the procedure is
+carrying a `provider` key, the TODO LIST lives somewhere else and the procedure is
 that provider's —
-[`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md) for
+[`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md) for
 GitHub Issues.
 Everything below about *what an entry says* still applies; only where it is
 written changes.
@@ -123,7 +164,7 @@ Three rules that survive the medium, and are the ones most easily lost:
   `[blocked → …]`. This is not optional bookkeeping: `--wss-start` reads issues
   newest-first, so an item parked seconds ago is the *first* thing it reaches
   for, and an unmarked deferral is reversed by the next session that runs it.
-  Ordinary backlog items, the ones simply not scheduled yet, carry no marker.
+  Ordinary TODO list items, the ones simply not scheduled yet, carry no marker.
 
 - **The reasoning still goes to `WSS.record.decisions`, never into the item.** An
   issue body is not a decision log. Link to the decision from the item — and
@@ -166,7 +207,7 @@ If a decision blocks it, mark it `[blocked → <what's undecided>]` pointing at
 **`[critical → why]` is the one priority marker** — same line, same shape, no
 other grades, and never written into another lane's transfer queue. The rules —
 who may set it, why two levels, how consumers read it — are
-[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
+[`WSS.LANE-CONTRACT.md`](../../wss/workflow/WSS.LANE-CONTRACT.md)'s
 `[critical → why]` section.
 
 **Watch for state claims this entry falsifies.** Before writing, grep
@@ -174,7 +215,7 @@ who may set it, why two levels, how consumers read it — are
 false — "nothing exercises Y", "no X exists yet", a `[blocked → …]` marker whose
 decision has since been settled, a sibling entry proposing what this one
 supersedes — and fix them in the same edit
-([`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+([`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
 Same-file scope is the cheap case and the usual one; the cross-record form is an
 entry asserting X exists falsifying "no X exists" wherever that sentence lives.
 
@@ -192,9 +233,9 @@ Four rules that are not stylistic:
   judgment — which stands only until the owner's next gate. The entries that
   omit this read as settled while hiding who settled them, and "I don't recall
   ordering this" must be answerable from the record —
-  [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s rule 2.
+  [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s rule 2.
 - **Record when the decision is made, not when it is built** —
-  [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s rule 1. An entry
+  [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s rule 1. An entry
   goes in the day something is settled, even if no code follows for months.
 - **Never rewrite a past entry** — that contract's rule 4. Appending is the only
   way this file changes.
@@ -205,6 +246,37 @@ Four rules that are not stylistic:
 hand-edited, and a later `--wss-check` fails if you skip it. Where the manifest
 declares no index command, say the index was not regenerated rather than leaving
 it silently stale.
+
+### Then walk the deferral pointers back
+
+**A deferral pointer is one-way, and this step is the only thing that closes the
+loop.** A parked entry in `WSS.record.todo` cites the decision that will answer
+it — `Deferred (owner) — see the decision log's <date> (<ordinal>) entry` — but
+nothing ever walks that link in reverse. A session appending a decision does not
+revisit the entries now pointing at it, so an answered entry sits open and the
+next session describes the same thing a second time. That is the recorded root
+cause of a duplicate pair, and it is **not** "nothing detects duplicates".
+
+So, immediately after appending an entry and before this skill returns:
+
+1. **Grep `WSS.record.todo` for the pointers that now cite the entry you just
+   wrote** — its date and its ordinal, in the spelling the entry actually carries.
+   Also grep for pointers citing the same date with no ordinal, which is a
+   spelling that has been used.
+2. **Read each entry the grep returns and ask one question**: does the decision
+   just appended answer the entry's open question in full?
+3. **Where it does**, the entry is done — hand it to `--wss-todo` for deletion,
+   the same route as any other completed item, and say in your reply which
+   entries closed this way. Where it answers only part, hand `--wss-todo` the
+   narrowed text rather than leaving the whole entry standing.
+4. **Where the grep returns nothing, say so in one line.** A silent step is
+   indistinguishable from a skipped one, and an empty result is the ordinary case.
+
+**This adds no script, no record and no commit-time gate**, and that is
+deliberate. A pre-write duplicate check with a ruling menu, a helper script this
+procedure would have to quote, and a refusal in `wss-append-only.sh` were all
+proposed and all rejected: each adds machinery to catch a symptom of a one-way
+link, which is the pattern this step exists instead of.
 
 ## When a deferred item is later done
 

@@ -17,7 +17,7 @@ this skill's.
 **Project facts come from `.claude/WSS.WORKFLOW.json`**: `WSS.record.toolbelt` is the
 registry, fallback `WSS.TOOLBELT.md`. An absent file is an empty registry, not an
 error. This skill is its **sole writer** —
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md).
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md).
 
 ## Job 1 — Consult, before any search
 
@@ -38,7 +38,7 @@ decision, not this skill's.
 ## Job 3 — Register the adoption
 
 When the user adopts a candidate, two writes, split exactly as
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md) requires:
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md) requires:
 
 - **The row, here.** Task shape → package → pointer into `WSS.record.decisions`.
   Lean — the registry is a lookup table, not a second decision log.
@@ -49,13 +49,13 @@ When the user adopts a candidate, two writes, split exactly as
 for the claims the adoption makes false — "no library does X", a row naming the
 package this one replaces, a task shape now covered that some entry still
 describes as hand-built — and fix them in the same edit
-([`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+([`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
 Same-file scope is the cheap case and the usual one; the cross-record form is a
 row asserting X exists falsifying "no X exists" wherever that sentence lives.
 
 **One registry per project, never lane-split** — which tool does a job is a
 property of the project, not of a worktree
-([`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)). Where the registry
+([`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)). Where the registry
 pointer names a decision entry, use its heading, which is stable in an
 append-only log; where the manifest declares `WSS.record.decisionsIndex`, the index
 is the cheap way to it.

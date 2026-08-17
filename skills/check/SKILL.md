@@ -10,8 +10,14 @@ description: "Health-check every record the project's manifest declares, for cla
 When it finds something, it invokes the skill that **owns** that file, and that
 owner re-verifies and writes under its own rules, in its own commit.
 
-Delegation is a lookup, not a judgement —
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md) is the table:
+Delegation is a lookup, not a judgement, and
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md) is the authority. The
+rows below are this skill's dispatch view of it — a second copy, kept honest
+rather than remembered: `wss-doctor.sh` compares the two on their
+`WSS.record.*` keys in both directions and fails on any divergence, so a record
+that gains an owner without gaining a row here is reported rather than
+discovered. What is free to differ is the owner column, which names the flag or
+writer to invoke where the matrix names the skill.
 
 | Finding lives in | Dispatch to |
 |---|---|
@@ -24,7 +30,8 @@ Delegation is a lookup, not a judgement —
 | `WSS.record.toolbelt` | `--wss-scout` |
 | `WSS.record.stocktake`, `WSS.record.audits` | `audit-writer` |
 | `WSS.record.changelog` | `changelog-writer` |
-| `WSS.record.tooling.catalog`, `WSS.record.tooling.sources` | `--wss-tools` |
+| `WSS.record.tooling.catalog` | `--wss-catalog` |
+| `WSS.record.tooling.sources` | `--wss-tidy` |
 | the docs site's annex page derived from `WSS.record.tooling.catalog` | `docs-writer` |
 | `.claude/WSS.WORKFLOW.json` — a key naming a file that moved, or one nothing reads | `manifest-writer` |
 
@@ -32,23 +39,23 @@ Delegation is a lookup, not a judgement —
 whole procedure would have to run.**
 
 Resolve the paths through the lane selector first: where `.claude/WSS.LANE` names a
-lane, `WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for `todo`,
-`openDecisions`, `handoff` and `roadmap` — [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
+lane, `WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for the
+splittable keys — [`WSS.LANE-CONTRACT.md`](../../wss/workflow/WSS.LANE-CONTRACT.md)'s
 resolution rule. A finding in a lane file dispatches to the same owner the
 unsplit record has; the lane changes the path, never the writer.
 
 **One exception, and it is not a dispatch.** A finding about a file belonging to
 **this suite** — including one this inspection is running — does not go to
-`--wss-tools`. File it and stop, per
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md#a-file-belonging-to-the-installation-is-never-edited-from-a-project-session),
+`--wss-tidy`. File it and stop, per
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md#a-file-belonging-to-the-installation-is-never-edited-from-a-project-session),
 which holds the destination and the reasoning. This never covers the project's
-own skills: `WSS.record.tooling.sources` globs are relative, so `--wss-tools` owns them
+own skills: `WSS.record.tooling.sources` globs are relative, so `--wss-tidy` owns them
 as usual.
 
 **The owner's second look is the point, not overhead** — hand over the evidence,
 not a verdict, and expect a share of your findings to come back not reproduced.
 Why that is load-bearing:
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md#the-inspector-writes-nothing).
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md#the-inspector-writes-nothing).
 
 ## Scope comes from the manifest
 
@@ -56,18 +63,18 @@ Why that is load-bearing:
 carry a list here.
 
 Without a manifest, the worklist is every key's fallback in
-[`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md) — that table is the authority, and a
+[`WSS.MANIFEST.md`](../../wss/workflow/WSS.MANIFEST.md) — that table is the authority, and a
 list repeated here would drift from it. Say which fallbacks you used, since they
 cannot know what the project actually keeps.
 
 ## When `WSS.record.todo` is a provider
 
-An object with a `provider` key means the backlog is not a file —
-[`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md#what-the-sweeps-do-with-it) is the
+An object with a `provider` key means the TODO list is not a file —
+[`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md#what-the-sweeps-do-with-it) is the
 contract. It is swept the same way and findings dispatch to `--wss-todo` as always.
 
 **One thing the checkpoint cannot do for it.** Incremental narrowing works by
-diffing a record against a baseline commit, and an issue backlog has no presence
+diffing a record against a baseline commit, and an issue TODO list has no presence
 in this repository's history — so there is nothing to diff and it is always read
 in full. Record it as `not-covered` for the record scope unless you actually
 read it; claiming coverage you did not earn is inherited by every cheap sweep
@@ -89,11 +96,11 @@ A scope's `covered` is the record file **plus the code globs this run read to
 verify it**; that pairing is what a later run diffs against. **With no code
 globs to pair, the scope writes `covered: []`** — the record alone would be
 diffed against itself, which is
-[`WSS.SWEEP-CHECKPOINT.md`](../../workflow/WSS.SWEEP-CHECKPOINT.md#four-rules-and-they-are-the-whole-value)'s
+[`WSS.SWEEP-CHECKPOINT.md`](../../wss/workflow/WSS.SWEEP-CHECKPOINT.md#four-rules-and-they-are-the-whole-value)'s
 rule 4 rather than a rule of this skill's.
 
 The mechanics are
-[`WSS.SWEEP-CHECKPOINT.md`](../../workflow/WSS.SWEEP-CHECKPOINT.md#reading-a-checkpoint);
+[`WSS.SWEEP-CHECKPOINT.md`](../../wss/workflow/WSS.SWEEP-CHECKPOINT.md#reading-a-checkpoint);
 what is specific here is what voids a narrowing:
 
 | Changed since the baseline | Puts back in full scope |
@@ -118,7 +125,7 @@ the next run to redo all of it.
 
 ## What to look for
 
-**The taxonomy is [`workflow/checks/WSS.RECORD-DRIFT.md`](../../workflow/checks/WSS.RECORD-DRIFT.md)**
+**The taxonomy is [`wss/tests/WSS.RECORD-DRIFT.md`](../../wss/tests/WSS.RECORD-DRIFT.md)**
 — the classes of drift, and the things that look like findings and are not.
 Read it and apply it over the scope resolved above.
 
@@ -134,7 +141,7 @@ request:
 
 If the ask is "verify the docs site", that is `--wss-docs`. If it is "is the record
 still true", it is this. If the ask is "where is the project" — the record plus
-its conventions, interface, safety nets and a backlog rebuild — that is
+its conventions, interface, safety nets and a TODO list rebuild — that is
 `--wss-stocktake`, which already includes this as one dimension. Run one, not both.
 
 ## How to report
@@ -149,7 +156,7 @@ behaviour-writer   1 finding
 reference-writer   1 finding
   WSS.record.reference:88   lists N seeded locales; the seed script seeds 1
 
---wss-tools     1 finding
+--wss-tidy      1 finding
   <agent file>:12       claims the app registers only a health route;
                         it registers several route modules
 ```

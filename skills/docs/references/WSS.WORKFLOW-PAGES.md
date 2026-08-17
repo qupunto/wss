@@ -10,7 +10,7 @@ somewhere that matters** — a check the reader assumes happens at step three ac
 per-request somewhere else entirely — and the page exists to make that one
 design choice and its consequences visible.
 
-These are T3 pages: `domain/workflows.md` while the flows fit one page,
+These are T3 pages: `domain/WSS.WORKFLOWS.md` while the flows fit one page,
 `domain/workflows/<name>.md` each once they outgrow it (G14/G15 thresholds).
 The citations do not break T3's framework-free rule, and saying why matters:
 the *content* — actors, stages, gates, state — stays true if the stack were
@@ -54,7 +54,7 @@ Each stage carries two anchors, and the form of each is load-bearing:
   the file's own greppable name for the thing, and which kind it is follows what
   the file is made of: a **symbol** where the implementation is code
   (`backend/src/auth/session.ts::issueSession`), and a **heading, verbatim**
-  where it is prose (`skills/start/SKILL.md::Phase 3 — Partition into lanes
+  where it is prose (`skills/start/SKILL.md::Phase 3 — Partition into shards
   that cannot collide`), which is what a project implemented as instruction
   files has in place of symbols. Both survive edits that renumber every
   line, and an anchor that stops resolving is a *detectable* staleness, where a
@@ -92,7 +92,7 @@ The stamp says when a person last read the flow, not that nothing moved beneath
 it. Both classes close only by re-reading, and the stamp is what says how long
 it has been.
 
-## The page describes; findings go to the backlog
+## The page describes; findings go to the TODO list
 
 Writing a workflow page is a close read of a subsystem and **will surface
 defects**. The page never carries "this is wrong" — it describes what the
@@ -113,7 +113,7 @@ route files or a live OpenAPI document — and where one builds that generator i
 is **project tooling, declared nowhere globally**, run at verification time so
 the regenerated facts and the stamp move together. A manifest key would take a
 global skill that reads it
-([`WSS.MANIFEST.md`](../../../workflow/WSS.MANIFEST.md)'s first rule), and a
+([`WSS.MANIFEST.md`](../../../wss/workflow/WSS.MANIFEST.md)'s first rule), and a
 generator each project writes for itself is read by none. What no generator
 covers: the ordered steps *inside* a service, and any table assembled from
 several files.

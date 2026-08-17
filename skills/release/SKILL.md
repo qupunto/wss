@@ -8,7 +8,7 @@ description: "Cut a release — confirm the version, have the changelog written,
 **This skill writes nothing.** It is the only one that may *decide* to tag, but
 the tag itself is written by `git-writer`, the changelog by `changelog-writer`,
 and the milestone mark by `--wss-plan`. Who owns what is
-[`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md).
+[`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md).
 
 **Project facts come from `.claude/WSS.WORKFLOW.json`**: `WSS.record.releases`,
 `WSS.record.changelog`, `WSS.record.stocktake`, `WSS.branch.publish`, and `WSS.agents.release` —
@@ -18,12 +18,12 @@ the agent that prepares the material. Without a manifest, fall back to
 **`WSS.record.releases` is the only planning record this skill reads, and that is
 load-bearing.** `WSS.record.roadmap` splits by lane and holds goals; it carries no
 version and no completion mark, so there is nothing in it for a release to act
-on — [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md) holds that rule.
+on — [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md) holds that rule.
 A project may run any number of lane roadmaps and still have exactly one release
 checkpoint. Reading a roadmap here would undo that.
 
 Where a `.claude/WSS.LANE` selector names a lane, `WSS.lanes.named.<lane>.records.todo`
-overrides `WSS.record.todo` — [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
+overrides `WSS.record.todo` — [`WSS.LANE-CONTRACT.md`](../../wss/workflow/WSS.LANE-CONTRACT.md)'s
 resolution rule; the changelog and the release list never split.
 
 ## The `--wss-release` shorthand
@@ -32,7 +32,7 @@ Invoking without confirmation is safe: everything up to the push is local and
 reversible, and the push has its own gate below. Where a flag counts is
 [`README.md`](../../README.md); what it authorizes is the block
 `wss-shorthand-flags.sh` injects and
-[`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md)'s matrix.
+[`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md)'s matrix.
 
 ## 1. The precondition is a mark, not a word
 
@@ -47,7 +47,7 @@ Four cases:
 - **Marked completed, no tag for it** — that is the release. Go.
 - **Looks complete but is not marked** — do not tag it. Hand to `--wss-plan`, which
   asks the user and marks it, then come back. Marking it here would be writing
-  another skill's record, and it skips the two disqualifier checks `--wss-plan` runs
+  another skill's record, and it skips the disqualifier checks `--wss-plan` runs
   (an open blocking decision; unremediated high-severity audit findings).
 - **A patch on an already-tagged version** (§4) — no milestone needed.
 - **The release list has declared an end to milestones** — see below.
@@ -100,12 +100,9 @@ Release drift is one of the dimensions it covers: what `WSS.record.releases` and
 locally and on the remote. Do not reimplement that comparison here — a second
 copy of a check is a second thing to keep true.
 
-`--wss-full-check` rather than `--wss-check`, deliberately. The incremental sweep trusts
-whatever `covered` list an earlier run wrote, and a release is exactly the moment
-that trust should not be extended: a checkpoint written before the work being
-tagged is the one that would license skipping the files it changed. Releases are
-rare enough to afford the full run, and it subsumes `--wss-check` — invoking both
-pays twice for the same answers.
+`--wss-full-check` rather than `--wss-check`, deliberately — the incremental
+sweep's `covered` trust is exactly what a release should not extend, and it
+subsumes `--wss-check` anyway, so invoking both pays twice for the same answers.
 
 It does
 spend the session's one consented test run where the project gates its suite
@@ -133,6 +130,11 @@ cites**, which is where the user-visible substance of the release actually is,
 and under lanes is several files rather than one. Letting it do that in its own
 context keeps several thousand tokens of history out of yours.
 
+**In the maintenance case there is no milestone to hand over** — say so rather
+than naming one, and the roadmap read has no entry to resolve, so the substance
+comes from `WSS.record.todo` and the git range since the last tag, which is the
+evidence §1 already requires.
+
 Where a project declares no release agent, do the reading here and say that you
 did — it costs context, and the user should know why this turn was expensive.
 
@@ -157,11 +159,10 @@ telling them anything.
 | **minor** | a milestone **set beforehand** in `WSS.record.releases` is marked completed — **or** *this version's own entry* in `WSS.record.releases` carries a `- migrate:` line |
 | **patch** | everything else. This is the default, not a category |
 
-**Major never fires by inference.** Not from a large range, not from a
-structural change, not from a milestone that felt significant. `1.0.0` is a
-claim about *stability* rather than about size — that the data model and the
-interface will not change incompatibly without another major — and only the
-user can make it.
+**Major never fires by inference** — not from a large range, however
+significant it feels. `1.0.0` is a claim about *stability* rather than about
+size — that the data model and the interface will not change incompatibly
+without another major — and only the user can make it.
 
 **Minor's first trigger is a mark, and *beforehand* is the load-bearing word.**
 The milestone must have existed before the work closed it, which is what stops
@@ -173,7 +174,7 @@ and ask.
 **Minor's second trigger is a compatibility floor, and it overrides the
 absence of a milestone.** A `- migrate:` line is work an *adopted* tree must
 apply, per
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s releases row.
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s releases row.
 Where this version owes one, the release is a compatibility event whether or
 not anyone planned it, and pre-1.0 the minor field is the channel that says so.
 Ask it of the work, not of the diff: does an adopted tree have to change to
@@ -230,7 +231,7 @@ past the commits it summarised ships work no entry mentions.
 `CHANGELOG.md` exists *and is not what `WSS.record.changelog` points at*, it is the
 user-facing log and it needs its own entry for this version. **It goes through
 `changelog-writer` too**, not written here: the file is not a record, but this
-skill writes nothing at all ([`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md#the-matrix)),
+skill writes nothing at all ([`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md#the-matrix)),
 and the writer is the one place both entries' split is stated.
 
 It is a **different entry, not a copy**. `WSS.record.changelog` says which contract
@@ -273,8 +274,8 @@ here.
 
 ## What this skill does not do
 
-Who owns what is [`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md); what each record
-holds is [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md).
+Who owns what is [`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md); what each record
+holds is [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md).
 
 - **It does not mark a milestone completed.** That mark is this skill's
   precondition, not its output.

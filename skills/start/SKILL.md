@@ -1,6 +1,6 @@
 ---
 name: start
-description: "Pick up the project's pending work and do it — settle the open decisions first, select a batch from the backlog, partition it into lanes that cannot collide, and run those lanes in parallel. SHORTHAND: `--wss-start`. Also trigger on \"carry on with what's pending\", \"pick up the next thing\", \"keep going with the backlog\". COMMITS, NEVER PUSHES."
+description: "Pick up the project's pending work and do it — settle the open decisions first, select a batch from the TODO LIST, partition it into shards that cannot collide, and run those shards in parallel. SHORTHAND: `--wss-start`. Also trigger on \"carry on with what's pending\", \"pick up the next thing\", \"keep going with the TODO LIST\". COMMITS, NEVER PUSHES."
 ---
 
 # Starting the next block of work
@@ -8,12 +8,11 @@ description: "Pick up the project's pending work and do it — settle the open d
 **Project facts come from `.claude/WSS.WORKFLOW.json`** — `WSS.record.*`, `WSS.commands.*`,
 `WSS.gate`, `WSS.agents.*`, `WSS.lanes.*`, `WSS.hazards.*`. Read it first. Without a manifest,
 fall back to conventional names, skip what you cannot resolve, and say so in one
-line rather than guessing. Where a `.claude/WSS.LANE` selector names a lane,
-`WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for `todo`, `openDecisions`,
-`handoff` and `roadmap` — [`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s
-resolution rule —
-and that lane's `scope` globs bound the batch: partition within them, and treat
-work outside them as another worktree's.
+line rather than guessing. **Under lane mode, some of these keys resolve to a
+lane-scoped file instead, and the batch is bounded by that lane's `scope`
+globs** — both are [`references/WSS.LANES.md`](references/WSS.LANES.md)'s, read
+where lane mode is on, before step 3 reads any record; a non-lane run needs
+neither and says nothing about it.
 
 Three records hold the pending work and they answer different questions:
 
@@ -32,7 +31,7 @@ is a choice that **gets made anyway**, silently, by whoever writes the first lin
 of the code that depends on it.
 
 Who may write each record is
-[`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md). **This skill
+[`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md). **This skill
 writes source code and commits. It writes no record file directly** — it calls
 the primitive that owns each one.
 
@@ -53,17 +52,34 @@ here for the rest of the session. So: **if a step's cost is *reading* rather tha
 *deciding*, delegate it.**
 
 The exception is the three planning records above — they **are** the input, and a
-summary of them cannot be partitioned into lanes. Read those directly. Never read
+summary of them cannot be partitioned into shards. Read those directly. Never read
 the decision log whole; go through `WSS.record.decisionsIndex`, pick the entries that
-bear on the batch, and hand each lane the names of its own.
+bear on the batch, and hand each shard the names of its own.
 
 No source file needs to be open in this context. Locating and reading code is
-what the lanes are for.
+what the shards are for.
 
 ## Phase 0 — Orient
 
-1. **Pin the tree.** `git rev-parse --short HEAD`, `git status --porcelain`, and
-   `git log origin/<integration>..<integration> --oneline`. A dirty tree or
+Run the collector first, from the project directory:
+
+```bash
+S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+[ -x "$S/wss/tests/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
+bash "$S"/skills/start/assets/wss-orient.sh
+```
+
+<!-- load-bearing: the only route to contracts that survives publication — see the decision log before removing -->
+The two resolution lines are [`contracts`](../contracts/SKILL.md)'
+canonical form. `wss-orient.sh` is read-only and offline except a CI query that
+degrades to "not checked" rather than a false zero. It emits the tree pin,
+the CI result where the manifest names a workflow, and — for the three
+planning records plus `WSS.record.decisionsIndex` — each one's resolved path,
+whether it exists, its size, and (`openDecisions` only) its entry count. **It
+reports facts, never their meaning**: it does not read any record's content,
+so step 3 below is never optional because of it.
+
+1. **Pin the tree**, from the block's `== tree ==` section. A dirty tree or
    unpushed commits are not a blocker, but say in one line what is already there.
    **If more than one session shares this checkout**, starting a parallel batch on
    top of another session's half-finished edits is the failure this phase exists
@@ -77,13 +93,47 @@ what the lanes are for.
    step 3 reads any record** — it holds the sync-forward and the transfer-queue
    drain, in that order, and where a cross-lane contradiction gets filed. Where
    it is off none of it can apply: skip the file and say nothing about it.
-2. **Check the pipeline before adding to it.** Where the manifest names a CI
-   workflow, query it. A pipeline can sit red for days before anyone notices, and
-   a batch merged onto a red one hides which change broke it. If it is red,
-   **fixing that is the batch** — say so and skip to Phase 4 with one lane.
-3. **Read the three planning records**, plus `WSS.record.decisionsIndex`.
+2. **Check the pipeline before adding to it**, from the block's `== CI ==`
+   section. A pipeline can sit red for days before anyone notices, and a batch
+   merged onto a red one hides which change broke it. If it is red,
+   **fixing that is the batch** — say so and skip to Phase 4 with one shard.
+3. **Read the three planning records**, plus `WSS.record.decisionsIndex` — the
+   block's `== planning records ==` section already named each one's resolved
+   path, existence and size; the content is only in the files themselves.
+
+   **This is also where the TODO LIST gets its duplicate read-back.** The
+   write-time rule in `skills/record/SKILL.md` — check for an equivalent
+   entry before appending — catches what one append-in-progress session can
+   see; it cannot catch what only a whole-file read exposes, because a session
+   appending one entry has no reason to read the other thousand-plus lines.
+   The read above already opened `WSS.record.todo`; use it. Dispatch
+   [`agents/wss-survey.md`](../../agents/wss-survey.md) — the Survey rung — pinned
+   to `WSS.record.todo` as its whole read set, the one record measured to clear
+   [the four-tool spawn floor](../../wss/tests/WSS.TOKEN-ECONOMY.md#per-grant-spawn-floor)
+   on its own. Hand it this verdict format — four classes, all found by hand
+   and none caught by the write-time rule:
+
+   1. A standing register's line item, re-filed longhand as its own entry.
+   2. One figure or concept restated across N entries with no canon named.
+   3. A subtask claimed by two entries at once.
+   4. An entry that belongs in a standing register and never joined it — the
+      inverse of class 1, which a similarity check alone misses.
+
+   Output is clusters of `file:line` pairs, each with a proposed disposition.
+   **It detects and asks; it never merges** — entries carry different
+   deferral authorities, and `Deferred (owner)` versus `Deferred (session)` is
+   the whole eligibility test Phase 2 applies at the next `--wss-start`, so an
+   automatic merge would silently change what a later batch may reverse. Put
+   every cluster to the user as a ruling, batched into Phase 1 alongside the
+   open decisions — it was never filed as one, so it does not belong in
+   `WSS.record.openDecisions`, but it is exactly as blocking: a batch built on
+   an unresolved duplicate risks doing the same work twice, or silently
+   reversing a deferral nobody re-affirmed. Whatever the user rules, the edit
+   goes through `--wss-todo`, same as any other write to that record — this
+   step decides nothing and writes nothing. An empty result is the ordinary
+   state and is said in one line, the same as an empty transfer queue.
 4. **Create the task list up front** via `--wss-track`: one task per open decision,
-   one per lane, plus integration, the suite run, and the record. The list is how
+   one per shard, plus integration, the suite run, and the record. The list is how
    the user sees where it got to without reading the transcript.
 
 ## Phase 1 — Settle the open decisions
@@ -92,6 +142,11 @@ Every entry in `WSS.record.openDecisions`, in file order — it is already order
 urgency. Present each with its options, its real tradeoffs, the recommendation if
 it carries one, and **what it blocks**, because that last field is what makes the
 question answerable.
+
+**Batch in step 3's duplicate-read-back clusters too**, if it returned any —
+each with its proposed disposition standing in for a recommendation. They
+never lived in `WSS.record.openDecisions`, but they are asked here rather than
+separately: one user-facing moment for everything that blocks the batch.
 
 Use `AskUserQuestion`. Batch up to four at a time rather than one call per entry,
 and put the recommended option first, labelled.
@@ -105,7 +160,7 @@ For each decision the user actually makes, **hand it to `--wss-log`** — which 
 deleting the entry from `WSS.record.openDecisions`, appending the outcome and the
 options rejected to `WSS.record.decisions`, and regenerating the index. Do not write
 those files here: never-in-both is
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md)'s rule 3, and one owner
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s rule 3, and one owner
 is how it stays prevented.
 
 A decision *not* to build something is still a decision and still gets an entry —
@@ -123,17 +178,17 @@ past it is how it gets made by accident.
 themselves, and **named as critical in the batch statement** — an item that
 jumps the queue silently is indistinguishable from one that was simply near the
 top. There is one marker and no other grades;
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md) holds why.
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md) holds why.
 
 Then the rest from `WSS.record.todo`, in section order (it is severity- and
 dependency-ordered already). Not everything in it is eligible.
 
 **`WSS.record.todo` may be a provider rather than a file** — an object with a
 `provider` key, per
-[`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md#reading-it). Read
+[`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md#reading-it). Read
 it through that contract, and mind its `--limit`: a list command that silently
 returns the first thirty of forty-five items hands this phase a batch chosen
-from a truncated backlog, which looks exactly like a batch chosen from the whole
+from a truncated TODO LIST, which looks exactly like a batch chosen from the whole
 one. When an item lands, closing it is `--wss-todo`'s, the same as deleting a line.
 
 **Then drop the section-order assumption above, because there are no sections.**
@@ -157,6 +212,11 @@ batch rather than failing:
 
 **Never autonomously in scope:**
 
+- **Anything in `WSS.record.backlog`.** Phase 2 selects from `WSS.record.todo`
+  and from no other task record. The backlog holds what nobody scheduled;
+  promotion into the TODO LIST is `--wss-todo`'s and a person's, one entry at a
+  time. A batch that reaches into it rebuilds the single bag the split exists to
+  remove, and does it silently.
 - **Anything that runs against production**, or is written as a deploy runbook.
   Those need a real deploy and a per-step confirmation. Not batch items.
 - **Anything explicitly deferred** to a "later" section. Picking one up silently
@@ -166,169 +226,115 @@ batch rather than failing:
 - **Versions and tags** — `--wss-release`'s decision alone, and the changelog entry
   that goes with one is `changelog-writer`'s.
 
-**Then size it.** Three to five lanes is the working range, and the limit is
-almost never ambition — it is Phase 3's partition. Prefer four clean lanes over
-seven that need serializing. One backlog item touching disjoint code can split
-into two lanes; two separate items touching one file must merge into one.
+**Then size it.** Three to five shards is the working range, and the limit is
+almost never ambition — it is Phase 3's partition. Prefer four clean shards over
+seven that need serializing. One TODO list item touching disjoint code can split
+into two shards; two separate items touching one file must merge into one.
 
-**If the backlog and open decisions both yield nothing eligible** — which will
+**If the TODO LIST and open decisions both yield nothing eligible** — which will
 happen, and is a good sign — go to the roadmap this checkout resolves and take the
 first open block of the current goal. **In a lane worktree that is that lane's
 roadmap**, and a goal belonging to another lane is that worktree's work rather
 than a fallback for this one.
 Do not improvise its breakdown here: hand the block to `--wss-plan`, which
-turns it into concrete backlog items with dependencies, then run Phase 2 again
-over what that produced. **A roadmap block is a paragraph; a lane needs a file
+turns it into concrete TODO list items with dependencies, then run Phase 2 again
+over what that produced. **A roadmap block is a paragraph; a shard needs a file
 list.**
 
 **State the batch in three or four lines before spending anything**: which items,
-which lanes, what was skipped and why, and which decisions Phase 1 unblocked.
+which shards, what was skipped and why, and which decisions Phase 1 unblocked.
 That is a statement, not a request for approval.
 
-## Phase 3 — Partition into lanes that cannot collide
+## Phase 3 — Partition into shards that cannot collide
 
-Lanes run concurrently in one shared working tree. Two agents editing one file do not merge — the second write wins
-and the first lane's work is gone, silently, with its tests still passing in its
-own transcript.
+**How the batch is partitioned, sequenced into waves, and briefed is
+[`WSS.FAN-OUT.md`](../../wss/workflow/WSS.FAN-OUT.md)'s** — the file set as the
+unit of parallelism, the two-list write/read collision rule, the
+`WSS.lanes.*` table, serialize-not-isolate, wave ordering, the single-message
+launch, and the brief's required fields. Read it now rather than reconstructing
+it from feel.
 
-So the unit of parallelism is not the task. **It is the file set.** Assign every
-lane an explicit list of files it owns and may write, and state that it must not
-write anything outside that list — if it needs to, it stops and reports rather
-than reaching.
+**Match each shard against [the dispatch ladder](../../wss/workflow/WSS.DISPATCH-LADDER.md).**
+Read it top to bottom and take the first rung whose key holds, then state the
+rung and the matching key when the batch is stated, per the ladder's own
+`## Citing a rung`.
 
-**Disjoint write sets are not enough. Count what each lane *reads* as well.** Two
-lanes must not run concurrently when one reads a file the other writes. **A
-read/write race corrupts nothing, so nothing looks broken**: what it produces is a confident, well-cited, wrong report, citing a file
-where the evidence genuinely was a moment ago.
-
-So the brief for each lane carries **two** lists — the files it may write, and the
-files it depends on being stable. Where one lane's read list intersects another's
-write list, they go in different waves. When in doubt, serialize: a wave costs
-wall-clock, and a wrong finding costs a change that looks right.
-
-The manifest's `lanes` block says which paths are dangerous and how:
-
-| Manifest key | Rule |
-|---|---|
-| `WSS.lanes.exclusive` | **At most one lane in the entire batch.** Paths where two concurrent edits produce two artifacts that cannot both be right — a schema plus its migrations being the canonical case, since two parallel migrations get two timestamps and the second is authored against a schema that no longer exists. If two items need changes here, merge them into one lane making both in a single migration, and run that lane **first, alone**, so every other lane generates against the final state. |
-| `WSS.lanes.serialize` | Shared machinery. A lane that **modifies** one runs alone or first. Lanes that only **call** it run in parallel freely. |
-| `WSS.lanes.generated` | Nobody. Regenerating is the orchestrator's, once, after the exclusive lane. |
-| A given route file or service | Single owner, no exceptions. Two lanes adding endpoints to one router is the classic silent loss. |
-| Test files | One per lane, named for its feature. Fixtures scoped to the lane's own rows (see Phase 5). |
-| **Every `WSS.record.*` file** | **No lane writes these.** Every lane will want to and they would collide on every line. The orchestrator records once, in Phase 6, through the owning primitives. |
-
-**When a partition cannot be made disjoint, serialize — do not isolate.**
-Worktree isolation looks like the answer and is usually a trap: a fresh worktree
-needs the gitignored things a subagent cannot supply — environment files, a
-dependency symlink or install, any generated client — so an isolated lane arrives
-unable to run anything. Two sequential lanes are cheaper than one lane that
-cannot verify itself. Check `worktree.symlinkDirectories` in
-`.claude/settings.json` before assuming otherwise.
-
-**Order the lanes.** Anything others build on goes first regardless of its own
-priority: exclusive paths, then shared modules, then features, then the tests for
-them. Lanes in the same wave are concurrent; waves are sequential.
-
-**Assign each lane a model tier.** Lanes inherit the session's model unless the
-launch overrides it, which prices a doc-sync lane the same as the schema lane.
-Inherit by default; hand a cheaper tier only to a lane that is mechanical *and*
-fully specified — its brief names exactly what to change, and checking the
-result is cheap and local. Never downgrade the exclusive lane, a lane whose
-output others build on, or Phase 5's verification. The asymmetry is deliberate:
-a wrong downgrade produces plausible-but-wrong work, and the redo through
-integration costs more than the saving — when unsure, inherit. State tiers
-relative to the session ("session model", "a cheaper tier"), never as model
-names, which rot; and name every downgrade when stating the batch, so an
-economy stays a visible decision rather than a silent one.
-
-**Then recut the task list to the partition.** Step 4's lane tasks were foreseen
-before any lane existed; replace them with one task per actual lane, named with
-its wave and its tier, the moment the batch is stated. The list is where a tier
-downgrade stays visible after the batch statement scrolls away.
+**Then recut the task list to the partition.** Step 4's shard tasks were foreseen
+before any shard existed; replace them with one task per actual shard, named with
+its wave and its rung, the moment the batch is stated. The list is where an
+Analyze-rung launch stays visible after the batch statement scrolls away.
 
 ## Phase 4 — Run the wave
 
-All lanes of a wave in **a single message so they run concurrently**. Route each
-to its owner from `agents.*` — this skill writes no feature code itself:
+**The launch itself, and what every shard's brief must carry, are
+[`WSS.FAN-OUT.md`](../../wss/workflow/WSS.FAN-OUT.md)'s** — all shards of a wave in
+a single message, and the brief's required fields, including one this skill
+states again because it drives the launch call itself:
 
-| Lane's work | Manifest role |
+- **Its rung from [the dispatch ladder](../../wss/workflow/WSS.DISPATCH-LADDER.md)**
+  — assigned in Phase 3, passed as this launch's model override.
+
+Route each shard to its owner from `agents.*` — this skill writes no feature
+code itself:
+
+| Shard's work | Manifest role |
 |---|---|
-| Schema shape, service boundaries, "how should this be modeled" | `WSS.agents.architecture` first (advises only), then the lane that implements it |
+| Schema shape, service boundaries, "how should this be modeled" | `WSS.agents.architecture` first (advises only), then the shard that implements it |
 | Endpoints, services, domain logic, queries | `WSS.agents.implement` |
 | Containers, deployment and build config, operational scripts, CI | `WSS.agents.infra` |
 | Test coverage, the authorization matrix, validation boundaries | `WSS.agents.test` |
 | Proving a specific vulnerability before anyone fixes it | `WSS.agents.exploit` — rare and expensive, against a named surface only |
 
-**Where a role is undeclared the lane still leaves this context** — run it as a
-general-purpose subagent carrying the same brief, and say so. Do not substitute a
-different role's agent, which is how a test lane ends up writing feature code.
+**Where a role is undeclared the shard still leaves this context** — route it to
+**its rung's own agent** instead of a general-purpose subagent: `agents/wss-survey.md`
+for Survey, `agents/wss-analyze.md` for Analyze, `agents/wss-design.md` for Design,
+`agents/wss-execute.md` for Execute, matching the rung Phase 3 already assigned this
+shard against [the dispatch ladder](../../wss/workflow/WSS.DISPATCH-LADDER.md) — and say
+so. Do not substitute a different *role's* agent, which is how a test shard ends up
+writing feature code; routing by rung on an undeclared role is not the same move,
+because every rung agent is role-agnostic by construction.
+
+**This inverts the old default, and the cost is real: say it plainly.** A shard
+whose rung's tool grant withholds something the work turns out to need now fails
+rather than proceeding on the widest possible grant — the ladder treats that as a
+match failure working correctly, not as a reason to widen the fallback back out.
+Grant cost is priced per spawn, absolute, so the common case (undeclared) is what
+had to stop being the expensive one.
+
 Undeclared is the normal case, not a misconfiguration: `--wss-adopt` tells a
 project with no agent files to omit `agents` entirely, on the strength of this
-fallback. Inline is the exception — for a lane too small to be worth a brief —
-because a lane run inline spends its whole read-and-edit cycle in the
-orchestrator's context, and every phase after it pays that context back on every
-call it makes.
+fallback — now the rung-agent fallback, not `general-purpose`. Inline is the
+exception — for a shard too small to be worth a brief — because a shard run inline
+spends its whole read-and-edit cycle in the orchestrator's context, and every
+phase after it pays that context back on every call it makes.
 
-Each lane's brief carries, explicitly:
-
-- **The backlog item verbatim**, including its `file:line` citations — with the
-  standing caveat that line numbers drift and the file plus description is the
-  real reference. Re-locate rather than concluding an item is stale.
-- **Its file ownership list**, and the instruction to stop rather than write
-  outside it.
-- **Its model tier from Phase 3** — passed as the launch's model override where
-  the harness exposes one; where it does not, every lane inherits and the
-  assignment costs nothing.
-- **The decision entries that bear on it, by name** — looked up once here from
-  the index, not six times by six lanes. Plus `WSS.record.behaviour` for what the
-  rule currently *is*, and any `WSS.hazards.*` pointer that applies to its phase.
-- **Whether it may run the test suite at all.** Where the project gates the suite
-  behind a consent token, a lane cannot run it — not the whole suite, not one
-  file, not a single filter, because the gate is in the harness rather than in the
-  command. Say this explicitly: "do not run the full suite" reads as though a
-  targeted run were the sanctioned alternative, and a lane that discovers
-  otherwise mid-task has already wasted the attempt. Give the lane the sanctioned
-  alternative instead — a disposable environment it builds, exercises and drops
-  entirely within its own scope. Where the manifest names one under `WSS.hazards.*`,
-  point at that; a lane left to invent one will reach for the shared state the
-  gate exists to protect.
-- **A test lane is the case that bites**, and it needs saying separately: it
-  writes files it cannot execute even once. **Budget an iteration after the
-  consented run**, and do not treat a test lane's report as
-  the end of its own task.
-- **Prove the guard by breaking the code on purpose.** An assertion proves
-  nothing until it has failed against the broken version. A test can pass on
-  first run against the very bug it targets when something upstream of the code
-  under test rejects the input first — request validation firing before the
-  handler, for instance — so the guard is never actually exercised.
-- **Run the grep that would disprove a negative claim** before reporting "nothing
-  does X" — [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#negative-claims).
-- **Do not touch any record file.** Report what changed and why; Phase 6 records
-  it.
+In this skill's own phasing, the fan-out method's "consented run" a test shard
+budgets an iteration after is Phase 5's; a shard's commit happens in Phase 5
+step 3, through `git-writer`; its record entries are written in Phase 6.
 
 ## Phase 5 — Integrate and verify, once
 
-Lane reports are evidence, not verification. **Read every lane's diff** before it
-counts as landed. A lane that reports "74/74 passing" has told you about its own
+Shard reports are evidence, not verification. **Read every shard's diff** before it
+counts as landed. A shard that reports "74/74 passing" has told you about its own
 transcript, not about the tree.
 
-**!important — a lane that dies without reporting may have left the code
-deliberately broken.** Lanes are told to prove a guard by breaking it on purpose;
-a lane killed mid-cycle — API error, timeout, the user stopping it — never reaches
+**!important — a shard that dies without reporting may have left the code
+deliberately broken.** Shards are told to prove a guard by breaking it on purpose;
+a shard killed mid-cycle — API error, timeout, the user stopping it — never reaches
 the restore. The residue is dangerous precisely because it is designed to look
 plausible: an authorization check quietly relaxed one tier, at both the route and
 the service, with the surrounding names still describing the stricter rule. It
 reads as correct at a glance and it typechecks clean.
 
-So when a lane does not return a report, treat its output as **suspect rather
+So when a shard does not return a report, treat its output as **suspect rather
 than merely incomplete**:
 
-- Instruct lanes to mark deliberate breakage with a greppable token, then grep for
+- Instruct shards to mark deliberate breakage with a greppable token, then grep for
   it. That is the cheap check, not the sufficient one: a mutation can be
   structural — moving a write outside its transaction — and carry no marker.
 - **Verifying one mutation was restored says nothing about the others.**
 - The only reliable check is behavioural: run a harness over the invariants the
-  lane was supposed to establish. If those assertions fail against a leftover
+  shard was supposed to establish. If those assertions fail against a leftover
   mutation, you also get break-on-purpose evidence for your own repair free.
 
 In order, and none of these are optional:
@@ -336,10 +342,10 @@ In order, and none of these are optional:
 1. **Regenerate any generated client, on its own line**, never chained behind
    `&&` where a permission error can fail silently while a stale artifact keeps
    working until a nonsense error appears far from the cause.
-2. **`WSS.commands.typecheck`.** Cross-lane type breakage lives here and nowhere
-   else — it is the one failure no individual lane can see.
-3. **Commit each lane separately** through `git-writer`, telling it which files
-   belong to which lane — the partition is yours to know, the trailer and the
+2. **`WSS.commands.typecheck`.** Cross-shard type breakage lives here and nowhere
+   else — it is the one failure no individual shard can see.
+3. **Commit each shard separately** through `git-writer`, telling it which files
+   belong to which shard — the partition is yours to know, the trailer and the
    staging rules are its. Before the suite, not after: the suite may reset state
    destructively, and a crash mid-run should cost the run, not the work.
 4. **Ask for suite consent, then run `WSS.commands.test` once.** Use the coverage
@@ -353,7 +359,7 @@ In order, and none of these are optional:
    Consent refused, a run that died part-way, or a subset of the suite means **no
    stamp at all**: `--wss-stocktake` skips its own run on the strength of this entry,
    so one no run earned is worse than none. A red result *is* stamped, as red —
-   [`WSS.SWEEP-CHECKPOINT.md`](../../workflow/WSS.SWEEP-CHECKPOINT.md) has the fields and
+   [`WSS.SWEEP-CHECKPOINT.md`](../../wss/workflow/WSS.SWEEP-CHECKPOINT.md) has the fields and
    the two things that void a carry-forward. Nothing here reads the entry back;
    the baseline is a commit this batch just made, so no carry-forward could
    apply either way.
@@ -365,18 +371,18 @@ In order, and none of these are optional:
 
 **Expect the first consented run to fail, and treat that as the phase working
 rather than as a setback.** Two kinds of failure are normal here and neither is
-visible from inside any lane:
+visible from inside any shard:
 
-- **Tests written blind.** No test lane could execute its own files, so import
+- **Tests written blind.** No test shard could execute its own files, so import
   slips and fixture collisions surface here first.
 - **Pre-existing tests that encoded a rule the batch deliberately changed.**
   These are not bugs and must not be "fixed" by loosening the assertion. Move each
   to the new rule and say in the commit why the old assertion was true when
   written.
 
-**A lane whose work does not survive this phase is not done.** Report it as
-in-progress with the blocker named, and leave its backlog item standing. Half a
-batch landed honestly beats four lanes described as finished.
+**A shard whose work does not survive this phase is not done.** Report it as
+in-progress with the blocker named, and leave its TODO list item standing. Half a
+batch landed honestly beats four shards described as finished.
 
 ## Phase 6 — Record through the owners, then close out
 
@@ -391,7 +397,7 @@ is the read/write race Phase 3 describes.
 1. **`--wss-todo`** — remove what shipped, and rewrite anything that turned out
    bigger than its checkbox with what was actually learned. Completed items
    *leave*; they are not kept struck through.
-2. **`--wss-log`** — any non-obvious call a lane made while building. Phase 1's
+2. **`--wss-log`** — any non-obvious call a shard made while building. Phase 1's
    decisions are already recorded.
 3. **`behaviour-writer` and `reference-writer`** — what the *code* changed:
    `WSS.record.behaviour` for runtime rules, `WSS.record.reference` for schema and
@@ -403,11 +409,14 @@ is the read/write race Phase 3 describes.
    progress and never raises the milestone question, because a mark is a
    checkpoint for the whole project. From the main checkout, `--wss-plan` is what
    asks the user and marks a milestone completed in `WSS.record.releases`; that mark
-   is what authorises a release, and it is never inferred from lane reports.
+   is what authorises a release, and it is never inferred from shard reports.
 5. **New open decisions.** A batch that surfaced a choice and settled it silently
    has done the thing Phase 1 exists to prevent. Route it through `--wss-todo`, to the
    open-decisions record if still open.
-6. **`--wss-tools`** if any lane touched a skill or agent file.
+6. **`--wss-tidy`, then `--wss-catalog`, in that order** if any shard touched a
+   skill or agent file — tidy's sweeps run `wss-tools-inventory.sh` and hand off
+   to catalog once they edit anything, but a shard that touched files without
+   tripping a sweep still owes the catalog a look for a row it never wrote.
 7. **`handoff-writer`** — what the batch changed, plus any `!important` it
    created or resolved, so the next session inherits it. Not `--wss-wrap`: this skill
    grants commit and not push, and an invoked skill inherits the caller's grant,

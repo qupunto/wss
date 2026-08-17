@@ -16,7 +16,7 @@ record, so there is nothing for a grant to confer.
 
 Where a flag counts is [`README.md`](../../README.md); what it authorizes is
 the block `wss-shorthand-flags.sh` injects and
-[`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md)'s matrix — the two
+[`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md)'s matrix — the two
 copies `wss-doctor.sh` compares, never restated per skill.
 
 ## The threshold
@@ -61,44 +61,11 @@ of building a confusing parallel one.
 
 ## Order by ramification, then group by shared cost
 
-Two different forces decide the order. Apply them in this order.
-
-### 1. Ramification beats priority
-
-A change that alters something **other tasks build on** goes first, whatever
-its own priority. Reordering costs you a little; redoing costs you the whole
-task.
-
-Hoist to the front anything that changes:
-
-- a **data model or schema** other tasks read or write
-- a **shared type, interface or helper** other tasks call
-- an **auth or permission rule** other tasks must satisfy
-- a **naming or structural convention** other tasks follow
-- an **API contract** a caller elsewhere in the list depends on
-
-This is the one rule that overrides the user's stated priority. Say so in
-your reply when you invoke it — "doing the schema change first because tasks
-3 and 5 query that table" — so the reordering is visible rather than silent.
-
-### 2. Everything else batches by its expensive tail
-
-Most remaining work shares a slow, repeatable step at the end. Do every
-change in the family, **then run the step once**:
-
-| Family | Batch together | Tail, run once after the batch |
-|---|---|---|
-| Schema / data model | models, fields, relations, enums, indexes | the project's schema sequence — validate, regenerate the client, typecheck, migrate, reseed. Where `.claude/WSS.WORKFLOW.json` names a `WSS.onSchemaChange` skill, that skill owns the exact order |
-| API / endpoints | routes, handlers, services, request schemas | the full test suite (`WSS.commands.test`), then iterate on what fails |
-| Architecture / infra | compose files, service boundaries, build config | rebuild the stack, then smoke-run it |
-| Docs | every doc invalidated by the work above | a single documentation pass at the end |
-
-### 3. Keep priority where the first two rules leave it free
-
-After hoisting ramifications, order the **groups** by the highest-priority
-task each one contains, and keep the user's stated order **within** a group.
-Grouping is meant to change how work is bundled, not to quietly demote
-something the user said was urgent.
+Ordering within a unit of work — ramification-first hoisting, batching by
+shared cost, priority as the tiebreaker, and when not to batch — is
+[`wss/workflow/WSS.WORK-ORDER.md`](../../wss/workflow/WSS.WORK-ORDER.md). Read it
+before building any list with more than a couple of tasks; the rest of this
+section is how that ordering gets expressed in `TaskCreate` calls.
 
 ### Expressing it in the list
 
@@ -116,14 +83,6 @@ something the user said was urgent.
 When the batch's verification step fails — tests red, migration rejected,
 build broken — leave the tail task `in_progress`, create a task per distinct
 failure, fix those, then re-run the tail.
-
-### Do not over-batch
-
-Batching trades **feedback granularity** for fewer expensive runs.
-
-Keep a batch small enough that a failed tail is still diagnosable. When
-changes are independent and the tail is cheap, prefer the earlier signal
-over the saved run — batching is an optimization, not a virtue.
 
 ## Keep exactly one task in progress
 
@@ -167,13 +126,13 @@ nothing they cannot already see.
 At the end, state plainly what was completed, what was not, and why. If any
 task is still open, say so rather than letting the list quietly carry it.
 
-## Do not confuse this with the project's backlog
+## Do not confuse this with the project's TODO list
 
 Two different artifacts, and mixing them loses work:
 
 - **The task list here** — this session's working plan. Ephemeral. Gone when
   the session ends.
-- **The project's backlog** — durable pending work for the repo, `WSS.record.todo`
+- **The project's TODO list** — durable pending work for the repo, `WSS.record.todo`
   in the project's manifest. `--wss-todo` owns it, alongside the reasoning in
   `WSS.record.decisions`.
 
@@ -182,5 +141,5 @@ just here. And when the whole unit of work is approved and done, `--wss-wrap` cl
 the list out.
 
 Who may write which record file is
-[`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md); what each one
-holds is [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md).
+[`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md); what each one
+holds is [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md).

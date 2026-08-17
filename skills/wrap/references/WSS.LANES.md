@@ -50,7 +50,7 @@ All three steps go through `git-writer` under `--wss-wrap`'s grant:
    ```
 
    **No leading `+`, ever** — a working copy; the authority on the rule is
-   `git-writer` (`workflow/writers/WSS.GIT-WRITER.md`), which wins any
+   `git-writer` (`wss/workflow/writers/WSS.GIT-WRITER.md`), which wins any
    disagreement. That is the entire safety property, and it is why
    this is not a merge: git resolves the push as a fast-forward or **refuses it
    server-side**. There is no working tree involved, no conflict to hit, and
@@ -77,6 +77,8 @@ All three steps go through `git-writer` under `--wss-wrap`'s grant:
    reads as an instruction to execute it again. The start-side twin lives in
    `--wss-start`'s own `references/WSS.LANES.md`: a lane worktree also syncs forward before a batch
    runs.
+
+Where this session has dispatched work into sibling lanes, append a dispatch note to each target lane's `transfer` queue after step 2 lands on `WSS.branch.integration`, carrying the same three things described for the transfer queue drain in `--wss-start`'s `references/WSS.LANES.md`.
 
 **Step 2 does not fire on an unfinished-work wrap.** Where the wrap ran because
 the session is ending rather than because the work was approved — `--wss-wrap`'s

@@ -10,7 +10,7 @@ is `WSS.SITE-SETUP.md`'s. This file is about which pages exist and how they are 
 ## Profiles
 
 **Which profile a project is, and the signals behind it, are
-[`WSS.PROJECT-SHAPE.md`](../../../workflow/WSS.PROJECT-SHAPE.md)'s** — one detector, so
+[`WSS.PROJECT-SHAPE.md`](../../../wss/workflow/WSS.PROJECT-SHAPE.md)'s** — one detector, so
 this skill and `--wss-stocktake` cannot reach different conclusions about the same repo.
 What a profile *implies for documentation* is this table's, and stays here.
 
@@ -25,7 +25,7 @@ What a profile *implies for documentation* is this table's, and stays here.
 | **Monorepo** | T1, T2 at root; per-package subtrees mirroring the relevant profile; one `architecture.md` owning cross-package boundaries |
 
 A profile names the minimum, not the ceiling: a tier stays out of the set until the thing it
-documents exists in the codebase today (G12).
+documents exists in the codebase today.
 
 ## Sidebar assembly
 

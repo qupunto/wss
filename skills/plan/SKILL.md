@@ -17,7 +17,7 @@ thing to hold onto:
 an unsplit project's. That single prohibition is what lets a project hold any
 number of lane roadmaps while still holding exactly one release checkpoint —
 `--wss-release` reads `WSS.record.releases` and no other planning record.
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md) holds the rule and the
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md) holds the rule and the
 reasoning; `wss-doctor.sh` fails on a roadmap that breaks it.
 
 A roadmap is **not** a task list and **not** a place for design arguments. The
@@ -29,13 +29,13 @@ checklist is `WSS.record.todo` and the reasoning is `WSS.record.decisions`, both
 `WSS.record.decisionsIndex`, `WSS.record.stocktake`, and `WSS.agents.roadmap`. Without a
 manifest, fall back to `WSS.ROADMAP.md` and `WSS.RELEASES.md` and say so. Where a
 `.claude/WSS.LANE` selector names a lane, `WSS.lanes.named.<lane>.records.X` overrides
-`WSS.record.X` for `todo`, `openDecisions`, `handoff` and `roadmap` —
-[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s resolution rule. `releases` is
+`WSS.record.X` for the splittable keys —
+[`WSS.LANE-CONTRACT.md`](../../wss/workflow/WSS.LANE-CONTRACT.md)'s resolution rule. `releases` is
 never among them.
 
-Who owns what is [`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md);
+Who owns what is [`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md);
 what each record holds is
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md).
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md).
 
 ## Which mode you are in — read the selector first
 
@@ -55,13 +55,13 @@ it here produces a checkpoint nobody else agreed to.
 
 Where a lane session genuinely needs a milestone decision, say which lane it is
 in and that the question belongs to the main checkout. That is
-[`WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md)'s route-to-the-owning-lane rule
+[`WSS.LANE-CONTRACT.md`](../../wss/workflow/WSS.LANE-CONTRACT.md)'s route-to-the-owning-lane rule
 applied to a record rather than to a file.
 
 ## Why this is a skill and not only the agent
 
 Same split as `--wss-release` and for the same reason. The agent named in
-`WSS.agents.roadmap` does the reading — the roadmaps, the release list, the backlog,
+`WSS.agents.roadmap` does the reading — the roadmaps, the release list, the TODO list,
 the decision index, the audit log, the git history — and returns a proposal.
 
 But **completing a milestone requires asking the user, in conversation, and
@@ -165,6 +165,10 @@ cases that authorize a tag. Without it, every milestone is completed and tagged,
 release can be cut** — the project ships its last version and then silently
 cannot ship again.
 
+**The declaring heading must carry the literal `*end of milestones*` marker** —
+that marker is what the milestone counters read, and a declaration without it is
+counted as an unfinished milestone rather than as the declaration it is.
+
 Three rules, and the first is the one that gets skipped:
 
 - **Ask before writing it, the same as completing a milestone.** This is a larger
@@ -205,10 +209,10 @@ section.
 Both records are read to set priorities, which makes a false claim in either
 unusually expensive: it does not just misinform, it redirects work. So "nothing
 does X" and any count go through
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#negative-claims) before
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md#negative-claims) before
 they are written here, and a finding dispatched about either file gets the
 re-verification in
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md#the-inspector-writes-nothing) before
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md#the-inspector-writes-nothing) before
 it is acted on.
 
 **Watch for state claims this write falsifies.** Before writing, grep the
@@ -217,7 +221,7 @@ mark makes false — a block still sitting in next-up that this goal completes, 
 stated dependency this order reverses, a milestone reading open that the mark
 closes, an end-of-milestones section a new milestone contradicts — and fix them
 in the same edit
-([`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+([`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
 Same-file scope is the cheap case and the usual one; the cross-record form is a
 mark or goal asserting X exists falsifying "no X exists" wherever that sentence
 lives.

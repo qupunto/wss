@@ -18,7 +18,7 @@
 # and it is not conditional on anything being wrong — it is the file a fresh
 # session is supposed to start from. The harness only auto-loads the working
 # directory's CLAUDE.md, so every other resolved handoff — mapped elsewhere,
-# or the WSS.HANDOFF.md fallback where the key or the manifest is absent — is
+# or the wss/records/WSS.HANDOFF.md fallback where the key or the manifest is absent — is
 # a handoff nothing reads. This injects it. It stays silent only where the
 # handoff is CLAUDE.md (the harness already loaded it) or the resolved file
 # does not exist (nothing to load), so a project that never wrote a handoff
@@ -81,7 +81,7 @@ fi
 # A sweep checkpoint that is far behind HEAD means the next --wss-check or --wss-docs
 # will re-read a lot. Worth one line so the user can choose to run it; not worth
 # a line while it is fresh. 40 commits is a nudge threshold, not a rule.
-# The manifest may relocate the checkpoint (`WSS.sweeps`, workflow/WSS.MANIFEST.md), and
+# The manifest may relocate the checkpoint (`WSS.sweeps`, wss/workflow/WSS.MANIFEST.md), and
 # wss-doctor.sh honours that. Hardcoding the default here meant a project that moved
 # it got no nudge at all, silently — or a nudge off an abandoned file still
 # sitting at the default path. Same resolution as the doctor's, absolute-safe.
@@ -142,7 +142,7 @@ manifest="$PWD/.claude/WSS.WORKFLOW.json"
 
 # A worktree of a lane-split project carries `.claude/WSS.LANE` (gitignored), and
 # `WSS.lanes.named.<lane>.records.X` in the manifest then overrides `WSS.record.X` for
-# the splittable records — workflow/WSS.LANE-CONTRACT.md states the rule once.
+# the splittable records — wss/workflow/WSS.LANE-CONTRACT.md states the rule once.
 # Read the selector here so every record read below resolves the same way:
 # nudging a lane worktree about the unsplit files would miss the lane's own
 # pending decisions, and the handoff injection must serve the lane's card.
@@ -202,15 +202,15 @@ depends on one makes the call by accident."
     fi
   fi
 
-  # A backlog going untouched is far less alarming: it costs a list that has
+  # A TODO list going untouched is far less alarming: it costs a list that has
   # drifted from reality, which is recoverable, and a long focused push through
   # one milestone legitimately does not touch it. At 40 this would fire on
   # correct behaviour, so it sits at twice the sweep threshold.
-  # A provider-backed backlog has no file — record_path selects the string
+  # A provider-backed TODO list has no file — record_path selects the string
   # form explicitly so the skip is a decision rather than a coincidence: an
-  # issue backlog has no baseline in this repository's history, so "unchanged
+  # issue TODO list has no baseline in this repository's history, so "unchanged
   # for N commits" is not a question that can be asked of it here.
-  # workflow/providers/WSS.GITHUB-ISSUES.md says the same about why a checkpoint
+  # wss/workflow/providers/WSS.GITHUB-ISSUES.md says the same about why a checkpoint
   # cannot narrow an issue sweep.
   td=$(record_path todo)
   if [ -n "$td" ] && [ -f "$PWD/$td" ]; then
@@ -219,19 +219,19 @@ depends on one makes the call by accident."
       out="${out}${out:+
 
 }$n open item(s) in $td, unchanged for $b commits of work.
---wss-stocktake re-checks the backlog against what the code now does, and rebuilds
+--wss-stocktake re-checks the TODO list against what the code now does, and rebuilds
 it around the answer."
     fi
   fi
 
-  # A drifted plan is the same class of loss as a drifted backlog, so it reuses
-  # the backlog's 80 rather than getting a number of its own — a long focused
+  # A drifted plan is the same class of loss as a drifted TODO list, so it reuses
+  # the TODO list's 80 rather than getting a number of its own — a long focused
   # push through one milestone legitimately does not touch this file, and at the
   # sweeps' 40 this would fire on correct behaviour. The literal is repeated
   # rather than shared: the two coincide by argument, not by definition, and one
   # constant would make changing either look like changing both.
   #
-  # `- [ ]` is the entry test for the same reason it is the backlog's: a roadmap
+  # `- [ ]` is the entry test for the same reason it is the TODO list's: a roadmap
   # whose blocks are all marked completed is FINISHED, not neglected.
   #
   # WSS.record.decisions and WSS.record.stocktake are deliberately absent. The decision log
@@ -327,7 +327,7 @@ fi
 
 # --------------------------------------------------------------- handoff
 # See the exception in the header. The harness auto-loads only CLAUDE.md, so
-# every other resolved handoff — declared, or the WSS.HANDOFF.md fallback when
+# every other resolved handoff — declared, or the wss/records/WSS.HANDOFF.md fallback when
 # the key or the whole manifest is absent — is a record nothing reads unless
 # this injects it. Silent only for CLAUDE.md (in context twice otherwise) and
 # for a manifest jq cannot read: the mapping might name CLAUDE.md, and a
@@ -338,10 +338,10 @@ hp=""
 if [ -f "$manifest" ]; then
   if command -v jq >/dev/null 2>&1; then
     hp=$(record_path handoff)  # lane-aware — a lane worktree gets ITS handoff
-    [ -n "$hp" ] || hp=WSS.HANDOFF.md  # key undeclared — documented fallback
+    [ -n "$hp" ] || hp=wss/records/WSS.HANDOFF.md  # key undeclared — documented fallback
   fi
 else
-  hp=WSS.HANDOFF.md                    # no manifest — the same fallback
+  hp=wss/records/WSS.HANDOFF.md                    # no manifest — the same fallback
 fi
 case "$hp" in
     ""|CLAUDE.md|./CLAUDE.md) ;;

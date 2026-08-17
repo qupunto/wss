@@ -14,15 +14,15 @@ shape as `--wss-describe`, for the record one column over.
 
 **This skill decides nothing and writes nothing itself.** It resolves the record
 and hands the work to
-[`writers/WSS.REFERENCE-WRITER.md`](../../workflow/writers/WSS.REFERENCE-WRITER.md),
+[`writers/WSS.REFERENCE-WRITER.md`](../../wss/workflow/writers/WSS.REFERENCE-WRITER.md),
 which is the sole writer of `WSS.record.reference` per
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md). The whole of what to write,
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md). The whole of what to write,
 how much, and what that record may not hold is that procedure's — read it rather
 than restating its rules here.
 
 **Project facts come from `.claude/WSS.WORKFLOW.json`**: `WSS.record.reference` — an
 **array of paths**, not one — with the fallback in
-[`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md). Say which you used.
+[`WSS.MANIFEST.md`](../../wss/workflow/WSS.MANIFEST.md). Say which you used.
 
 ## The file this reaches may be the project's landing page
 

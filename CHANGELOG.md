@@ -8,6 +8,101 @@ reasoning behind each change, is `WSS.CHANGELOG.md`. This file is deliberately
 free of that: if an entry here only makes sense to someone editing the suite, it
 belongs in the other one.
 
+## 0.11.1 — 2026-08-17
+
+**If you were waiting on 0.11.0, this is the one to take.** 0.11.0 was tagged but
+never actually reached you: the packaging step that builds the public copy
+refused it, correctly, and stopped before publishing anything. Everything 0.11.0
+described — including the three changes to your project that updating applies —
+arrives here instead. Read the 0.11.0 notes below for what those are; nothing in
+them changed.
+
+**Nothing in your project needs to change for this release itself.**
+
+## 0.11.0 — 2026-08-17
+
+**This release changes three things inside your project, and updating does all
+three for you.** They are applied in the order the releases went out, each one
+checked against your tree first — so a mend that is already done is skipped, and
+a re-run resumes rather than repeats. You see the full list of what will be
+touched before anything is touched.
+
+- **The suite now has to be told which of the files it keeps for you are added
+  to and which are rewritten in place.** That is what lets it refuse a change
+  that quietly deletes something you wrote months ago. The list is written in
+  for you.
+- **If you kept your own copies of the suite's rule files inside your project,
+  they move one folder deeper.** Most projects never made those copies, and for
+  those this does nothing at all.
+- **The safety hook installed in your checkout points at a file that has moved,
+  and it is re-installed.** This one is worth knowing about: that hook lives
+  outside version control, so pulling never fixes it, and nothing in your
+  project's checks would have told you. **If you or anyone else has a second
+  clone of the project, the update needs running there too** — each clone has
+  its own.
+
+**Your written history can no longer be quietly edited.** Deleting a line from
+inside an entry you already recorded is now refused outright, rather than being
+something you had to notice in a diff. Three things are still allowed, because
+each is genuinely not a rewrite: the instructions at the top of a file, an
+entry's current status, and the entry you are still writing. Amending anything
+else means adding a new entry that says so — which is what you would have wanted
+anyway.
+
+**Sessions now default to the high effort level.** This is a change to a setting
+that ships with the suite, so it will apply to you unless your own settings say
+otherwise, and it costs more per session than the previous default. If you would
+rather it did not, set it back — it is your file, and nothing here will
+overwrite that choice again.
+
+**One flag you may have typed no longer exists.** `--wss-tools` was doing two
+jobs that had nothing to do with each other: tidying up the tooling, and writing
+down what the tooling now is. They are `--wss-tidy` and `--wss-catalog` now. The
+old flag was removed rather than quietly redirected, so typing it does nothing
+rather than doing half of what you meant — and tidying now writes the catalogue
+itself when it finishes, so the description can no longer be left describing the
+tree from before.
+
+**Your parked ideas are two lists instead of one.** One holds what is genuinely
+queued to be done; the other holds what a session noticed on its way to
+something else and nobody has committed to. Nothing moves between them without
+you saying so, and starting a session never picks work from the second one. The
+practical effect is that "how much is outstanding" stops counting things nobody
+ever promised to do.
+
+**A parked idea gets closed when you record the answer to it.** Until now the
+answer went in, the idea stayed open, and the next session cheerfully described
+the same thing a second time. That was the actual cause of the duplicates, and
+it is fixed at the cause rather than by adding a duplicate-detector.
+
+**Work handed to a helper now runs at a decided level rather than a felt one.**
+There is a single table that says which kind of work runs where, on what, and at
+what effort, keyed on things anyone can check — whether the task writes files,
+whether someone else depends on its answer, whether the instructions already say
+what to read. Nothing chooses its own level any more, and a check refuses a
+helper whose settings disagree with the table. **A vaguely-briefed job is now
+priced as an expensive one instead of being silently run cheap and badly**, which
+means a well-briefed one gets to be genuinely cheap.
+
+**The heaviest commands cost you less to run.** Setting up a project, taking
+stock, syncing parallel work streams, and the documentation commands were each
+one enormous file that loaded whole; each is now a short router that pulls in
+only the step it has reached. Taking stock came in well under half its previous
+size. Starting a session gets its mechanical facts from a single call instead of
+reading around for them.
+
+**Several things that used to fail quietly now say so.** A settings file that
+exists but is broken used to read as though you had configured nothing — it now
+tells you it could not be read. Running the checks outside a repository used to
+report a messy working tree instead of no repository. Scaffolding a
+documentation site ignored the languages you had declared and will now stop
+rather than build you the wrong thing. And a batch of internal checks were
+reporting all-clear over files they had never opened; they now read them.
+
+**The suite's own files live under one folder.** Nothing you type changes, and
+nothing you wrote moves — but if you have ever gone looking inside the
+installation, that is where things went.
+
 ## 0.10.3 — 2026-08-11
 
 **This release is `0.10.2` plus one fix — `0.10.2` never reached you.** Its

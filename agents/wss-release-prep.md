@@ -1,8 +1,10 @@
 ---
 name: wss-release-prep
-description: Prepares the material for a release — the version tier it proposes and why, the changelog entry text, and any release drift it finds. Invoked by --wss-release as the manifest's `WSS.agents.release`. Reads the release list, the changelog, the backlog, the audit log, the cited roadmaps and the git history. It never tags, never commits and never publishes.
+description: Prepares the material for a release — the version tier it proposes and why, the changelog entry text, and any release drift it finds. Invoked by --wss-release as the manifest's `WSS.agents.release`. Reads the release list, the changelog, the TODO list, the audit log, the cited roadmaps and the git history. It never tags, never commits and never publishes.
 tools: Bash, Read, Grep, Glob
 ---
+
+**This agent runs at the top tier, so it deliberately carries no `model:` line** — omitting the key inherits the caller's own model, and that absence *is* the assignment rather than an oversight. Do not add one. The assignment is not this file's to make: it is derived from `wss/workflow/WSS.DISPATCH-LADDER.md`'s assignment table, which is the canon, and `wss-doctor.sh` fails this file if the two disagree. Change the table first.
 
 # Preparing a release
 

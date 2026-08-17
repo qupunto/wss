@@ -19,21 +19,34 @@ from this project's facts and naming no other.
 
 Three files are the authority and settle any disagreement between skills:
 
-- `~/.claude/workflow/WSS.OWNERSHIP.md` — who may write what
-- `~/.claude/workflow/WSS.RECORD-CONTRACT.md` — what each record holds
-- `~/.claude/workflow/WSS.MANIFEST.md` — which keys a manifest may set
+- `~/.claude/wss/workflow/WSS.OWNERSHIP.md` — who may write what
+- `~/.claude/wss/workflow/WSS.RECORD-CONTRACT.md` — what each record holds, plus
+  the one-source-of-truth rule and its exceptions
+- `~/.claude/wss/workflow/WSS.MANIFEST.md` — which keys a manifest may set
 
 **What each one governs, what a project without a manifest falls back to, and
 where these paths resolve under a plugin install rather than a clone, is the
 `contracts` skill.** It is canonical; the paths above are here so
 routing itself costs no lookup. `~/.claude/README.md` covers the `--flag`
-shorthands; what each one authorizes is `~/.claude/workflow/WSS.OWNERSHIP.md`'s
+shorthands; what each one authorizes is `~/.claude/wss/workflow/WSS.OWNERSHIP.md`'s
 matrix.
+
+## The order that settles every trade-off
+
+**Transparency > reliability > efficiency.** Set by the owner and not
+situational: where two of them pull apart, the higher wins and the cost is
+stated rather than absorbed.
+
+Efficiency is genuinely last. It never buys a silent shortcut, an unstated
+assumption, a number quoted without the command behind it, or a value used from
+memory instead of from the file that owns it. **The section below optimises the
+third of three** — read it as subordinate to the two above it, because a cheaper
+call that hides what it did is the wrong call whatever it saved.
 
 ## Tool traffic is the context, not the conversation
 
 Prose is a few percent of the window; tool calls are nearly all of it. Optimise
-the calls, not the wording.
+the calls, not the wording — within the order above, never against it.
 
 - **A script that runs twice gets written once.** Put it in the scratchpad and
   re-run it with arguments; a re-pasted heredoc costs its full length every time.
@@ -55,7 +68,7 @@ report is where the saving leaks back out.
 ## Run the doctor rather than trusting an inventory
 
 ```bash
-"${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/wss-doctor.sh
+"${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/wss/tests/wss-doctor.sh
 ```
 
 Read-only, and it prints what it checks. Run it rather than believing any count

@@ -79,7 +79,7 @@ esac
 # below does not matter. `--wss-stocktake` and `--wss-full-stocktake` look like they collide and
 # do not — the latter has its own leading dashes. wss-doctor.sh checks the invariant
 # rather than trusting this comment; add a flag that violates it and it fails.
-FLAGS=(--wss-full-stocktake --wss-pr --wss-full-check --wss-release --wss-stocktake --wss-report --wss-adopt --wss-flags --wss-start --wss-track --wss-docs --wss-check --wss-tools --wss-todo --wss-wrap --wss-plan --wss-help --wss-log --wss-alerts --wss-overview --wss-scout --wss-describe --wss-reference --wss-diagram --wss-update)
+FLAGS=(--wss-full-stocktake --wss-pr --wss-full-check --wss-release --wss-stocktake --wss-report --wss-adopt --wss-flags --wss-start --wss-track --wss-docs --wss-check --wss-tidy --wss-catalog --wss-todo --wss-wrap --wss-plan --wss-help --wss-log --wss-alerts --wss-overview --wss-scout --wss-describe --wss-reference --wss-diagram --wss-update)
 
 # Split into whitespace-separated tokens. `set -f` because an unquoted
 # expansion would otherwise glob `*` in the prompt against the filesystem.
@@ -239,7 +239,8 @@ skill_for() {
     --wss-adopt) echo adopt ;;
     --wss-update) echo update ;;
     --wss-docs | --wss-diagram) echo docs ;;
-    --wss-tools) echo tools ;;
+    --wss-tidy) echo tidy ;;
+    --wss-catalog) echo catalog ;;
     --wss-check) echo check ;;
     --wss-report) echo report ;;
     --wss-full-check) echo full-check ;;
@@ -290,6 +291,50 @@ skill_gist_() {
       sub(/[[:space:]]+$/, "")
       print; exit
     }' "$1"
+}
+
+# The suite root, in BOTH install forms: hooks/ sits directly under it in a
+# checkout (~/.claude/hooks/) and under a plugin (${CLAUDE_PLUGIN_ROOT}/hooks/).
+# $CONFIG_DIR is NOT usable here — under a plugin it is the adopter's own config
+# directory, which is not the suite. NEW STANDING ASSUMPTION for this layer:
+# the suite root is this script's parent directory.
+SUITE_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd -P)"
+
+# THE GRANT IS DERIVED, NEVER COPIED. The canon is wss/workflow/WSS.OWNERSHIP.md's
+# matrix, last column ("Authorization the flag grants"). Emits the blank lines
+# around itself, so a caller is one line and cannot mis-space its block.
+# Fails CLOSED: any failure to read the cell denies the grant rather than
+# inventing one, and always emits a literal "Authorization:" prefix.
+grant_() { # $1 = flag token, e.g. --wss-adopt
+  local own="${SUITE_ROOT:-}/wss/workflow/WSS.OWNERSHIP.md" cell=''
+  [ -n "${SUITE_ROOT:-}" ] && [ -f "$own" ] && cell=$(awk -F'|' -v flag="$1" '
+    /^\|/ && index($3, "`" flag "`") {
+      a = $(NF - 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", a); print a; exit
+    }' "$own" 2>/dev/null)
+  case ${cell:-—} in
+    —|-|'')
+      printf '\nAuthorization: none — the grant could not be read from\nwss/workflow/WSS.OWNERSHIP.md, so this flag authorizes nothing on its own.\n\n'
+      return 0 ;;
+  esac
+  printf '\nAuthorization: %s\n\n' "$cell"
+}
+
+# THE FILING TEMPLATE IS DERIVED, NEVER COPIED. The canon is the fence in
+# wss/workflow/WSS.OWNERSHIP.md's "A file belonging to the installation is never
+# edited from a project session" section — the one statement of the format.
+# Emits the blank lines around itself and the six-space indent both blocks
+# need, so a caller is one line and cannot mis-space its block.
+# Fails CLOSED: an unreadable fence sends the session to the canon rather than
+# inventing a format from memory.
+bugtpl_() {
+  local own="${SUITE_ROOT:-}/wss/workflow/WSS.OWNERSHIP.md" tpl=''
+  [ -n "${SUITE_ROOT:-}" ] && [ -f "$own" ] && tpl=$(awk '
+    /^## \[open\]/ { p = 1 }
+    p { if ($0 ~ /^```/) exit; print "      " $0 }' "$own" 2>/dev/null)
+  case $tpl in
+    *'## [open]'*) printf '\n%s\n\n' "$tpl"; return 0 ;;
+  esac
+  printf '\n      The entry format could not be read from wss/workflow/WSS.OWNERSHIP.md.\n      Open that file, section "A file belonging to the installation is never\n      edited from a project session", and copy its fenced format before\n      filing. Do not invent one.\n\n'
 }
 
 # THE POINT OF THIS BLOCK: it is computed, every time, from the FLAGS array and
@@ -370,8 +415,13 @@ The rest of the message is the idea to defer, not a question to answer.
 Authorization: none.
 
 Irreversible, in force before the skill loads: a deferral is a decision, so it
-produces TWO entries — the task in the project's backlog record, and the
-reasoning in its decision record. Never write the reasoning into the backlog.
+produces TWO entries — the task in the project's TODO LIST, and the
+reasoning in its decision record. Never write the reasoning into either record.
+The TODO LIST is `WSS.record.todo` and holds what is QUEUED. `WSS.record.backlog`
+holds the non-blocking, non-critical findings nobody scheduled, and that is
+where an observation goes when nothing is waiting on it. Filing a finding as
+queued work is how a session that started with a small brief ends with more
+tasks than it began with.
 If the real blocker is an unmade choice rather than bad timing it belongs in the
 open-decisions record instead, and never in both. The decision entry NAMES WHOSE
 CALL the deferral was — the owner's words, or the session's own judgment, which
@@ -422,9 +472,9 @@ EOF
 The user included the `--wss-adopt` flag. That is an explicit, unconditional
 instruction to run the `adopt` skill now — bring this project under the
 workflow by writing `.claude/WSS.WORKFLOW.json`.
-
-Authorization: COMMIT what it creates. Not push.
-
+EOF
+    grant_ --wss-adopt
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
 - If a manifest already exists this is an AMENDMENT, not a rewrite. Fill gaps
   only; never overwrite a key the project already chose. THE ONE EXCEPTION is a
@@ -448,14 +498,14 @@ The user included the `--wss-update` flag. That is an explicit, unconditional
 instruction to run the `update` skill now — update the suite install, then
 detect what conventions this tree actually carries and migrate it to the
 newest.
-
-Authorization: COMMIT what the migration changes. Not push.
-
+EOF
+    grant_ --wss-update
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
 - DETECTION IS THE AUTHORITY. The stamp (`WSS.suite`) and the release list's
   migration lines only accelerate; every claim is re-verified against the
   tree's own files before anything is mended.
-- SNAPSHOT BEFORE THE FIRST WRITE: wss-export-records.sh --all (it reads
+- SNAPSHOT BEFORE THE FIRST WRITE: wss/scripts/wss-export-records.sh --all (it reads
   legacy manifests). Tell the user where the archive landed.
 - The migration plan is shown and gets an explicit OK in that turn before any
   mend. A mend the plan did not name waits; it is never slipped in.
@@ -507,7 +557,7 @@ Irreversible, in force before the skill loads:
   invoked from here inherits THIS flag's grant, which is none: it writes its
   file and does not commit.
 - A file with NO owner in the matrix is ordinary work: edit it directly and say
-  what changed. Scripts, CI, the harness settings and the `workflow/*.md`
+  what changed. Scripts, CI, the harness settings and the `wss/workflow/*.md`
   contracts are the usual instances. Read this rule with the one above it —
   "dispatch everything" is what an earlier version of this block said, and it
   forbids the repair of a broken hook script that WSS.OWNERSHIP.md licenses.
@@ -521,15 +571,20 @@ Irreversible, in force before the skill loads:
   and reports as not run where none does. No flag here delivers it on its own.
 EOF
     ;;
-  --wss-tools)
+  # The filing template near the end of this block, and its twin in the
+  # `--wss-catalog` block below, are NOT copies. Both call bugtpl_(), which
+  # reads the fence out of wss/workflow/WSS.OWNERSHIP.md at runtime, so the format
+  # has one statement and no site can drift from it. Nothing here needs
+  # changing when that fence changes.
+  --wss-tidy)
     cat <<'EOF'
-The user included the `--wss-tools` flag. That is an explicit, unconditional
-instruction to invoke the `tools` skill now — keep the tooling
-catalog in step with what skills and agents actually exist, fix stale claims
-inside those files, and run the prose prune when that is what was asked.
-
-Authorization: COMMIT. Not push.
-
+The user included the `--wss-tidy` flag. That is an explicit, unconditional
+instruction to invoke the `tidy` skill now — run the five sweeps over
+`WSS.record.tooling.sources` (stale claims, prose prune, token-economy,
+rot-resistance, routing) and fix what they find inside those files.
+EOF
+    grant_ --wss-tidy
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
 - In PRUNE mode, propose first and cut second: a proposed cut is a hypothesis,
   and this is the one job where being wrong is silent — nothing fails when a
@@ -543,9 +598,12 @@ Irreversible, in force before the skill loads:
   behind a link. Everything else the rule decides — what a skill or agent file
   may carry at all, and why a corrected count goes stale again — is stated once,
   in the "The mutable-claim rule" section of
-  ~/.claude/workflow/WSS.RECORD-CONTRACT.md. READ IT before editing any such file.
+  ~/.claude/wss/workflow/WSS.RECORD-CONTRACT.md. READ IT before editing any such file.
 - Say in the commit what you removed and why. It is the only audit trail an
   erasure gets.
+- After any edit that restructures a file — a rename, a section moved, a skill
+  or agent added or removed — run `bash wss/scripts/wss-tools-inventory.sh` and then invoke
+  `--wss-catalog`. Skipping this leaves the catalog describing the pre-tidy tree.
 - NEVER edit a file belonging to THIS SUITE — its own skills, agents, workflow
   contracts and scripts — from a session working in another project. Not even
   the skill currently running, and not even when the defect is obvious. Under a
@@ -558,11 +616,47 @@ Irreversible, in force before the skill loads:
 - Instead, APPEND the finding to WSS.BUG-REPORTS.md in the config directory
   ($CLAUDE_CONFIG_DIR, else ~/.claude) — the one file any session in any project
   may write to — then stop. It is gitignored and so ships with no template:
-
-      ## [open] <one-line summary>
-      Found: <project worked in> · <config commit, short SHA>
-      File: <path within the suite> · Detail: <what is wrong, what you expected>
-
+EOF
+    bugtpl_
+    cat <<'EOF'
+  Never report only into the conversation — that loses the finding at the next
+  /clear. Filing IS the action, not a step on the way to fixing it. Triage
+  needs a checkout; from a plugin install, raise it upstream as well.
+EOF
+    ;;
+  --wss-catalog)
+    cat <<'EOF'
+The user included the `--wss-catalog` flag. That is an explicit, unconditional
+instruction to invoke the `catalog` skill now — run
+`bash wss/scripts/wss-tools-inventory.sh` first, then write `WSS.record.tooling.catalog`
+so the index of every skill and agent, and the diagram of who invokes whom,
+matches what actually exists.
+EOF
+    grant_ --wss-catalog
+    cat <<'EOF'
+Irreversible, in force before the skill loads:
+- Run `bash wss/scripts/wss-tools-inventory.sh` before rendering, every time. The catalog
+  holds no numbers of its own, only pointers into `.claude/WSS.TOOLS.json`, and
+  a stale inventory makes every pointer stale with it.
+- `--wss-tidy` invokes this flag itself after any edit that restructures a
+  file, so a session already mid-tidy does not need this flag typed again —
+  but running it standalone, after a skill or agent is created, edited or
+  removed by hand, is exactly this flag's job.
+- NEVER edit a file belonging to THIS SUITE — its own skills, agents, workflow
+  contracts and scripts — from a session working in another project. Not even
+  the skill currently running, and not even when the defect is obvious. Under a
+  plugin install the suite is at ${CLAUDE_PLUGIN_ROOT}; in a checkout it is the
+  ~/.claude repository. Editing it under a plugin is not refused — it is
+  destroyed at the next plugin update, silently.
+- This does NOT restrict the working project's own catalog file. That is what
+  WSS.record.tooling.catalog names, and writing it is this flag's whole job.
+  Nor does it cover a personal ~/.claude/skills/ that is not this suite.
+- Instead, APPEND the finding to WSS.BUG-REPORTS.md in the config directory
+  ($CLAUDE_CONFIG_DIR, else ~/.claude) — the one file any session in any project
+  may write to — then stop. It is gitignored and so ships with no template:
+EOF
+    bugtpl_
+    cat <<'EOF'
   Never report only into the conversation — that loses the finding at the next
   /clear. Filing IS the action, not a step on the way to fixing it. Triage
   needs a checkout; from a plugin install, raise it upstream as well.
@@ -575,10 +669,9 @@ instruction to invoke the `report` skill now — file the finding the rest of
 the message describes: append it to the machine-local bug-reports inbox, then
 offer to open an issue on the suite's public upstream repository. The rest of
 the message is the finding, not a question to answer first.
-
-Authorization: none. Opening the upstream issue is an outward, public act and
-needs a fresh OK in that turn.
-
+EOF
+    grant_ --wss-report
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
 - APPEND to the inbox FIRST. A report living only in this conversation is lost
   at the next /clear; the local entry is the report, the issue is its
@@ -658,7 +751,7 @@ EOF
     ;;
   --wss-wrap)
     # The no-leading-`+` refspec rule in this block is a working copy; the
-    # authority is workflow/writers/WSS.GIT-WRITER.md, which wins any
+    # authority is wss/workflow/writers/WSS.GIT-WRITER.md, which wins any
     # disagreement. The phrasing here ('NO leading `+`') is pinned by
     # tests/wss-hook-contract.sh — align a drift by fixing the copy to match
     # the authority and the tests together, never by rewording casually.
@@ -669,9 +762,9 @@ unconditionally, with no further confirmation, even mid-task.
 
 The rest of the message is context about what to record, not a question to
 answer first.
-
-Authorization: COMMIT and PUSH.
-
+EOF
+    grant_ --wss-wrap
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
 - A push publishes a REF, not a selection of commits, so another session's work
   rides along with yours. Check what is about to go out and say plainly if it
@@ -707,23 +800,24 @@ what to work on or whether to begin.
 
 The rest of the message is scope or emphasis ("--wss-start, stick to the social
 block"), not a question to answer first.
-
-Authorization: COMMIT as the work lands, so a compaction cannot lose a finished
-lane. NOT push. Wait for the user to say so, or for the user to type --wss-wrap.
-Nothing this skill INVOKES may push on its behalf: an invoked skill inherits this
-grant, never its own flag's, so closing out goes through handoff-writer for the
-handoff, not through wrap for the ritual, and the commits go through
-git-writer, which may commit here but not push.
-
+EOF
+    grant_ --wss-start
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
-- Lanes run concurrently in ONE shared working tree, so the unit of parallelism
-  is the FILE SET, not the task. Two lanes editing one file do not merge: the
-  second write wins and the first lane's work is gone silently. Give every lane
+- Commit as the work lands, so a compaction cannot lose a finished shard. Wait
+  for the user to say so, or for the user to type --wss-wrap, before any push.
+  Nothing this skill INVOKES may push on its behalf: an invoked skill inherits
+  this grant, never its own flag's, so closing out goes through handoff-writer
+  for the handoff, not through wrap for the ritual, and the commits go
+  through git-writer, which may commit here but not push.
+- Shards run concurrently in ONE shared working tree, so the unit of parallelism
+  is the FILE SET, not the task. Two shards editing one file do not merge: the
+  second write wins and the first shard's work is gone silently. Give every shard
   an explicit list of files it owns, and tell it to stop rather than write
   outside that list.
-- At most ONE lane in the whole batch may touch the paths the manifest lists
+- At most ONE shard in the whole batch may touch the paths the manifest lists
   under `WSS.lanes.exclusive`, and it runs first and alone.
-- NO lane writes a record file. The orchestrator records once, at the end.
+- NO shard writes a record file. The orchestrator records once, at the end.
 - Settle the open-decisions record with the user BEFORE selecting work. An open
   decision does not wait — it gets made silently by whoever writes the first
   line of code that depends on it.
@@ -740,9 +834,9 @@ to start.
 
 The rest of the message is context about what is being released, not a question
 to answer first.
-
-Authorization: COMMIT. The PUSH is NOT covered by this flag.
-
+EOF
+    grant_ --wss-release
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
 - The precondition is a MILESTONE MARKED COMPLETED in `WSS.record.releases`, written
   by --wss-plan. NOT the roadmap: that record holds goals, splits per lane, and
@@ -773,11 +867,12 @@ to open one.
 
 The rest of the message is context about what is being merged, not a question
 to answer first.
-
-Authorization: COMMIT. The PUSH and the MERGE are NOT covered by this flag —
-each needs a fresh OK in that turn. Opening the PR is covered.
-
+EOF
+    grant_ --wss-pr
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
+- The PUSH and the MERGE are NOT covered by this flag — each needs a fresh OK in
+  that turn. Opening the PR is covered.
 - The precondition is that WSS.branch.integration is ALREADY PUSHED. A PR opened
   over unpushed commits describes a range the reviewer cannot see. If commits
   are local only, stop and say so — pushing them is not this flag's grant.
@@ -807,9 +902,9 @@ unconditional instruction to run the `stocktake` skill at FULL scope —
 invoke it now, without asking for confirmation first.
 
 The rest of the message is scope or emphasis, not a question to answer first.
-
-Authorization: COMMIT and PUSH — but the audit's OWN RECORD ONLY.
-
+EOF
+    grant_ --wss-full-stocktake
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
 - Full scope means audit history is ignored ENTIRELY. Do not read coverage
   baselines out of the audit record and do not skip anything because a previous
@@ -854,7 +949,7 @@ The user included the `--wss-diagram` flag. That is an explicit, unconditional
 instruction to draw ONE diagram of what the message names — or, bare, of what
 was just worked on — and land it in the docs site: invoke the `docs` skill
 now, and write the result as a page under the site's annex directory
-(`docs/annex/` by the site's own convention). The rest of the message is the
+(`wss/docs/annex/` by the site's own convention). The rest of the message is the
 subject, not a question to answer first.
 
 Authorization: none. Committing and pushing stay ordinary decisions.
@@ -867,7 +962,7 @@ In force before the skill loads:
   claim drawn from source you read; and stop before the graph stops being
   readable — a table is often the better answer, and saying so is a valid
   outcome of this flag.
-- The catalog's interaction diagram is not this flag's to touch: `--wss-tools`
+- The catalog's interaction diagram is not this flag's to touch: `--wss-catalog`
   draws that one.
 EOF
     ;;
@@ -878,9 +973,9 @@ instruction to run the `stocktake` skill incrementally — invoke it now,
 without asking for confirmation first.
 
 The rest of the message is scope or emphasis, not a question to answer first.
-
-Authorization: COMMIT and PUSH — but the audit's OWN RECORD ONLY.
-
+EOF
+    grant_ --wss-stocktake
+    cat <<'EOF'
 Irreversible, in force before the skill loads:
 - This skill asks WHERE THE PROJECT IS, not whether its code is correct. Its
   dimensions are the record, the project's consistency against its own stated
@@ -970,7 +1065,7 @@ EOF
 # the current state). Applied HERE, deterministically, before the blocks are
 # emitted — so what the block reports is what has already happened, not an
 # instruction that might be reinterpreted.
-ALERTS_STATE="$CONFIG_DIR/WSS.ALERTS-ON"
+ALERTS_STATE="$CONFIG_DIR/wss/flags/WSS.ALERTS-ON"
 alerts_msg=''
 if [ -n "${seen[--wss-alerts]:-}" ]; then
   alerts_arg=''
@@ -982,6 +1077,7 @@ if [ -n "${seen[--wss-alerts]:-}" ]; then
   done
   case $alerts_arg in
     on)
+      mkdir -p "$(dirname "$ALERTS_STATE")" 2>/dev/null || true
       if : > "$ALERTS_STATE" 2>/dev/null; then
         alerts_msg='Sound alerts are now ON for this machine.'
       else
@@ -1023,13 +1119,14 @@ fi
 # it, but it runs --wss-check's method over --wss-check's files as one of its three
 # areas, so firing both sweeps the record twice. The wider one wins.
 #
-# `--wss-docs` and `--wss-tools` are deliberately NOT dropped, even though --wss-full-check
-# subsumes their SWEEPS. Both of those flags have a second, unrelated job —
-# writing a page, syncing the catalog — and `--wss-full-check --wss-docs auth` is a
-# health check followed by a request to document something. This hook cannot
-# tell that apart from a redundant sweep, and dropping a write request to save
-# one read is the wrong way to be wrong. The multi-flag preamble already tells
-# Claude to do a shared step once.
+# `--wss-docs`, `--wss-tidy` and `--wss-catalog` are deliberately NOT dropped, even
+# though --wss-full-check subsumes their SWEEPS. Each of those flags has a second,
+# unrelated job — writing a page, editing the tooling sources, syncing the
+# catalog — and `--wss-full-check --wss-docs auth` is a health check followed by
+# a request to document something. This hook cannot tell that apart from a
+# redundant sweep, and dropping a write request to save one read is the wrong
+# way to be wrong. The multi-flag preamble already tells Claude to do a shared
+# step once.
 if [ -n "${seen[--wss-full-check]:-}" ] && flag_fires --wss-full-check; then
   unset 'seen[--wss-check]'
 fi
@@ -1041,9 +1138,10 @@ fi
 # one's writes as fresh drift.
 #
 # `--wss-full-check` is deliberately NOT dropped here, on the same reasoning that
-# spares --wss-docs and --wss-tools above. It is a different skill, not a wider scope:
-# it also covers the docs site and the tooling files, neither of which a
-# stocktake touches. Dropping it would silently narrow what the user asked for.
+# spares --wss-docs, --wss-tidy and --wss-catalog above. It is a different skill,
+# not a wider scope: it also covers the docs site and the tooling files, neither
+# of which a stocktake touches. Dropping it would silently narrow what the user
+# asked for.
 if { [ -n "${seen[--wss-stocktake]:-}" ] && flag_fires --wss-stocktake; } ||
    { [ -n "${seen[--wss-full-stocktake]:-}" ] && flag_fires --wss-full-stocktake; }; then
   unset 'seen[--wss-check]'

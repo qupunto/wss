@@ -14,10 +14,11 @@
 !settings.json
 !CLAUDE.md
 
-# Root scripts. `!*.sh` re-includes the operational scripts at the root; the
-# hook scripts moved to `hooks/` on 2026-08-01 for the plugin layout, and
-# `!*.sh` cannot reach them there — see the `!hooks/` block below for why that
-# is not a redundant line.
+# wss-doctor.sh, the one root script left. `!*.sh` re-includes it; the other
+# sixteen moved to `wss/scripts/` on 2026-08-15's tier 2 (already covered by
+# the `!wss/` + `!wss/**` pair below) and the hook scripts moved to `hooks/`
+# on 2026-08-01 for the plugin layout — `!*.sh` cannot reach either
+# subdirectory, which is why `!hooks/` and `!wss/` each need their own pair.
 !*.sh
 
 # The plugin layout. `hooks/` holds the hook scripts and the `hooks.json`
@@ -46,12 +47,28 @@
 !commands/**
 
 # This repo is two things at once: a live config directory and a project with
-# its own documentation. The inverted rule above serves the first and would
-# block the second, so re-include them explicitly rather than loosening `*`,
-# which would start pulling in machine state again.
+# its own documentation, gitignore-only. The inverted rule above serves the
+# first and would block the second, so re-include README.md explicitly rather
+# than loosening `*`, which would start pulling in machine state again. The
+# docs site itself lives under `wss/` as of 2026-08-15 (moved out of a
+# top-level `docs/`) and needs no re-inclusion pair of its own — the `!wss/`
+# block below already covers it wholesale.
 !README.md
-!docs/
-!docs/**
+
+# The `/wss` tree: the project's own records, logs, generated artifacts and
+# local flags, gathered out of the root, `docs/` and `.claude/` on 2026-08-15.
+# BOTH lines are load-bearing for the same reason the `!hooks/` block above
+# spells out — `!*.sh` and a bare `!wss/` cannot reach into a subdirectory, and
+# a missing pair does not error, it silently untracks. Add nothing here that is
+# machine-local: this tree travels between machines.
+!wss/
+!wss/**
+
+# ...except `wss/flags/`, which is per-machine state by definition — the alert
+# switch and its stamp were untracked at the root and must stay untracked here.
+# The `!wss/**` pair above would otherwise re-include them, which is the exact
+# accident that pair is powerful enough to cause.
+wss/flags/
 
 # Without a LICENSE a repo is all rights reserved, which would make the skills
 # unusable by anyone who finds them.
@@ -63,14 +80,19 @@
 # negation is never consulted.
 !.github/
 !.github/**
-!tests/
-!tests/**
 
-# This repo keeps no project-scoped skills. `$PWD/.claude/skills` is where they
-# live in any project that has them, and the workflow still supports that
-# everywhere — a project ships its own skill and the flag hook resolves it there
-# first. This checkout deliberately has none: every skill here is global, so
-# there is no subtree to re-include.
+# `$PWD/.claude/skills` is where a project's own skills live, and the workflow
+# supports that everywhere — a project ships its own skill and the flag hook
+# resolves it there first.
+#
+# THIS REPO NOW KEEPS TWO THERE, and the placement is the point rather than an
+# accident. `skills/` here is the SUITE's, and every file in it loads in every
+# project on this machine; a skill that only makes sense against this repository
+# — one that names `audits/`, `wss-publish.sh`, this tree's own method files —
+# would be dead weight in all of them and confusing in most. Under
+# `.claude/skills/` it is reachable only from a session standing here.
+# `wss-publish.sh` deletes the directory from every assembly, so none of it
+# reaches an adopter.
 #
 # Narrow on purpose. `.claude/` will accumulate machine-local state — a
 # settings.local.json, session bookkeeping — so re-include files by name rather
@@ -78,12 +100,13 @@
 # the rest is ever consulted.
 !.claude/
 !.claude/WSS.TOOLING.md
-
-# The shared workflow contract every global skill reads. Deliberately outside
-# skills/, since a directory there with no SKILL.md is ignored today but relying
-# on that is a bet on discovery internals.
-!workflow/
-!workflow/**
+# The catalog's generated twin: `.claude/WSS.TOOLING.md` holds what a tool is
+# for, this holds every measured fact about it. Tracked, unlike the derived
+# files named further down, because `wss-tools-inventory.sh --check` regenerates
+# to a temp file and diffs against this one — with nothing committed there is
+# nothing to diff and the staleness guard is vacuous rather than absent. Same
+# reason `docs/WSS.DECISIONS-INDEX.md` is tracked.
+!.claude/WSS.TOOLS.json
 
 # This repo running its own workflow on itself. Every path below is a record
 # file this configuration's skills expect, or the manifest that maps them.
@@ -105,41 +128,37 @@
 !WSS.RELEASES.md
 !CHANGELOG.md
 !WSS.CHANGELOG.md
-# Assembles and gates the public tree. Tracked here and deliberately NOT on the
-# list of what it copies — it is about producing that repository, so it is
-# meaningless inside it, and it names the Gate needles in the clear.
-!wss-publish.sh
-# Blanks every declared record. This one DOES travel: an adopter runs it to start
-# agnostic, and wss-publish.sh runs the copy rather than keeping a second list.
-!wss-reset-records.sh
-# Moves machine-local workflow state (untracked records, the lane selector, the
-# inbox) between machines. Travels: an adopter changing machines is its whole
-# audience. The archives it produces are NOT re-included — they are snapshots.
-!wss-export-records.sh
-# The tidy exit: removes the suite's machinery from a project, records only
-# behind a second flag. Travels — stopping cleanly is an adopter act.
-!wss-retire-workflow.sh
-# Prints one adopted tree's own properties, read-only, run by hand from inside
-# it. Travels: it reads whatever manifest it is pointed at and holds nothing
-# about this repository. Its OUTPUT is local-only — it names a private
-# project's paths and record layout, and the suite's repository is public.
-!wss-tree-survey.sh
+# Five of the root scripts used to need their own re-include line here, each
+# with its own comment — `!*.sh` cannot reach a subdirectory any more than it
+# could reach `hooks/`, so each was named individually. THEY NEED NO
+# RE-INCLUSION OF THEIR OWN ANY MORE: wss-publish.sh, wss-reset-records.sh,
+# wss-export-records.sh, wss-retire-workflow.sh and wss-tree-survey.sh all
+# moved to `wss/scripts/` in 2026-08-15's tier 2, which the `!wss/` +
+# `!wss/**` pair above already reaches — the same shape the audits reports
+# below document for the same reason.
 # Agent audit reports. Tracked so they are BACKED UP — they are the most
 # expensive artifact this repo produces and they existed on one machine only
 # until 2026-08-02, one disk failure from gone.
 #
-# They do NOT travel to the published repo: `wss-publish.sh` deletes them from the
-# assembly, and its whitelist would fail the run if it ever missed one. Keeping
-# them out of the public tree is that script's job, not this file's — being
-# untracked was never what protected the publication surface.
-!audits/
-!audits/**
+# THEY NEED NO RE-INCLUSION OF THEIR OWN ANY MORE. They live at
+# `wss/logs/audits/`, which the `!wss/` + `!wss/**` pair above already reaches;
+# the `!audits/` pair that used to sit here named a root directory that no
+# longer exists, so it re-included nothing.
+#
+# They do NOT travel to the published repo: `wss-publish.sh` deletes them from
+# the assembly. **Its whitelist is NOT the backstop for that any more** — Gate 2
+# admits `wss/` wholesale, so the reports are admitted by it now, and the
+# backstop is a dedicated Gate 2 line naming `wss/logs/audits/`. Keeping them
+# out of the public tree is that script's job, not this file's — being untracked
+# was never what protected the publication surface.
 
 !.claude/WSS.WORKFLOW.json
 !.claude/WSS.HANDOFF.md
 !.claude/WSS.HAZARDS.md
 !.claude/agents/
 !.claude/agents/**
+!.claude/skills/
+!.claude/skills/**
 
 # Never, under any circumstances. Last word wins, so everything below survives
 # any re-inclusion added above it later — which is the whole reason this block
@@ -147,7 +166,7 @@
 .credentials.json
 
 # The block above protects one filename. The re-inclusions higher up admit whole
-# directory trees WHOLESALE — skills/**, .claude/agents/**, docs/**, workflow/**,
+# directory trees WHOLESALE — skills/**, .claude/agents/**, wss/**, wss/workflow/**,
 # tests/** and .github/** among them — so before these lines existed a
 # new sensitive KIND under any of them was committable and nothing said so.
 # `git add` is silent when it declines a path and equally silent when it accepts
