@@ -17,7 +17,7 @@
       "Bash(gh repo delete*)",
       "Edit(~/.claude/.gitignore)",
       "Edit(~/.claude/settings.json)",
-      "Edit(~/.claude/wss-doctor.sh)",
+      "Edit(~/.claude/wss/tests/wss-doctor.sh)",
       "Edit(~/.claude/hooks/wss-session-check.sh)",
       "Edit(~/.claude/hooks/wss-shorthand-flags.sh)",
       "Edit(~/.claude/hooks/hooks.json)",
@@ -25,7 +25,7 @@
       "Edit(.claude/*.sh)",
       "Edit(~/.claude/skills/**)",
       "Edit(~/.claude/agents/**)",
-      "Edit(~/.claude/workflow/**)",
+      "Edit(~/.claude/wss/workflow/**)",
       "Edit(.claude/skills/**)",
       "Edit(.claude/agents/**)"
     ],
@@ -93,5 +93,6 @@
         ]
       }
     ]
-  }
+  },
+  "effortLevel": "high"
 }

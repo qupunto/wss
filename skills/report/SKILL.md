@@ -6,7 +6,7 @@ description: "File a finding about this suite upstream — append it to the mach
 # Reporting a suite finding upstream
 
 The inbox flow this mechanizes already exists:
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md)'s cross-project rule files every
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md)'s cross-project rule files every
 suite finding into the machine-local `WSS.BUG-REPORTS.md` and stops, and an adopter
 with no checkout has "an issue upstream" as their terminal step. This skill is
 that step made deterministic — and it is the durability move for the one file
@@ -20,16 +20,11 @@ against itself by editing this line.
 ## The order is: local first, upstream second
 
 1. **Append the entry to the inbox** — `$CLAUDE_CONFIG_DIR/WSS.BUG-REPORTS.md`
-   (`~/.claude/WSS.BUG-REPORTS.md` unless that variable is set), below the append
-   marker where the file has one. A file that does not exist yet is simply
-   created and appended to — the counters read a marker-less inbox in full —
-   in the standard format:
-
-   ```
-   ## [open] <one-line summary>
-   Found: <the project the session was working in> · <config commit, short SHA>
-   File: <path within the suite> · Detail: <what is wrong, and what you expected>
-   ```
+   (`~/.claude/WSS.BUG-REPORTS.md` unless that variable is set), in the format
+   [`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md#a-file-belonging-to-the-installation-is-never-edited-from-a-project-session)
+   states. **Read that section before writing the entry** — the three template
+   lines, where in the file they go, and which SHA the `Found:` line carries are
+   all there, and this skill keeps no second copy of them on purpose.
 
    Filing locally is complete in itself. If everything after this step fails,
    the report exists and the doctor surfaces it; say the upstream half is owed

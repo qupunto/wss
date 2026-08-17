@@ -4,7 +4,7 @@
 # Emits every countable line of the overview report: tree, per-record open
 # counts, warning counts, sweep freshness, roadmap position. The skill adds
 # the judgment lines only. Writes nothing, stamps nothing, never touches the
-# network — external state (backlog providers, gh, CI) is reported as not
+# network — external state (TODO list providers, gh, CI) is reported as not
 # counted here, never as zero.
 #
 # Run it from the project directory. It lives with the installation, which is
@@ -18,7 +18,7 @@ HAVE_JQ=1; command -v jq >/dev/null 2>&1 || HAVE_JQ=0
 HAVE_MANIFEST=0; [ -f "$MANIFEST" ] && HAVE_MANIFEST=1
 
 # With a manifest, an undeclared key is reported "undeclared" — no fallback.
-# With no manifest at all, the conventional names from workflow/WSS.MANIFEST.md
+# With no manifest at all, the conventional names from wss/workflow/WSS.MANIFEST.md
 # apply. jq missing while a manifest exists makes it unreadable: every key
 # reads as undeclared, and the header says why.
 mget() { # mget <jq-path> <fallback-with-no-manifest>
@@ -78,18 +78,18 @@ if [ "$HAVE_MANIFEST" = 1 ] && [ "$HAVE_JQ" = 1 ]; then
   [ -n "$provider" ] && TODO_TYPE="provider:$provider"
 fi
 if [ "$TODO_TYPE" = "file" ]; then
-  count_line "todo" "$(resolve_record todo WSS.TODO.md)" '^[[:space:]]*- \[ \]' "open"
+  count_line "todo" "$(resolve_record todo wss/records/WSS.TODO.md)" '^[[:space:]]*- \[ \]' "open"
 else
   echo "todo: ${TODO_TYPE#provider:} provider — not counted here; count via the provider contract"
 fi
-count_line "open-decisions" "$(resolve_record openDecisions docs/WSS.OPEN-DECISIONS.md)" '^## ' "entries"
+count_line "open-decisions" "$(resolve_record openDecisions wss/records/WSS.OPEN-DECISIONS.md)" '^## ' "entries"
 
 lanes="$(mget '.WSS.lanes.named | keys[]?' '')"
 if [ -n "$lanes" ]; then
   echo "lanes declared:"
   while IFS= read -r l; do
-    lt="$(mget ".WSS.lanes.named.\"$l\".records.todo" "")"; lt="${lt:-$(mget '.WSS.record.todo' 'WSS.TODO.md')}"
-    lo="$(mget ".WSS.lanes.named.\"$l\".records.openDecisions" "")"; lo="${lo:-$(mget '.WSS.record.openDecisions' 'docs/WSS.OPEN-DECISIONS.md')}"
+    lt="$(mget ".WSS.lanes.named.\"$l\".records.todo" "")"; lt="${lt:-$(mget '.WSS.record.todo' 'wss/records/WSS.TODO.md')}"
+    lo="$(mget ".WSS.lanes.named.\"$l\".records.openDecisions" "")"; lo="${lo:-$(mget '.WSS.record.openDecisions' 'wss/records/WSS.OPEN-DECISIONS.md')}"
     tn="?"; on="?"
     [ -f "$lt" ] && tn="$(grep -c '^[[:space:]]*- \[ \]' "$lt" 2>/dev/null || true)"
     [ -f "$lo" ] && on="$(grep -c '^## ' "$lo" 2>/dev/null || true)"
@@ -99,12 +99,35 @@ fi
 
 echo
 echo "== warnings =="
-if [ -x "$INSTALL_ROOT/wss-doctor.sh" ]; then
-  doctor_out="$("$INSTALL_ROOT/wss-doctor.sh" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')"
+if [ -x "$INSTALL_ROOT/wss/tests/wss-doctor.sh" ]; then
+  doctor_out="$("$INSTALL_ROOT/wss/tests/wss-doctor.sh" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')"
   printf '%s\n' "$doctor_out" | grep '^  FAIL  ' | sed 's/^  FAIL  /doctor FAIL: /' || true
   printf 'doctor result: %s\n' "$(printf '%s\n' "$doctor_out" | tail -1 | sed 's/^  *//')"
 else
-  echo "doctor: not found at $INSTALL_ROOT — not checked"
+  # Names the path it looked for, not just the root. The 2026-08-16 reorg moved
+  # this script to wss/tests/ and left the old root path here, so this branch
+  # reported "not checked" on a tree where the doctor was present and fine —
+  # a false negative that reads exactly like an uninstalled suite.
+  echo "doctor: not found at $INSTALL_ROOT/wss/tests/wss-doctor.sh — not checked"
+fi
+# Release in flight: plugin.json version vs newest tag
+pj="$INSTALL_ROOT/.claude-plugin/plugin.json"
+if [ -f "$pj" ]; then
+  pv=$(jq -r '.version // empty' "$pj" 2>/dev/null || true)
+  newest_tag=$(git -C "$INSTALL_ROOT" tag -l 'v*' --sort=-v:refname 2>/dev/null | head -1 || true)
+  if [ -z "$newest_tag" ]; then
+    echo "release in flight: no tag — nothing to compare"
+  elif [ -z "$pv" ]; then
+    echo "release in flight: no version in plugin.json"
+  elif [ "v$pv" = "$newest_tag" ]; then
+    echo "release in flight: no — $pv matches tag $newest_tag"
+  elif [ "$(printf 'v%s\n%s\n' "$pv" "$newest_tag" | sort -V | tail -1)" = "v$pv" ]; then
+    echo "release in flight: yes — version $pv ahead of tag $newest_tag"
+  else
+    echo "release in flight: trailing — version $pv behind tag $newest_tag"
+  fi
+else
+  echo "release in flight: no plugin.json"
 fi
 count_line "inbox open reports" "$CONFIG_DIR/WSS.BUG-REPORTS.md" '^## \[open\]' ""
 count_line "handoff !important blocks" "$(resolve_record handoff CLAUDE.md)" '!important' ""
@@ -125,7 +148,7 @@ echo
 echo "== roadmap (goals) =="
 # Lane-aware: a lane worktree reports its own goals. Milestones are NOT here —
 # a roadmap carries no version and no completion mark, per WSS.RECORD-CONTRACT.md.
-ROADMAP="$(resolve_record roadmap WSS.ROADMAP.md)"
+ROADMAP="$(resolve_record roadmap wss/records/WSS.ROADMAP.md)"
 if [ -z "$ROADMAP" ]; then
   echo "roadmap: undeclared"
 elif [ ! -f "$ROADMAP" ]; then
@@ -168,7 +191,7 @@ fi
 echo
 echo "== releases =="
 # Never lane-resolved: one release list per project, however many lanes it runs.
-RELEASES="$(mget '.WSS.record.releases' 'WSS.RELEASES.md')"
+RELEASES="$(mget '.WSS.record.releases' 'wss/records/WSS.RELEASES.md')"
 if [ -z "$RELEASES" ]; then
   echo "releases: undeclared"
 elif [ ! -f "$RELEASES" ]; then
@@ -177,10 +200,11 @@ else
   printf 'releases: %s\n' "$RELEASES"
   awk '
     /^## / {
-      m++; title = substr($0, 4)
-      miles[m] = title
-      comp[m] = (title ~ /\*completed\*/) ? 1 : 0
-      if (title ~ /[Mm]aintenance|no (further|more) milestones|end(ed)? milestones/) ended = 1
+      t = substr($0, 4)
+      if (t ~ /\*end of milestones\*/) { ended = 1; next }
+      m++
+      miles[m] = t
+      comp[m] = (t ~ /\*completed\*/) ? 1 : 0
       next
     }
     END {

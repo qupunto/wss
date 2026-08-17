@@ -16,7 +16,7 @@ project directory:
 
 ```bash
 S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-[ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
+[ -x "$S/wss/tests/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
 bash "$S"/skills/overview/assets/wss-probe.sh
 ```
 
@@ -26,7 +26,7 @@ canonical form.
 
 The probe is read-only and offline. It resolves `.claude/WSS.WORKFLOW.json`
 itself — conventional fallbacks, the `.claude/WSS.LANE` selector, `WSS.lanes.named`
-overrides, all per [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md) — counts every
+overrides, all per [`WSS.MANIFEST.md`](../../wss/workflow/WSS.MANIFEST.md) — counts every
 record, runs `wss-doctor.sh`, computes each sweep baseline's distance from HEAD
 — by calling `wss-sweep-distance.sh` beside it, the one implementation of that
 measurement, which `--wss-wrap` step 7 runs `--compact` for its closing line —
@@ -34,13 +34,16 @@ locates the roadmap's first goal with open blocks, and locates the release
 list's first milestone not marked completed. **The roadmap is lane-resolved
 and the release list never is** — one release checkpoint per project, however
 many lanes it runs, per
-[`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md). **Quote its
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md). **Quote its
 block rather than re-rendering it**: paste the probe's output as the report,
 then append the judgment lines below — one line each. Every number
 was read at this invocation: never carried forward from a handoff card,
 memory, or an earlier session. A count is a mutable claim, so it lives in
 the reply and never lands in a file
-([`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+([`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule)).
+
+The general form of that rule, and its concurrency caveat, is
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md#a-skill-resolves-its-pointers-before-it-runs).
 
 Where the probe cannot run at all, read and count by hand to the same
 contract, and say so in one line.
@@ -50,8 +53,8 @@ contract, and say so in one line.
 The probe stops where mechanics stop. On top of its output:
 
 - **Finish the lines it marks "not counted here" or "not checked".** A
-  provider-backed backlog is counted through
-  [`providers/WSS.GITHUB-ISSUES.md`](../../workflow/providers/WSS.GITHUB-ISSUES.md#after-writing-in-the-same-session-do-not-read-with---label)
+  provider-backed TODO list is counted through
+  [`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md#after-writing-in-the-same-session-do-not-read-with---label)
   — mind its read-after-write rule — or reported *not checked* when `gh`,
   the network, or the provider is unreachable. Never dropped: an absent line
   reads as clean.
@@ -65,9 +68,12 @@ The probe stops where mechanics stop. On top of its output:
 - **Say when the probe warns that a roadmap heading carries a version or a
   completion mark.** That is a release checkpoint in the wrong file — under
   lanes, one worktree's — and it goes to `--wss-plan`.
+- **Report whether a release is in flight.** The probe compares `.claude-plugin/plugin.json`'s
+  version against the newest git tag: if the version leads, a release is in flight; if they match,
+  nothing is in flight; if no tag or no plugin.json exists, say so and interpret nothing.
 - **Keep the probe's distinct states distinct.** "Undeclared", "missing" and
-  "0 open" are three different facts — "no backlog is declared" and "the
-  backlog is empty" must never render as the same bare `0`.
+  "0 open" are three different facts — "no TODO list is declared" and "the
+  TODO list is empty" must never render as the same bare `0`.
 - **Report, never repair.** Stale sweep → name `--wss-check`. Untriaged inbox
   → name `--wss-full-check`. A milestone that looks complete → name
   `--wss-plan`. One line each; acting on them is those flags' work, under
@@ -80,5 +86,5 @@ The probe stops where mechanics stop. On top of its output:
   read-only as the skill.
 - **It does not verify claims.** Drift detection is `--wss-check`'s method;
   this skill counts what the records say, not whether they are right.
-- **It does not rebuild or reorder anything** — backlog is `--wss-todo`'s,
+- **It does not rebuild or reorder anything** — TODO list is `--wss-todo`'s,
   roadmap is `--wss-plan`'s, and a full reckoning is `--wss-stocktake`'s.

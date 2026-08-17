@@ -11,6 +11,12 @@ disable-model-invocation: true
 pays for at start and who may invoke it. This skill edits that block and
 nothing else.
 
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md) lists `toggle` in its
+matrix, and its [resolve-pointers
+rule](../../wss/workflow/WSS.OWNERSHIP.md#a-skill-resolves-its-pointers-before-it-runs)
+governs the read below: take `skillOverrides` fresh from both files on every
+run, never from earlier in this session.
+
 | level | startup cost | model can invoke | `/name` works | `--wss-` flag |
 |---|---|---|---|---|
 | *(no entry)* | full description | yes | yes | fires |
@@ -24,12 +30,23 @@ disabled, so those flags stop firing while the slash form (if any) survives.
 
 ## Procedure
 
-1. **Read the current state.** `skillOverrides` from
-   `$PWD/.claude/settings.json` and
-   `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json` — a project entry wins
-   over a user entry for the same skill. List every skill directory under both
-   `skills/` trees beside its effective level, as the table above's rows.
-   Present that before changing anything.
+1. **Read the current state**, in one call, from the project directory:
+
+   ```bash
+   S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+   [ -x "$S/wss/tests/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
+   bash "$S"/skills/toggle/assets/wss-skill-levels.sh
+   ```
+
+   Those two resolution lines are [`contracts`](../contracts/SKILL.md)'
+   canonical form. The script reads both settings files — a project entry wins
+   over a user entry for the same skill — and both `skills/` trees, and prints
+   one row per skill: its effective level, which file set it, which tree it
+   lives in, and whether its own frontmatter hides it. **Present that table
+   before changing anything**, and read each `level` against the legend above.
+   A `hidden` frontmatter row is model-uninvocable whatever its level says.
+   The script refuses rather than rendering a table it cannot trust: no `jq`,
+   unreadable settings, or no skills tree at all exits 1 with the reason.
 
 2. **Collect the changes.** `/wss:toggle <skill> <level>` applies directly;
    bare `/wss:toggle` asks, with the table as context. `on` means *delete the

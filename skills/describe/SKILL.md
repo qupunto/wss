@@ -13,14 +13,14 @@ flag is that route.
 
 **This skill decides nothing and writes nothing itself.** It resolves the record
 and hands the work to
-[`writers/WSS.BEHAVIOUR-WRITER.md`](../../workflow/writers/WSS.BEHAVIOUR-WRITER.md),
+[`writers/WSS.BEHAVIOUR-WRITER.md`](../../wss/workflow/writers/WSS.BEHAVIOUR-WRITER.md),
 which is the sole writer of `WSS.record.behaviour` per
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md). The whole of what to write, how
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md). The whole of what to write, how
 much, and what that record may not hold is that procedure's — read it rather
 than restating its rules here.
 
 **Project facts come from `.claude/WSS.WORKFLOW.json`**: `WSS.record.behaviour`, with the
-fallback in [`WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md). Say which you used.
+fallback in [`WSS.MANIFEST.md`](../../wss/workflow/WSS.MANIFEST.md). Say which you used.
 
 ## What reaches this flag, and what does not
 

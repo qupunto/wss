@@ -6,7 +6,7 @@ Everything in `<angle brackets>` is yours to replace. Where a skeleton instead s
 concrete path, filename or language — `docs/` as the root, `src/routes/$lang/…`, `ca` —
 that is **one project's tree**, kept concrete because a skeleton made entirely of
 placeholders teaches nothing about what a filled one looks like. The root is
-`WSS.docs.root`'s ([`WSS.MANIFEST.md`](../../../workflow/WSS.MANIFEST.md)) and the rest is
+`WSS.docs.root`'s ([`WSS.MANIFEST.md`](../../../wss/workflow/WSS.MANIFEST.md)) and the rest is
 this project's own.
 
 ## Guide page (top-level `docs/<concern>.md`)
@@ -228,6 +228,3 @@ The Purpose column names the **actual exports**, not a vague summary:
 | `src/lib/storage.ts` | Generic `Storage` class and the `authTokenStorage` instance |
 | `src/hooks/useUser.ts` | `useUser(enabled?)` hook reading `userQuery` |
 ```
-
-This table is the most-used part of the page — a reader who knows the concept comes back
-only for "which file was that in". Keep it complete and keep it accurate.

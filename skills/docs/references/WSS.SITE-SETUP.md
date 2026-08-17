@@ -8,7 +8,7 @@ that's the reason for choosing it over a static-site generator.
 
 ```bash
 S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-[ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
+[ -x "$S/wss/tests/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
 bash "$S"/skills/docs/assets/wss-scaffold.sh "<Project Name>" [root-lang [translation-lang ...]]
 ```
 
@@ -17,8 +17,20 @@ explains its output and rationale, it does not restate the files. Read the scrip
 need the exact bytes. It refuses to run against an existing directory.
 
 **The root is resolved, not passed.** The script reads `WSS.docs.root` and falls back down
-that key's declared chain ([`WSS.MANIFEST.md`](../../../workflow/WSS.MANIFEST.md)),
+that key's declared chain ([`WSS.MANIFEST.md`](../../../wss/workflow/WSS.MANIFEST.md)),
 printing the root it settled on; `--root <dir>`, before the project name, overrides it.
+
+**The languages resolve the same way**, from the sibling key `WSS.docs.languages` — first
+element the root language, every later one a translation subdirectory — falling back, where
+the key is absent, to that key's declared fallback: monolingual. The trailing positionals
+override the declaration and are announced as the origin when they do, so an invocation
+that restates what the manifest already says is invisible while one that contradicts it is
+not. A `languages` that is declared but is not a non-empty array of non-empty strings stops
+the run with exit 2 rather than falling back: the manifest was consulted and found wrong,
+which is not the same as unreadable, and scaffolding a monolingual site past a declaration
+asking for four is the divergence this resolution exists to prevent. Override it
+positionally to proceed while the key is being fixed.
+
 Every `docs/` below is **one tree's root** — the site of a project that declares none and
 takes the first fallback — and every `ca` is **that tree's** translation code, not a path
 or a language this script requires.

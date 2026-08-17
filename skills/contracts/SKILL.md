@@ -27,21 +27,21 @@ from a fallback is one nobody sees. When a skill reports falling back, the fix i
 Relative from any skill file, which is what makes them resolve in both install
 forms:
 
-- [`../../workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md) — **who may write
+- [`../../wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md) — **who may write
   what.** The invariant: every record file has exactly one writer. An
   orchestrator that needs a record written calls the primitive that owns it, even
   when the edit is one line and obviously correct.
-- [`../../workflow/WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md) —
+- [`../../wss/workflow/WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md) —
   **what each record holds, and what it must never hold.**
-- [`../../workflow/WSS.MANIFEST.md`](../../workflow/WSS.MANIFEST.md) — **which keys a
+- [`../../wss/workflow/WSS.MANIFEST.md`](../../wss/workflow/WSS.MANIFEST.md) — **which keys a
   project's `.claude/WSS.WORKFLOW.json` may set**, and what each falls back to when
   absent. What the files those keys point at may be **called** is not this
-  file's: [`../../workflow/WSS.NAMING.md`](../../workflow/WSS.NAMING.md) holds the
+  file's: [`../../wss/workflow/WSS.NAMING.md`](../../wss/workflow/WSS.NAMING.md) holds the
   `WSS.`/`wss-` grammar and the test for whether a file is the suite's at all.
   A pass settling both — `--wss-adopt`, `update` — reads both.
 
 On worktree lanes all three defer to
-[`../../workflow/WSS.LANE-CONTRACT.md`](../../workflow/WSS.LANE-CONTRACT.md) — read in
+[`../../wss/workflow/WSS.LANE-CONTRACT.md`](../../wss/workflow/WSS.LANE-CONTRACT.md) — read in
 lane mode (a `.claude/WSS.LANE` selector, or `WSS.lanes.named` in the manifest),
 and when deciding whether to adopt lanes at all, the one reader that gate
 cannot detect.
@@ -51,25 +51,25 @@ the one place the two forms genuinely differ:
 
 | Installed as | Suite root | Contracts at |
 |---|---|---|
-| A clone into the config directory | `~/.claude` | `~/.claude/workflow/*.md` |
-| A plugin | `${CLAUDE_PLUGIN_ROOT}` | `${CLAUDE_PLUGIN_ROOT}/workflow/*.md` |
+| A clone into the config directory | `~/.claude` | `~/.claude/wss/workflow/*.md` |
+| A plugin | `${CLAUDE_PLUGIN_ROOT}` | `${CLAUDE_PLUGIN_ROOT}/wss/workflow/*.md` |
 
 **Prefer the relative link over either absolute path.** A skill reaching for
-`~/.claude/workflow/WSS.OWNERSHIP.md` is correct in a checkout and wrong in a plugin
+`~/.claude/wss/workflow/WSS.OWNERSHIP.md` is correct in a checkout and wrong in a plugin
 install, where the suite is under the plugin cache and the config directory holds
 the user's own settings instead. `${CLAUDE_PLUGIN_ROOT}` is set by the harness
 only in plugin form, so its absence is what distinguishes the two.
 
 `README.md` at the suite root covers the `--flag` shorthands; what each one
-authorizes is `workflow/WSS.OWNERSHIP.md`'s matrix. Neither is loaded automatically
+authorizes is `wss/workflow/WSS.OWNERSHIP.md`'s matrix. Neither is loaded automatically
 in either form.
 
 ## Run the doctor rather than trusting an inventory
 
 ```bash
 S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-[ -x "$S/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
-"$S"/wss-doctor.sh
+[ -x "$S/wss/tests/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
+"$S"/wss/tests/wss-doctor.sh
 ```
 
 Read-only, and it prints what it checks. Run it rather than believing any count

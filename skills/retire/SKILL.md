@@ -25,7 +25,7 @@ user's to run; the *checkout* removal is this skill's. Either way it is the
 *last* step, not the first — run early it removes the skill mid-walkthrough.
 
 **Not a writer.** Orchestrator, owns nothing —
-[`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md). The scripts delete, the
+[`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md). The scripts delete, the
 export script archives; this skill decides, asks and reports. It does not
 commit: the deletions land as a dirty tree, and what to do with that tree is
 the user's call, stated in the close-out.
@@ -40,7 +40,7 @@ route that may touch that tree.
 
 ```bash
 S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-[ -x "$S/wss-retire-workflow.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
+[ -x "$S/wss/scripts/wss-retire-workflow.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
 ```
 
 Checkout or plugin — say which in one line, because the last step differs: a
@@ -54,7 +54,7 @@ enumerates them; do not promise the user a complete picture before it runs.
 ## 1. Dry run first, so the question is concrete
 
 ```bash
-"$S"/wss-retire-workflow.sh --dir "$PWD"
+"$S"/wss/scripts/wss-retire-workflow.sh --dir "$PWD"
 ```
 
 Show the output. It lists what each tier would remove and refuses any path
@@ -100,7 +100,7 @@ turn, nothing wider.
 1. **Snapshot** (if question 1 said yes), before anything is deleted:
 
    ```bash
-   "$S"/wss-export-records.sh --all -o WSS.RETIREMENT-PLAN.tar.gz
+   "$S"/wss/scripts/wss-export-records.sh --all -o WSS.RETIREMENT-PLAN.tar.gz
    ```
 
    Not the plain export — that skips what a clone would bring, and would be
@@ -117,12 +117,12 @@ turn, nothing wider.
    records, and the machinery delete removes the manifest.
 
    ```bash
-   "$S"/wss-reset-records.sh            # dry run, show it
-   "$S"/wss-reset-records.sh --write
+   "$S"/wss/scripts/wss-reset-records.sh            # dry run, show it
+   "$S"/wss/scripts/wss-reset-records.sh --write
    ```
 
 3. **Deletions**, one retire invocation for both tiers:
-   `"$S"/wss-retire-workflow.sh --write --dir "$PWD"`, adding `--records`
+   `"$S"/wss/scripts/wss-retire-workflow.sh --write --dir "$PWD"`, adding `--records`
    when the records box is checked. **Records checked without machinery**
    still runs with both flags only if the user meant that — the script has
    no records-only mode, so say so and confirm before treating it as both.
@@ -140,8 +140,8 @@ so do not trust it to have found everything here. `--suite` looks for both
 and reports both:
 
 ```bash
-"$S"/wss-retire-workflow.sh --suite            # dry run, show it
-"$S"/wss-retire-workflow.sh --suite --write
+"$S"/wss/scripts/wss-retire-workflow.sh --suite            # dry run, show it
+"$S"/wss/scripts/wss-retire-workflow.sh --suite --write
 ```
 
 A **plugin** install it names but never deletes: ripping out the cache

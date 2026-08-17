@@ -2,8 +2,8 @@
 
 **The shared authority on how a page is written**, cited from every stage and
 owned by none of them: `--wss-docs` decides what the site should
-contain, [`WSS.DOCS-WRITER.md`](../../../workflow/writers/WSS.DOCS-WRITER.md)
-writes it, and [`WSS.DOCS-AUDIT.md`](../../../workflow/checks/WSS.DOCS-AUDIT.md)
+contain, [`WSS.DOCS-WRITER.md`](../../../wss/workflow/writers/WSS.DOCS-WRITER.md)
+writes it, and [`WSS.DOCS-AUDIT.md`](../../../wss/tests/WSS.DOCS-AUDIT.md)
 checks it afterwards. The numbers live here, beside the reference files that cite
 them most, rather than inside any one consumer — a list a consumer owned would be
 renumbered to suit it, and the citations elsewhere would go quiet rather than break.
@@ -39,7 +39,7 @@ having**; the rest are mechanics.
 
 - **G9 — Verify before declaring done.** Every path exists, every link and `#anchor` resolves,
   every fence is tagged — and every asserted symbol and value is confirmed against source
-  (`workflow/checks/WSS.DOCS-AUDIT.md` §8). Mechanics can be checked by script; accuracy needs re-reading the source.
+  (`wss/tests/WSS.DOCS-AUDIT.md` §8). Mechanics can be checked by script; accuracy needs re-reading the source.
   Don't eyeball either.
 - **G10 — Tables for anything enumerable.** Routes, endpoints, props, tokens, env vars,
   dependencies, key files.

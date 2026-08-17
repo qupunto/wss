@@ -5,10 +5,17 @@ present in this checkout, or the manifest declares `WSS.lanes.named`. A project
 worked from a single checkout skips it entirely; nothing here can apply, and
 there is nothing to say about it.
 
+**Record resolution is the first fact this file supplies.**
+`WSS.lanes.named.<lane>.records.X` overrides `WSS.record.X` for the
+splittable keys —
+[`WSS.LANE-CONTRACT.md`](../../../wss/workflow/WSS.LANE-CONTRACT.md)'s resolution
+rule — and that lane's `scope` globs bound the batch: partition within them,
+and treat work outside them as another worktree's.
+
 It holds what `--wss-start`'s Phase 0 hands over, **in the order written**, all
 of it before anything reads a record.
 
-**This is not the same thing as partitioning a batch into lanes.** Phase 3 does
+**This is not the same thing as partitioning a batch into shards.** Phase 3 does
 that inside one checkout, driven by `WSS.lanes.exclusive`, `.serialize` and
 `.generated`, and it runs whether or not this file was ever read.
 
@@ -38,6 +45,8 @@ A sibling lane appends on its own branch, so its entry arrives here only once
 that lane has landed on `WSS.branch.integration` and step 1 has pulled it in. A
 queue that looks empty on a lane that has not synced forward proves nothing.
 
+**Dispatch notes** may appear in the queue — written by a sibling lane's wrap to show what work it handed this lane and which sibling lanes remain active. Each carries three things: which lanes are running, each lane's write set (from its `scope` globs), and the integration commit the dispatch was cut from. Read these before draining other entries, to classify foreign changes as expected churn and prevent the "stop when the dirt is not yours" rule from firing on ordinary sibling work. Like all queue entries, dispatch notes are consumed on first read and deleted; a persistent brief was considered and rejected, keeping the queue as the sole mechanism.
+
 Per entry, in file order:
 
 - **Move it into the record its `[target]` names** — `todo`, `openDecisions` or
@@ -50,7 +59,7 @@ Per entry, in file order:
   request was declined.
 - **Carry `[critical → why]` across unchanged**, and never add one — only the
   user sets that marker, through the two gates
-  [`WSS.LANE-CONTRACT.md`](../../../workflow/WSS.LANE-CONTRACT.md)'s
+  [`WSS.LANE-CONTRACT.md`](../../../wss/workflow/WSS.LANE-CONTRACT.md)'s
   `[critical → why]` section names.
 
 **Eligibility follows provenance; priority follows the marker.** An entry that
@@ -73,5 +82,5 @@ with what is unaffected. Do not resolve it: a session in one lane cannot mediate
 between two, and picking whichever reading unblocks this batch is how one lane's
 assumption becomes the project's by default. `lane-record-sync` is the only
 consumer, and it re-verifies the claim rather than acting on it —
-[`WSS.LANE-CONTRACT.md`](../../../workflow/WSS.LANE-CONTRACT.md) holds the
+[`WSS.LANE-CONTRACT.md`](../../../wss/workflow/WSS.LANE-CONTRACT.md) holds the
 entry shape. Filing is the whole action; say that you filed it.

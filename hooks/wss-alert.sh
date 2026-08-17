@@ -15,7 +15,7 @@
 # Always exits 0 and prints nothing. A cue that could fail or delay the prompt
 # it announces would cost more than it is worth.
 
-STATE="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/WSS.ALERTS-ON"
+STATE="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/wss/flags/WSS.ALERTS-ON"
 [ -f "$STATE" ] || exit 0
 
 # Several events can fire for one prompt (a Notification plus the idle nudge,
@@ -23,11 +23,12 @@ STATE="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/WSS.ALERTS-ON"
 # WSS.ALERTS-ON rather than in the shared temp dir: a fixed name in /tmp is
 # another user's to own or pre-link on a multi-user box, and this suite
 # refuses symlinks everywhere else it writes.
-STAMP="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.wss-alert.stamp"
+STAMP="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/wss/flags/.wss-alert.stamp"
 now=$(date +%s)
 last=$(cat "$STAMP" 2>/dev/null) || last=0
 case $last in '' | *[!0-9]*) last=0 ;; esac
 [ $((now - last)) -lt 3 ] && exit 0
+mkdir -p "$(dirname "$STAMP")" 2>/dev/null || true
 printf '%s' "$now" > "$STAMP" 2>/dev/null || true
 
 # WS_ALERTS_CMD replaces the whole cue: a user's own player, or `:` — which is

@@ -57,10 +57,6 @@ The reader has never seen the repo. Always present, always first.
 | `WSS.OVERVIEW.md` | Stack tables, quickstart, scripts, env vars, directory tree, key decisions summary | Always |
 | `glossary.md` | Domain vocabulary, acronyms, and the terms the code uses differently from the business | Domain has jargon, or the project is bilingual |
 
-`glossary.md` is the most-skipped high-value page. In a project where "equipment", "supply",
-and "facility" mean specific different things, it prevents every other page from
-re-explaining them.
-
 ## T2 — Foundations
 
 Why the system is shaped the way it is. This is the tier that stops documentation from
@@ -96,7 +92,7 @@ The business model, independent of any framework.
 | `domain/model.md` | Entities, relationships, invariants, identity and ownership rules | The model is non-obvious from the schema |
 | `domain/lifecycles.md` | State machines: valid states, transitions, who may trigger them | Anything has a status field |
 | `domain/rules.md` | Business rules and calculations, with worked examples | There is arithmetic or eligibility logic anyone could get wrong |
-| `domain/workflows.md` | End-to-end journeys across layers: what the user does, what the system does | Multi-step flows exist (onboarding, checkout, approval) |
+| `domain/WSS.WORKFLOWS.md` | End-to-end journeys across layers: what the user does, what the system does | Multi-step flows exist (onboarding, checkout, approval) |
 
 Past the usual split thresholds (G14/G15), each journey becomes its own
 `domain/workflows/<name>.md` in the workflow-page shape — a diagram plus
@@ -242,8 +238,8 @@ Compliance, legal, and organizational obligations. **Include a page only when an
 actually applies** — a speculative compliance page is a liability, not diligence. Not legal
 advice: this tier states the obligation, points at the implementation, points at the evidence.
 
-`governance/licensing.md` (dependency licenses + SBOM) applies to nearly every project;
-`privacy.md`, `accessibility.md`, `audit-trail.md`, `data-governance.md` apply on condition.
+One page — dependency licenses and SBOM — applies to nearly every project; the rest
+apply on condition, which is what the table below decides.
 
 **→ `references/WSS.TIER-GOVERNANCE.md`** for the page table and the sector framework map
 (ISO 27001/SOC 2, PCI DSS, HIPAA, GxP/GLP, 21 CFR Part 11, EU AI Act, CRA, DORA/PSD2,
@@ -258,7 +254,7 @@ Exhaustive per-item reference, one page per enumerable set:
 `annex/permissions.md`, `annex/storybook.md`, `annex/WSS.CLAUDE-TOOLING.md`.
 
 `annex/WSS.CLAUDE-TOOLING.md` is the one annex whose source is another skill's record rather than
-the codebase: `--wss-tools` owns `WSS.record.tooling.catalog` and hands it over, and this page is the
+the codebase: `--wss-catalog` owns `WSS.record.tooling.catalog` and hands it over, and this page is the
 adaptation. Include it when the project has skills or agents of its own — the catalog it
 derives from is addressed to Claude and sits outside the site, so without this page a person
 reading the docs finds no account of how the repository is worked on.

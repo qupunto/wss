@@ -8,7 +8,7 @@ name: Verify
 # surfaces. That is what this workflow is for.
 #
 # It runs on push to any branch EXCEPT main, and on every pull request.
-# Everything here also runs locally — tests/wss-hook-contract.sh and wss-doctor.sh are
+# Everything here also runs locally — wss/tests/wss-hook-contract.sh and wss/tests/wss-doctor.sh are
 # the same scripts, not CI-only copies.
 #
 # Not on push to main, deliberately. Work happens on dev and reaches main only
@@ -29,6 +29,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The append-only step below compares this branch against the publish
+          # branch, so it needs both of them. The default depth-1 checkout has
+          # no merge base to find and the step would fail rather than pass —
+          # which is correct behaviour and a useless build, so fetch the history
+          # instead. This repo's tracked history is small; the 100 MB in a
+          # working ~/.claude is machine state that was never committed.
+          fetch-depth: 0
 
       - name: Shell syntax
         # Cheapest possible check, and the one that maps to the worst failure.
@@ -51,7 +59,7 @@ jobs:
         # Preinstalled on ubuntu runners. Advisory: style opinions here are not
         # worth failing a config repo over, but the output is worth reading.
         continue-on-error: true
-        run: shellcheck -S warning *.sh hooks/*.sh tests/*.sh .claude/*.sh || true
+        run: shellcheck -S warning wss/scripts/*.sh wss/tests/*.sh hooks/*.sh .claude/*.sh || true
 
       - name: settings.json is valid JSON
         # An unparseable settings.json silently disables every hook in it.
@@ -69,7 +77,10 @@ jobs:
           done
 
       - name: Hook contract
-        run: bash tests/wss-hook-contract.sh
+        run: bash wss/tests/wss-hook-contract.sh
+
+      - name: Append-only guard contract
+        run: bash wss/tests/wss-append-only-test.sh
 
       - name: Credentials never travel
         # The repo's whole premise is that one file never leaves the machine, and
@@ -97,9 +108,9 @@ jobs:
           #
           # --no-index because none of these exist: the question is what the
           # RULES say about a path, not what is on disk.
-          for p in skills/x/.env agents/x.pem workflow/id_rsa tests/x.key \
-                   docs/x.p12 .github/x.token .claude/agents/x/.npmrc \
-                   docs/my-secrets.json skills/x/svc-credentials.json; do
+          for p in skills/x/.env agents/x.pem wss/workflow/id_rsa wss/tests/x.key \
+                   wss/docs/x.p12 .github/x.token .claude/agents/x/.npmrc \
+                   wss/docs/my-secrets.json skills/x/svc-credentials.json; do
             if ! git check-ignore --no-index -q "$p"; then
               echo "FAIL: $p would be committable — a re-inclusion was added below the final block of .gitignore"
               exit 1
@@ -114,12 +125,12 @@ jobs:
         # spuriously failing.
         #
         # --strict because the warn class carries real drift — "flag maps to a
-        # skill that resolves nowhere", "grants disagree between the hook and
-        # WSS.OWNERSHIP.md" — and only `fails` set exit 1, so that drift landed GREEN.
+        # skill that resolves nowhere", "the row that should back this grant_
+        # call is gone" — and only `fails` set exit 1, so that drift landed GREEN.
         run: |
           mkdir -p /tmp/noproject
           cd /tmp/noproject
-          CLAUDE_DIR="$GITHUB_WORKSPACE" bash "$GITHUB_WORKSPACE/wss-doctor.sh" --strict
+          CLAUDE_DIR="$GITHUB_WORKSPACE" bash "$GITHUB_WORKSPACE/wss/tests/wss-doctor.sh" --strict --notes
 
       - name: Doctor (from the checkout)
         # The step above runs from an empty directory, so every $PWD-dependent
@@ -130,7 +141,7 @@ jobs:
         # being skipped were exactly the ones about it. Both scopes matter and
         # only one was covered; no count here, because it moves whenever a check
         # is added.
-        run: CLAUDE_DIR="$GITHUB_WORKSPACE" bash "$GITHUB_WORKSPACE/wss-doctor.sh" --strict
+        run: CLAUDE_DIR="$GITHUB_WORKSPACE" bash "$GITHUB_WORKSPACE/wss/tests/wss-doctor.sh" --strict --notes
 
       - name: Skill frontmatter
         # A skill with no name or description is invisible: it never matches a
@@ -153,77 +164,6 @@ jobs:
           done
           exit $rc
 
-      - name: Cross-links between our own files resolve
-        # Narrow on purpose. The valuable class is the hand-written cross-links
-        # added when the workflow went global — skills pointing at
-        # ../../workflow/*.md, docs pointing at each other. Those were written in
-        # one sitting and a broken one is invisible until followed.
-        #
-        # A general markdown link checker is NOT wanted here, and a first attempt
-        # at one produced ~60 findings of which almost none were real:
-        #
-        #   - skills/docs/references/** is teaching material about how to write a
-        #     docs site, so it is full of deliberate placeholders. That skill's
-        #     own handoff already documents template placeholders and
-        #     page-relative shorthand as known false-positive classes; do not
-        #     re-derive them here, badly.
-        #   - a link beginning `/` is site-root-relative inside a rendered docs
-        #     site, not a filesystem path. Treating it as one is the documented
-        #     mistake that reports 14 false positives on a real site.
-        #
-        # A check nobody trusts is a check nobody runs, so this only looks at
-        # tracked files and skips placeholders.
-        #
-        # The exemptions are per LINK, not per directory. Excluding
-        # skills/docs/references/ wholesale was the earlier shape, and it meant
-        # every relative link in that tree — including the live pointers into
-        # workflow/ — was verified by nothing, which is the class this step
-        # exists to catch. What is actually exempt:
-        #
-        #   - anything inside a fenced code block, which is sample markdown
-        #     rather than a pointer;
-        #   - anything inside inline backticks, which is how a document that
-        #     explains link syntax has to quote it. Without this, prose ABOUT a
-        #     broken link fails the build — so the rule could not be written
-        #     down in the repo that enforces it.
-        #
-        # Anchors are not checked here. wss-doctor.sh verifies the fragment half
-        # against the target's headings, and this job runs wss-doctor.sh below.
-        #
-        # `audits/` is excluded and it is the only directory-wide exemption, for
-        # the argument wss-doctor.sh's `md_files_` sets out at length: those reports
-        # are kept VERBATIM, so policing them offers only editing a frozen record
-        # to quiet a checker, or a permanent red that trains everyone to skim.
-        # `audits/README.md` stays in scope — it is the maintained index, not a
-        # frozen report. Keep this walk identical to `md_files_`: the doctor's
-        # comment says the two agree deliberately, and when the exclusion landed
-        # there and not here, this step went red for eleven commits on a report
-        # quoting a `types.md` link that was already an example when it was
-        # written.
-        run: |
-          rc=0
-          while IFS=$'\t' read -r f link; do
-            [ -e "$(dirname "$f")/$link" ] || { echo "FAIL $f -> $link"; rc=1; }
-          done < <({ git ls-files -z '*.md' ':(exclude)audits/**'
-                     git ls-files -z 'audits/README.md'
-                   } | xargs -0 -r awk '
-            FNR == 1 { fence = 0 }
-            /^[[:space:]]*```/ { fence = !fence; next }
-            fence { next }
-            {
-              line = $0
-              gsub(/`[^`]*`/, "", line)
-              while (match(line, /\]\([^)]*\)/)) {
-                l = substr(line, RSTART + 2, RLENGTH - 3)
-                line = substr(line, RSTART + RLENGTH)
-                sub(/#.*/, "", l)
-                if (l == "" || l ~ /^http/ || l ~ /^\// || l ~ /[<$]/) continue
-                printf "%s\t%s\n", FILENAME, l
-              }
-            }')
-          [ $rc -eq 0 ] && echo "ok   every cross-link in a tracked file resolves"
-          exit $rc
-
       - name: No absolute home paths
         # A path naming one machine's home directory is wrong on the other. This
         # has happened once already, in a document written FOR the other machine.
@@ -235,17 +175,24 @@ jobs:
         # was silently blind to.
         #
         # Inline code spans are stripped first, and tracked files only — all
-        # three the same exemptions the cross-link step above makes, for the same
-        # reasons, `audits/` included: wss-doctor.sh's own home-path check exempts
+        # three the same exemptions wss-doctor.sh's link check makes, for the
+        # same reasons, `wss/logs/audits/` included: wss-doctor.sh's own home-path check exempts
         # those frozen reports already, and a report saying which directory it
         # ran against is an observation nobody follows. Today they survive on
         # backticks alone — `…-pass5.md` carries two — so the first one written
-        # in prose turns this step red, which is how the cross-link step above
-        # broke.
+        # in prose turns this step red. That is how the cross-link step that
+        # used to sit here broke, before it was deleted as a duplicate of the
+        # doctor's own walk.
         # Widening the class immediately caught WSS.TODO.md's own entry ABOUT this
         # bug, which is prose quoting the pattern, not a path anyone will follow.
         # Without the exemption the rule could not be written down in the repo
         # that enforces it.
+        #
+        # VERBATIM COPY of md_files_()'s two `git ls-files` pathspecs in
+        # wss-doctor.sh (canon) — it changes only when that function's pathspecs
+        # change. This is now the ONLY copy: the cross-link step that carried the
+        # other one was deleted, because the two doctor runs above already take
+        # that exact walk with `--strict`.
         run: |
           rc=0
           while IFS= read -r -d '' f; do
@@ -253,14 +200,39 @@ jobs:
               | grep -nE '(/home|/Users)/[A-Za-z0-9._-]+/\.claude|file:///') || continue
             printf '%s\n' "$hits" | sed "s|^|FAIL $f:|"
             rc=1
-          done < <({ git ls-files -z '*.md' '*.sh' ':(exclude)audits/**'
-                     git ls-files -z 'audits/README.md'
+          done < <({ git ls-files -z '*.md' '*.sh' ':(exclude)wss/logs/audits/**'
+                     git ls-files -z 'wss/logs/audits/README.md'
                    })
           if [ $rc -ne 0 ]; then
             echo "absolute home path — use ~/.claude or a relative link"
             exit 1
           fi
           echo "ok   no absolute home paths"
+
+      - name: Logs are append-only
+        # The one rule here whose breach destroys evidence rather than prose: a
+        # deletion inside an append-only record removes something that was true
+        # and leaves no way to know it was there. It has happened once already.
+        #
+        # This is the second of two halves. The first is a pre-commit hook
+        # (`wss-append-only.sh --install-hook`), which lives in .git/hooks and is
+        # therefore per-clone and skippable — so it cannot be the enforcement,
+        # only the fast feedback. The halves also see different things: the hook
+        # sees a deletion that a later commit restores, which nets out to nothing
+        # in a range diff; this step sees what the branch does as a whole,
+        # including every commit made while no hook was installed.
+        #
+        # No path is named — the script resolves the set from WSS.recordMode's
+        # `log` tag, so the generated decisions index is out of scope by its own
+        # `generated` tag rather than by an exemption on its name.
+        #
+        # The base is the publish branch, from the manifest rather than
+        # hardcoded, and GITHUB_BASE_REF wins on a pull request. An unresolvable
+        # base fails the step; a range that cannot be computed is not a pass.
+        run: |
+          base=$(jq -r '.WSS.branch.publish // "main"' .claude/WSS.WORKFLOW.json)
+          if [ -n "${GITHUB_BASE_REF:-}" ]; then base="$GITHUB_BASE_REF"; fi
+          bash wss/scripts/wss-append-only.sh --base "origin/$base"
 
       - name: No credential-shaped content
         # .gitignore blocks sensitive kinds by FILENAME. Nothing read what is

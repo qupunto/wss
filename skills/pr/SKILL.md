@@ -1,6 +1,6 @@
 ---
 name: pr
-description: "Move work from the integration branch to the publish branch through a pull request — draft the body from the actual range, open it, watch its CI, and merge once the user confirms. SHORTHAND: `--wss-pr`. Also trigger on \"open a PR\", \"raise a pull request\", \"is the PR green yet\", \"merge that PR\"."
+description: "Move work from the integration branch to the publish branch through a pull request — draft the body from the actual range, open it, watch its CI, and merge once the user confirms. SHORTHAND: `--wss-pr`. Also trigger on \"open a PR\", \"raise a pull request\", \"is the PR green yet\", \"merge that PR\". MERGES TO PUBLISH — never infer it from \"looks good\" or \"that's done\"."
 ---
 
 # Moving work onto the publish branch
@@ -11,7 +11,7 @@ between them.
 
 **This skill writes nothing** — not a record, not the history. The commits and
 the merge go through `git-writer`. Who owns what is
-[`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md).
+[`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md).
 
 **Project facts come from `.claude/WSS.WORKFLOW.json`**: `WSS.branch.integration`,
 `WSS.branch.publish`, `WSS.branch.mergeMethod` and `WSS.commands.ci`. Without a manifest,
@@ -24,7 +24,7 @@ are not the same report.
 Where a flag counts is [`README.md`](../../README.md) — including why the token
 is spelled out and not `--pr`; what it authorizes is the block
 `wss-shorthand-flags.sh` injects and
-[`workflow/WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md)'s matrix.
+[`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md)'s matrix.
 
 Invoking without confirmation is safe because everything up to §5 is local or
 reversible.
@@ -119,12 +119,12 @@ rather than inferring it from the merge succeeding.**
 
 ## 6. Sweep the review threads nobody resolved
 
-**Do this after the merge, because that is the moment they stop being visible.**
-This is the one thing in a merge that has no other owner.
+**Do this after the merge.** This is the one thing in a merge that has no other
+owner.
 
 **Resolution state is GraphQL-only.** `gh api repos/O/N/pulls/N/comments` returns
 no resolved field at all — checked, it is simply not in the payload — so a
-sweep built on REST reports every thread as unresolved and floods the backlog:
+sweep built on REST reports every thread as unresolved and floods the TODO list:
 
 ```bash
 gh api graphql -f query='
@@ -138,12 +138,12 @@ query($o:String!,$n:String!,$p:Int!){
 ```
 
 **Propose; do not file.** A meaningful share of unresolved threads is chatter,
-and a backlog that costs more to prune than it saves is abandoned; the volume is
+and a TODO list that costs more to prune than it saves is abandoned; the volume is
 low enough that asking is cheap.
 
 So: list what you found, one line each, with the file and line and a link, and
 say which you think are actionable and why. **The user picks.** Confirmed items
-go to `--wss-todo`, which owns the backlog and writes it wherever this project
+go to `--wss-todo`, which owns the TODO list and writes it wherever this project
 declares — a file or a provider.
 
 **`isOutdated` is a separate column, not a filter.** It means the code under the
@@ -154,7 +154,7 @@ skip them.
 
 **Never resolve a thread on GitHub.** Marking someone's comment resolved is
 their act, and doing it on their behalf destroys the only signal that the
-question was never answered. Filing a backlog item is the response; clicking
+question was never answered. Filing a TODO list item is the response; clicking
 resolve is not.
 
 Where the repository has no threads, or none unresolved, **say so in one line**
@@ -173,8 +173,8 @@ contained. Then check whether it made anything else due:
 
 ## What this skill does not do
 
-Who owns what is [`WSS.OWNERSHIP.md`](../../workflow/WSS.OWNERSHIP.md); what each record
-holds is [`WSS.RECORD-CONTRACT.md`](../../workflow/WSS.RECORD-CONTRACT.md).
+Who owns what is [`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md); what each record
+holds is [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md).
 
 - **It does not write any record file.** The body drafted in §2 is not a record
   and is never written to a file in the repository.
