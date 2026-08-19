@@ -76,6 +76,7 @@ that cannot resolve one says so and continues.
 | `WSS.record.releases` | path | `wss/records/WSS.RELEASES.md` |
 | `WSS.record.changelog` | path | `wss/logs/WSS.CHANGELOG.md` |
 | `WSS.record.handoff` | path | `wss/records/WSS.HANDOFF.md` |
+| `WSS.record.setup` | path | — (no fallback; see below) |
 | `WSS.record.decisions` | path | `wss/logs/WSS.DECISIONS.md` |
 | `WSS.record.decisionsIndex` | path (generated) | — (see below) |
 | `WSS.record.openDecisions` | path | `wss/records/WSS.OPEN-DECISIONS.md` |
@@ -108,8 +109,8 @@ and `WSS.record.openDecisions` are prose read months later by someone reconstruc
 why a choice was made; an issue thread is a conversation. The task may move; the
 reasoning stays in a file.
 
-**`WSS.record.handoff` is the record with a session-start cost, whatever it
-resolves to.** The harness auto-loads only the working directory's `CLAUDE.md`;
+**`WSS.record.handoff` is one of two records with a session-start cost,
+whatever it resolves to** — the other is `WSS.record.setup`, below. The harness auto-loads only the working directory's `CLAUDE.md`;
 every other resolved handoff — a declared path, or the `WSS.HANDOFF.md`
 fallback when the key or the whole manifest is absent — is injected by
 `wss-session-check.sh` instead: the card above the `handoff:card-ends` marker
@@ -125,6 +126,15 @@ rewritten-in-place record into the file holding the project's standing agent
 instructions, which have no owner in the matrix, leaving `handoff-writer` sole
 writer of a file the user also edits. Nothing warns about that: the mapping is
 the consent.
+
+**`WSS.record.setup` is injected whole by `wss-session-check.sh`, and has no
+fallback.** It holds the per-machine facts and toggle values a session must
+have before it can look anything up; the admission test is in the record's own
+header, and `wss-doctor.sh` caps its size (`SETUP_CAP`) the way it caps the
+handoff card. Undeclared means nothing is injected — the correct degrade,
+since a project without the record has nothing to say. `wss-reset-records.sh`
+blanks it on publication: the record's structure ships, its values are one
+machine's.
 
 **`WSS.record.reference` is an array, not a sub-object.** Skills describing "the
 reference doc (overview)" or "(data model)" are naming *which file in that array*
@@ -179,7 +189,29 @@ it carry the conventional fallback the index cannot.
 
 | Key | Type | Fallback when absent |
 |---|---|---|
-| `WSS.recordMode` | map of record key → `log` \| `register` \| `generated` | The classification in [`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md#two-write-modes-every-record-is-a-log-or-a-register), applied by record key name |
+| `WSS.recordMode` | map of record key → `log` \| `register` \| `generated`, **or** an object `{ "mode": …, "grows": "tail" \| "head", "entry": "heading" \| "table-row", "mutable": "outcome" \| "none" }` | The classification in [`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md#two-write-modes-every-record-is-a-log-or-a-register), applied by record key name |
+
+**The object form declares a log record's SHAPE**, so `wss-append-only.sh` reads
+it rather than inferring it. `grows` names the end new entries arrive at — the
+other end is sealed — and `entry` names what an entry is made of, because a log
+kept as a table of rows has no `## ` heading anywhere and was therefore read as
+having no entries at all. **Both default to the shape the guard assumed before
+the form existed**, tail and `heading`, so a manifest carrying only the string
+form behaves exactly as it did; that is why the string form stays legal rather
+than being migrated. Only `mode` is required. The reasoning, and the probe that
+found the unguarded record, are the decision log's `2026-08-18 (twenty-fourth)`
+entry.
+
+**`mutable` is the exception to that "defaults to the old behaviour" rule, and
+deliberately so.** It names the one status field a record may have rewritten in
+place, and **absent means none** — where the guard previously granted the
+`Outcome:` exemption to every log record regardless of what the contract said.
+That was an over-permission, not a default worth preserving: the contract's
+status-field table gives `WSS.record.decisions` no mutable field at all, and an
+`Outcome:` block could be deleted from any of its entries. So a record that does
+not declare one does not get the exemption, and an adopter's records follow their
+own contract instead of inheriting this repo's table. The decision log's
+`2026-08-19` entry has the fixture.
 
 Keyed by the same names as `record` above — `todo`, `decisions`,
 `tooling.catalog`, `tooling.inventory` — one entry per declared record, and no
@@ -324,16 +356,30 @@ default is one more thing to keep true.
 
 | Key | Type | Notes |
 |---|---|---|
-| `WSS.branch.integration` | branch name | What `--wss-wrap` pushes, and what `--wss-pr` opens a PR from |
+| `WSS.branch.integration` | branch name | The **disposable test bench**: what `--wss-wrap` pushes, and where work is proved before it is shaped into a release. **Never a PR source** — a PR comes from a release branch, so this branch may be reset or discarded without losing anything a release depends on |
+| `WSS.branch.release` | branch name **pattern** | Where a release is assembled and what `--wss-pr` opens a PR from. `<version>` is substituted at branch-creation time; the settled shape is `release/v<version>` |
 | `WSS.branch.publish` | branch name | What `--wss-release` tags, and what `--wss-pr` merges into |
 | `WSS.branch.mergeMethod` | `merge` \| `squash` \| `rebase` | How `--wss-pr` merges. Fallback **`merge`** — a squash discards the individual commit messages the history is the record of, so it is a project's explicit choice rather than a default |
 | `WSS.gate.coverage` | object of thresholds | e.g. `{"lines": 91, "branches": 79}` — what CI enforces |
+| `WSS.prChecks` | object: checkbox label → `WSS.commands.*` key | Which declared command ticks which box in `.github/PULL_REQUEST_TEMPLATE.md`'s Checks section. `--wss-pr` runs each before drafting and ticks only from the result, citing the command. **The value is a key, never a command string** — a command written here would be a second copy of one the manifest already declares, and the two would drift. Sub-keys are the project's own labels, so nothing enumerates them; `wss-doctor.sh` checks that every value resolves to a command this manifest declares |
 | `WSS.commitTrailer` | trailer key | e.g. `Claude-Session` |
 | `WSS.sweeps` | path (generated, **gitignored**) | The sweep checkpoint cache. Fallback `.claude/WSS.SWEEPS.json`; its shape and rules are [`WSS.SWEEP-CHECKPOINT.md`](WSS.SWEEP-CHECKPOINT.md) |
 | `WSS.onSchemaChange` | **skill name** | The project's mandatory post-schema-edit sequence, and the guard rails around it. A skill rather than a command, because the order matters and because the dangerous operations need prose next to them |
 | `WSS.localCI` | path | The project's local-CI runbook script — prepare-never-perform. Presence says integration-branch pushes run the suite on a self-hosted runner; `adopt` reads it, raising the key only when the user asks and confirming the path resolves |
 | `WSS.hazards.*` | `file#anchor` | Map of phase name → where that phase's known traps are written. Conventional names: `testing`, `lanes`, `migrations`, `generated` |
 | `WSS.suite` | object | `{"version": "<semver>", "commit": "<sha>"}` — the migration stamp: which suite version, at which suite commit, this tree was last migrated to. Written **only** by `update` and `--wss-adopt`; read by `update` as an accelerator. **Detection from the tree is the authority** — a wrong or stale stamp is overridden by what the tree actually is, and its absence means "detect unaided", which both pre-stamp customers require anyway. The commit is what anchors a tree migrated from a checkout between releases |
+
+**The branch model these keys describe binds once the flow's cycles land, not
+when this table changes.** Structure before enforcement: `--wss-pr` still opens
+from `WSS.branch.integration` until the cycle that moves it, so a reader
+checking today's behaviour against this table will find the two disagree — the
+table is the target, not a description of the current run. The rulings are the
+decision log's `2026-08-19 (thirty-fifth)`–`(thirty-eighth)` entries.
+
+**The QA/staging tier is deliberately NOT a manifest key.** It is the
+`staging-branch` toggle in `WSS.record.setup`, which is its single source. A
+staging key in a manifest would be a second source for one fact, and
+`wss-doctor.sh` fails a manifest that carries one.
 
 **`WSS.sweeps` is deliberately not under `WSS.record.*`.** Every `WSS.record.*` path is
 expected to exist, and `wss-doctor.sh` fails on one that does not. The checkpoint is
@@ -359,10 +405,27 @@ skill that explains them. Shipping them in a shared global config sends one
 stack's tooling to every adopter, and worse, it puts the guard somewhere the
 project cannot change when its tooling does.
 
+**Nor is a record only this project would declare — but it can still be
+write-checked.** Rule 1 below keeps it out of this table because
+`wss-commit-provenance.sh` shipping it to every adopter would mean nothing
+there, but that script's write-check does not require a manifest row:
+`.claude/WSS.LOCAL-RECORDS.json`, a project-local sibling of
+`.claude/WSS.WORKFLOW.json`, holds `WSS.record.*` entries for exactly this
+case. Gitignore-re-included so it is committed and history-backed, but never
+published — `wss-publish.sh` removes it before Gate 2, whose `.claude/`
+whitelist (three named files) backstops a dropped rm on its own, needing no
+dedicated denial line the way a wholesale-admitted directory would. Its
+entries merge into the same key space `wss-commit-provenance.sh` reads from
+the manifest, so a `WSS.OWNERSHIP.md` row spells the key exactly as it would
+for any other record — only which file holds the path differs.
+`wss/logs/WSS.DECISIONS.md`'s `2026-08-18 (second)` entry has the reasoning.
+
 ## Adding a key
 
 1. A key earns its place only if a **global** skill reads it. A fact only one
-   project uses belongs in that project's docs, with `WSS.hazards.*` pointing at it.
+   project uses belongs in that project's docs, with `WSS.hazards.*` pointing
+   at it — or, if it wants commit-time write-checking anyway, in
+   `.claude/WSS.LOCAL-RECORDS.json` per "Not manifest keys" above.
 2. Add the row here first. This table is the authority; a skill's own file says
    what it does with the value, never what the key is.
 3. Use the existing name if one fits. Two names for one concept is the failure

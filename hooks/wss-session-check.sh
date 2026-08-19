@@ -325,6 +325,28 @@ user; it will not be shown again."
   : > "$CLAUDE_DIR/.wss-welcomed" 2>/dev/null || true
 fi
 
+# ----------------------------------------------------------------- setup
+# The setup record — stable per-machine facts and the toggle table, injected
+# whole for the same reason the handoff card is: a session must have these
+# before it can look anything up. No fallback and no default path: a project
+# that declares no WSS.record.setup has nothing to inject, and silence is the
+# correct degrade. Size is capped by wss-doctor.sh (SETUP_CAP), like the card.
+# This block runs BEFORE the handoff block so its prepend lands BELOW the
+# card in the final ordering.
+sp=""
+if [ -f "$manifest" ] && command -v jq >/dev/null 2>&1; then
+  sp=$(record_path setup)   # lane-aware — same resolution as the handoff
+fi
+if [ -n "$sp" ] && [ -f "$PWD/$sp" ]; then
+  out="This project's setup record ($sp): per-machine facts and toggles,
+injected into every session. Trust these values over derivation. A stale row
+must be updated or reported to the user — never silently worked around.
+
+$(cat "$PWD/$sp" || true)${out:+
+
+}${out}"
+fi
+
 # --------------------------------------------------------------- handoff
 # See the exception in the header. The harness auto-loads only CLAUDE.md, so
 # every other resolved handoff — declared, or the wss/records/WSS.HANDOFF.md fallback when

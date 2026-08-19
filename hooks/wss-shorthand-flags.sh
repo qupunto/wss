@@ -42,7 +42,11 @@
 #         It fails at RUNTIME ("declare: -A: invalid option") rather than at
 #         parse time, which is the only reason a guard ABOVE it gets to run at
 #         all — leaving `seen` an indexed array, so the next subscript evaluates
-#         `--wss-wrap` as arithmetic. Keep this check above line ~103.
+#         `--wss-wrap` as arithmetic. Keep this check above the FIRST
+#         `declare -A` in this file. wss-doctor.sh enforces that ordering
+#         against the construct itself, which is what a line number in a
+#         comment could not do: this line said "~103" while `declare -A` had
+#         drifted to 113, and nothing noticed for as long as it took to read.
 #
 # Both write to stderr and exit 0: a non-zero exit here would block the user's
 # turn outright, and a broken shorthand must never cost someone their prompt.
@@ -804,7 +808,13 @@ EOF
     grant_ --wss-start
     cat <<'EOF'
 Irreversible, in force before the skill loads:
-- Commit as the work lands, so a compaction cannot lose a finished shard. Wait
+- Commit the batch grouped by CONCEPT once every shard has finished — never one
+  commit per shard, never one per file. A commit is one concept and may span
+  many files across several shards. Each concept lands on its own typed branch
+  off WSS.branch.publish (feature/ fix/ refactor/ docs/ chore/ release/), and
+  NOTHING commits directly to WSS.branch.integration, which is a disposable
+  bench. Capture each shard's report before committing: the edits survive a
+  compaction, the reasoning does not. Wait
   for the user to say so, or for the user to type --wss-wrap, before any push.
   Nothing this skill INVOKES may push on its behalf: an invoked skill inherits
   this grant, never its own flag's, so closing out goes through handoff-writer
@@ -873,10 +883,14 @@ EOF
 Irreversible, in force before the skill loads:
 - The PUSH and the MERGE are NOT covered by this flag — each needs a fresh OK in
   that turn. Opening the PR is covered.
-- The precondition is that WSS.branch.integration is ALREADY PUSHED. A PR opened
+- The PR's head is a RELEASE branch assembled from WSS.branch.publish, never
+  WSS.branch.integration — the integration branch is the disposable test bench
+  and is never a PR source. Compose the name from WSS.branch.release with
+  <version> substituted, and take a user-supplied name in its place.
+- The precondition is that the RELEASE branch is ALREADY PUSHED. A PR opened
   over unpushed commits describes a range the reviewer cannot see. If commits
   are local only, stop and say so — pushing them is not this flag's grant.
-- Draft the body from `git log origin/<publish>..origin/<integration>`, NEVER
+- Draft the body from `git log origin/<publish>..origin/<release>`, NEVER
   from what this session remembers doing. A merge publishes the whole branch, so
   name the commits this session did not make — they are the ones a reviewer most
   needs.

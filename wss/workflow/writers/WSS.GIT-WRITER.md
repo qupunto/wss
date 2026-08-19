@@ -7,6 +7,15 @@ what ordinary work goes to, `WSS.branch.publish` is what `--wss-release` tags, a
 `WSS.commitTrailer` names the session trailer. Without a manifest, fall back to the
 current branch and say so in one line.
 
+**A backtick in `--message` is substituted by the CALLER's shell, not by this
+procedure, and what it eats is gone before the script sees it.** A message
+written inside double quotes with `` `contract` `` in it arrives with the word
+missing and the commit lands looking fine — the substitution happens at the call
+site, so nothing downstream can detect the loss. Quote such a message with
+single quotes, or escape every backtick. It has happened: one commit explaining
+a classification decision lost the name of the class, and the decision log's
+`2026-08-19 (nineteenth)` entry carries the instance.
+
 **The mechanism is [`assets/wss-git-commit.sh`](assets/wss-git-commit.sh).** It
 stages by exact name, assembles and verifies the trailer paragraph, and refuses a
 force-push refspec — structurally, not by a caller remembering to. What follows is
@@ -39,6 +48,30 @@ when it was made, not because checking is skipped on principle.
 `sweep-tracker` — and one reason particular to this procedure: a flag is how a user
 confers authorization, and this procedure must never confer any. The grant is always
 the caller's.
+
+## `terse-messages`: the body shrinks, the record does not
+
+**Check `→WSS.script.wss-toggle.sh --on terse-messages` before composing a commit
+body.** While it is on, the body is the subject line and at most a sentence — or
+the user's own wording, verbatim, where they supplied any. No narrative, no
+rehearsal of the reasoning.
+
+**What makes that safe is the decision log, and nothing else.** This file's
+ordinary rule is that a commit message carries *the why*; terse trades that away
+deliberately, and it is only affordable because `WSS.record.decisions` already
+holds the reasoning and outlives the message. **A project without that record
+should not turn this on** — there the commit message is the only place the why
+would live.
+
+**It does not touch the trailers.** Those are assembled by the mechanism rather
+than composed as prose, and whether `Co-Authored-By` names anyone is
+`provenance-off`'s question, not this one. The two toggles meet at that line and
+nowhere else.
+
+**It does not license an inaccurate message.** A short message that is wrong is
+not terse, it is false; the shape changes and the standard does not.
+
+**Absent means off**, so nothing here fires in a project that has not declared it.
 
 ## Why the history has an owner at all
 
@@ -180,7 +213,11 @@ fetched it, deleting it locally changes nothing.
   it does perform** is the one `--wss-pr` hands it, with the method from
   `WSS.branch.mergeMethod` and only once `pr` has the user's OK in that turn —
   [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md)'s `merge` row is the authority,
-  and it is the reason a merge commit has an owner at all.
+  and it is the reason a merge commit has an owner at all. **That merge is run
+  by hand under this procedure, not through `wss-git-commit.sh`** — the asset
+  script commits and pushes and has no merge path at all, so reading "it does
+  perform" as "the script does it" finds nothing and concludes the claim is
+  dead. The authority is the procedure; the script is one of its instruments.
 
   **A lane landing on `WSS.branch.integration` is the second thing that looks like a
   merge and is not one.** `--wss-wrap` hands it a push refspec with **no leading

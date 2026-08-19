@@ -250,17 +250,34 @@ precondition, and it is `--wss-plan`'s file. Do not edit it here either, and do
 not touch a roadmap: a goal met is that record's business, not a release's.
 
 Then **stop and show the user exactly what is about to go out**: the commits,
-the tag name, and the branch. Wait for an explicit OK **in that turn** — not one
+the tag name, and the branch it lands on. Wait for an explicit OK **in that turn** — not one
 inherited from earlier in the conversation, and never implied by the milestone
 mark. Completing a milestone and publishing a tag are two decisions.
 
-Before showing it, run `git log origin/<branch>..<branch>` and say plainly if
+Before showing it, run `git log origin/<publish>..<publish>` and say plainly if
 it contains commits this session did not make. A push publishes a whole ref,
 so another session's work rides along.
 
+## 5a. Which branch is tagged, and it is never the one you are standing on
+
+**The tag lands on `WSS.branch.publish`, after the release PR has merged into
+it** — never on `WSS.branch.integration`, which is the disposable test bench,
+and never on the `release/v<version>` branch, which exists only to carry the
+assembled work to that PR and is deleted after it merges.
+
+**Check the branch rather than assuming it.** Every range in this skill is
+`WSS.branch.publish`'s, and a session that has been working on the bench all day
+is standing on the wrong branch by default. The no-manifest fallback below is
+"the current branch" precisely because there is nothing better to fall back to —
+that is a degraded mode to announce, not the ordinary path.
+
+**A release branch whose PR has not merged yet is not taggable.** The version it
+carries has not reached the publish branch, so a tag placed on it names a commit
+the project does not ship from. Say so and stop rather than tagging early.
+
 ## 6. Tag and push, once confirmed
 
-**Hand the tag name, the message and the branch to `git-writer`**, telling it
+**Hand the tag name, the message and `WSS.branch.publish` to `git-writer`**, telling it
 the OK was given in this turn — it will not tag otherwise, and it holds the
 rules against forcing, amending and skipping hooks. This skill obtains the
 confirmation; that skill performs the act.

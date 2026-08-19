@@ -136,7 +136,7 @@ The lever above has a hard limit, and which shape the suite is in decides whethe
 you have it at all.
 
 **As a checkout**, `skillOverrides` in `settings.json` controls each skill
-individually, and `/wss:toggle` is the slash-only editor of exactly that block
+individually, and `/wss:skill-toggle` is the slash-only editor of exactly that block
 — it lists effective levels, refuses a level that would break a
 dispatch-reached skill, and warns when a change silences a flag. This
 repository uses two levels: `name-only` for a skill a session cannot usefully

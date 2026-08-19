@@ -97,8 +97,40 @@ if [ -z "$TEST_CMD" ]; then
   echo "WSS.commands.test undeclared — skipped"
   test_verdict=undeclared
 elif [ -n "$CARRY_REASON" ]; then
-  echo "carried forward: $CARRY_REASON"
-  test_verdict=carried
+  # A carry-forward is licensed by the TRACKER, not by the caller saying so.
+  # WSS.SWEEP-CHECKPOINT.md's three conditions: the test-run baseline is this
+  # exact HEAD, the tree was clean when it stamped, and the result is green.
+  # A dirty stamp records itself as `<sha>+dirty`, which matches no sha and so
+  # is refused here without a special case. The two conditions that void a
+  # carry-forward even when all three hold — a suite that is not hermetic, a
+  # changed environment — cannot be read from a file and stay the caller's.
+  # Until this check existed the reason string WAS the gate: any caller could
+  # skip the whole suite by naming one, and the run reported `carried`.
+  cf_sweeps=".claude/WSS.SWEEPS.json"
+  cf_head="$(git rev-parse HEAD 2>/dev/null || echo '')"
+  cf_short="$(git rev-parse --short HEAD 2>/dev/null || echo '')"
+  cf_base=""; cf_result=""; cf_count=""
+  if [ "$HAVE_JQ" = 1 ] && [ -f "$cf_sweeps" ]; then
+    cf_base="$(jq -r '.entries["test-run"].baseline // empty' "$cf_sweeps" 2>/dev/null)"
+    cf_result="$(jq -r '.entries["test-run"].result // empty' "$cf_sweeps" 2>/dev/null)"
+    cf_count="$(jq -r '.entries["test-run"]["test-count"] // empty' "$cf_sweeps" 2>/dev/null)"
+  fi
+  if [ -z "$cf_base" ]; then
+    echo "carry-forward REFUSED: no test-run entry in $cf_sweeps licenses it"
+    echo "  reason offered: $CARRY_REASON"
+    test_verdict=not-covered
+  elif [ "$cf_base" != "$cf_head" ] && [ "$cf_base" != "$cf_short" ]; then
+    echo "carry-forward REFUSED: test-run baseline is '$cf_base', HEAD is '$cf_short'"
+    echo "  reason offered: $CARRY_REASON"
+    test_verdict=not-covered
+  elif [ "$cf_result" != green ]; then
+    echo "carry-forward REFUSED: last test-run result is '${cf_result:-unset}', not green"
+    echo "  reason offered: $CARRY_REASON"
+    test_verdict=not-covered
+  else
+    echo "carried forward: $CARRY_REASON (test-run $cf_base, green, ${cf_count:-count unrecorded})"
+    test_verdict=carried
+  fi
 elif [ -n "$CONSENT_ENV" ] && [ "$TEST_CONSENT" != 1 ]; then
   echo "consent gate WSS.commands.testConsentEnv=$CONSENT_ENV not satisfied — ask once this session, then re-run with --test-consent"
   test_verdict=not-covered
@@ -171,8 +203,24 @@ elif [ -n "$CI_TOOL" ]; then
   ci_verdict=undeclared
 elif [ -n "$CI_CMD_RAW" ] && [ "$CI_CMD_RAW" != "null" ]; then
   echo "running the declared WSS.commands.ci shell command:"
-  bash -c "$CI_CMD_RAW" || true
-  ci_verdict=see-output
+  # THE EXIT STATUS IS THE VERDICT, and discarding it made this branch unable to
+  # go red at all. `|| true` kept the gauntlet alive past a failing command —
+  # which is right — but `overall` was then never set, so a project declaring a
+  # raw `WSS.commands.ci` had a CI verdict that could not fail however the
+  # command exited. The `gh` branch above has always set `overall=1` on a red
+  # conclusion; this is the same rule for the other shape.
+  #
+  # THE OUTPUT IS STILL NOT MACHINE-READABLE and the verdict does not pretend
+  # otherwise: `see-output` remains what a reader is told for a passing run,
+  # because a zero exit from an arbitrary command means "it ran", not "CI is
+  # green". A NONZERO exit is unambiguous, and that is the half now acted on.
+  bash -c "$CI_CMD_RAW" || ci_raw_rc=$?
+  if [ "${ci_raw_rc:-0}" -ne 0 ]; then
+    echo "the declared command exited ${ci_raw_rc}"
+    ci_verdict=red; overall=1
+  else
+    ci_verdict=see-output
+  fi
 else
   echo "WSS.commands.ci undeclared — cannot resolve CI"
   ci_verdict=undeclared

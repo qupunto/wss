@@ -37,8 +37,8 @@
     "full-check": "name-only",
     "lane-record-sync": "name-only",
     "retire": "name-only",
+    "skill-toggle": "user-invocable-only",
     "stocktake": "user-invocable-only",
-    "toggle": "user-invocable-only",
     "track": "name-only"
   },
   "hooks": {

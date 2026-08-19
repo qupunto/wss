@@ -186,7 +186,7 @@ if [ ! -f "$MANIFEST" ]; then
     echo "no .claude/WSS.WORKFLOW.json in $DIR, but a PRE-RENAME .claude/workflow.json exists." >&2
     echo "This tree predates the wss- renames, and retiring from the legacy manifest would" >&2
     echo "miss what it declares. Snapshot first (wss-export-records.sh --all reads the legacy" >&2
-    echo "manifest), migrate with --wss-update, then retire." >&2
+    echo "manifest), migrate with \`--wss-update\`, then retire." >&2
   else
     echo "no .claude/WSS.WORKFLOW.json in $DIR — nothing to retire" >&2
   fi

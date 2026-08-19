@@ -16,10 +16,11 @@ place of the undeclared role in the entry's `Method` field.
 `WSS.record.decisionsIndex` — one line per entry — pick the entries bearing on each
 dimension, and name them in that auditor's prompt. It reads `WSS.record.behaviour`
 and `WSS.record.reference` for current state, the named entries for the *why*, and
-opens the full log only if something contradicts what it is looking at. **Below
-the spawn floor, read it here** — "once yourself" is what keeps every dimension's
-auditor from repeating the read. **At or above it, delegate that same single
-lookup to [`wss-survey`](../../../agents/wss-survey.md) instead** — brief:
+opens the full log only if something contradicts what it is looking at.
+**Delegate that single lookup to
+[`wss-survey`](../../../agents/wss-survey.md)** — once, not once per dimension,
+which is what keeps every auditor from repeating the read; the divided-floor
+comparison SKILL.md states puts a whole-record read on this side of it — brief:
 `WSS.record.decisionsIndex` plus the list of dimensions
 in play; verdict: which entries bear on which dimension, one line each.
 

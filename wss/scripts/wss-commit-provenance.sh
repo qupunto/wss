@@ -170,6 +170,15 @@ resolve_() {
   local own_matrix="${CLAUDE_DIR:-.}/wss/workflow/WSS.OWNERSHIP.md"
   [ -f "$own_matrix" ] || return 1
 
+  # A project-local sibling, never shipped (wss-publish.sh removes it; Gate 2's
+  # .claude/ whitelist backstops a dropped rm). Holds WSS.record.* entries for
+  # records no global skill reads — kept out of the manifest per
+  # WSS.MANIFEST.md rule 1, "Adding a key" — but still commit-provenance
+  # checked like any other record, merged into the same key space so an
+  # WSS.OWNERSHIP.md row needs no different spelling depending on which file
+  # its path lives in. See WSS.MANIFEST.md, "Not manifest keys".
+  local local_records=".claude/WSS.LOCAL-RECORDS.json"
+
   local tmp
   tmp=$(mktemp -d)
   trap 'rm -rf "$tmp"' RETURN
@@ -178,28 +187,47 @@ resolve_() {
   git diff --cached --name-only --no-renames | sort > "$tmp/staged"
   [ -s "$tmp/staged" ] || return 0
 
-  # 2. Walk manifest to build path->key map (exclude glob patterns)
-  jq -r '
-    ((.WSS.record // {}) |
-      to_entries[] |
-      if .value | type == "string" then
-        "WSS.record." + .key + ": " + .value
-      elif .value | type == "array" then
-        "WSS.record." + .key + ": " + (.value | join(", "))
-      else
-        empty
-      end),
-    ((.WSS.lanes // {}) |
-      to_entries[] |
-      if .value | type == "string" then
-        "WSS.lanes." + .key + ": " + .value
-      elif .value | type == "array" then
-        "WSS.lanes." + .key + ": " + (.value | join(", "))
-      else
-        empty
-      end),
-    ((.WSS.sweeps // empty) | "WSS.sweeps: " + .)
-  ' "$manifest" 2>/dev/null | awk -F': ' '
+  # 2. Walk the manifest, and the local-records sibling if present, to build
+  # path->key map (exclude glob patterns). Only WSS.record.* is read from the
+  # sibling — lanes and sweeps are structural manifest concepts a project-local
+  # records file has no use for.
+  {
+    jq -r '
+      ((.WSS.record // {}) |
+        to_entries[] |
+        if .value | type == "string" then
+          "WSS.record." + .key + ": " + .value
+        elif .value | type == "array" then
+          "WSS.record." + .key + ": " + (.value | join(", "))
+        else
+          empty
+        end),
+      ((.WSS.lanes // {}) |
+        to_entries[] |
+        if .value | type == "string" then
+          "WSS.lanes." + .key + ": " + .value
+        elif .value | type == "array" then
+          "WSS.lanes." + .key + ": " + (.value | join(", "))
+        else
+          empty
+        end),
+      ((.WSS.sweeps // empty) | "WSS.sweeps: " + .)
+    ' "$manifest" 2>/dev/null
+
+    if [ -f "$local_records" ]; then
+      jq -r '
+        (.WSS.record // {}) |
+        to_entries[] |
+        if .value | type == "string" then
+          "WSS.record." + .key + ": " + .value
+        elif .value | type == "array" then
+          "WSS.record." + .key + ": " + (.value | join(", "))
+        else
+          empty
+        end
+      ' "$local_records" 2>/dev/null
+    fi
+  } | awk -F': ' '
     NF == 2 {
       key = $1
       paths = $2

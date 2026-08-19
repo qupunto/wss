@@ -19,14 +19,14 @@ Where the project genuinely does not need a record — no roadmap because it is 
 library with no planned blocks — do not create it, and leave the key out.
 
 **`WSS.record.backlog` is the exception to that, and it is created whenever a
-TODO list is.** The two are a pair: the TODO list holds what is queued, the
-backlog holds the non-blocking findings a session turns up on its way to
-something else. A project has those from its first session, so "it has nothing
-to put there yet" is never the reason to skip it — and skipping it is not
-neutral. With no backlog those findings land in the TODO list, which is the
-single bag the split exists to remove, and they arrive carrying a `- [ ]` that
-makes unqueued observations look scheduled. The key table's fallback resolves the
-file without a `backlog` key, so declaring one is optional; creating it is not.
+TODO list is.** What each of the pair holds is
+[`WSS.RECORD-CONTRACT.md`](../../../wss/workflow/WSS.RECORD-CONTRACT.md)'s split
+table, not restated here. A project has those findings from its first session,
+so "it has nothing to put there yet" is never the reason to skip it — skipping
+it is not neutral, since without a backlog those findings land in the TODO
+list wearing a `- [ ]` that makes them look scheduled. The key table's fallback
+resolves the file without a `backlog` key, so declaring one is optional;
+creating it is not.
 
 **A record under a provider has no file to create.** Where `WSS.record.todo` is a
 provider object, creating an empty `WSS.TODO.md` here would hand the project the two

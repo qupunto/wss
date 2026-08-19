@@ -1,4 +1,4 @@
-# T10 — Governance
+# T10 — Governance: page table and frameworks
 
 Loaded on demand from `WSS.TAXONOMY.md`. Read this only when a compliance, legal, or
 organizational obligation actually applies to the project.

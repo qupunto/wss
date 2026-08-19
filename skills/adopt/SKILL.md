@@ -107,6 +107,8 @@ full — only one mode's chain of steps is ever in play for a given run.
   the same pass.
 - **9. [Create the missing records — empty](references/WSS.STEP9-CREATE-RECORDS.md).**
   Heading and nothing else; the owning skill writes the first real line.
+- **9c. [Inherit the rulebook, or take its structure](references/WSS.STEP9C-RULEBOOK.md).**
+  Only where the tree carries `wss/rules/`. Step 7 asks; this carries it out.
 - **`--lane <name>`. [Set up a worktree for a declared lane](references/WSS.LANE-MODE.md).**
   Reached directly, like amendment — no detection, no search, no questions
   beyond the lane's own two.

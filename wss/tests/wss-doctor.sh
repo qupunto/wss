@@ -63,11 +63,23 @@ set -u
 STRICT=0
 CHECK_ASSEMBLY=0
 NOTES=0
+QUIET=0
+
+# TOGGLES SET THE DEFAULTS; A TYPED FLAG STILL WINS. Both are read in ONE call
+# and parsed here — this script is forked about 144 times by the contract suite,
+# so a lookup per toggle would be paid per toggle per fork. An absent toggle, an
+# absent table and an absent script all mean off, which is why nothing below
+# treats a missing value as an error.
+_tg=$( [ -x "$(dirname "${BASH_SOURCE[0]}")/../scripts/wss-toggle.sh" ] \
+       && bash "$(dirname "${BASH_SOURCE[0]}")/../scripts/wss-toggle.sh" 2>/dev/null || true )
+case $(printf '%s\n' "$_tg" | awk -F'\t' '$1=="doctor-strict"{print $2}') in on) STRICT=1 ;; esac
+case $(printf '%s\n' "$_tg" | awk -F'\t' '$1=="doctor-quiet"{print $2}') in on) QUIET=1 ;; esac
+
 for arg in "$@"; do
   case $arg in
     --strict) STRICT=1 ;;
     --check-assembly) CHECK_ASSEMBLY=1 ;;
-    --notes) NOTES=1 ;;
+    --notes) NOTES=1; QUIET=0 ;;
     *) echo "wss-doctor.sh: unknown argument '$arg' (only --strict, --check-assembly, --notes)" >&2; exit 2 ;;
   esac
 done
@@ -219,7 +231,11 @@ fi
 
 pass()  { printf '  \033[32mok\033[0m    %s\n' "$1"; }
 fail()  { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; fails=$((fails + 1)); }
-warn()  { printf '  \033[33mwarn\033[0m  %s\n' "$1"; warns=$((warns + 1)); }
+# QUIET SUPPRESSES THE PRINTING AND NEVER THE COUNTING. A warn still counts, so
+# --strict still turns the exit red on one; only the line is withheld. A toggle
+# that changed what a run CONCLUDED rather than what it showed would be a
+# different feature, and a dangerous one.
+warn()  { [ "$QUIET" -eq 1 ] || printf '  \033[33mwarn\033[0m  %s\n' "$1"; warns=$((warns + 1)); }
 # A cost or a coverage gap, not a fault: counted every run, but only PRINTED
 # when --notes is passed — a clean adopter's tree would otherwise fill with
 # notes for every optional key it does not declare. Never counted toward
@@ -313,6 +329,45 @@ if [ $coexist_checkout -eq 1 ] && [ $coexist_plugin -eq 1 ]; then
         \`wss/scripts/wss-retire-workflow.sh --suite\` for the exact command per install."
 else
   pass "the suite is installed at most once — no plugin/checkout coexistence"
+fi
+
+# The half the check above cannot see, measured rather than predicted: a teardown
+# that skips `claude plugin marketplace remove` leaves a registration in
+# plugins/known_marketplaces.json and a clone under plugins/marketplaces/, and
+# neither sits under plugins/cache/ (`wss/logs/WSS.DECISIONS.md`'s 2026-08-18
+# (thirteenth) entry, where exactly that residue passed this section clean).
+#
+# WARN, not FAIL, and only while nothing is installed. A marketplace clone is
+# fetched source that no hook event reaches, so it cannot double-fire anything —
+# it is residue of the same grade as the empty settings.json keys below. Where an
+# install IS present the registration belongs to it, and the failure above
+# already describes that state, so this stays silent to avoid naming the same
+# machine twice with two different remedies.
+#
+# Keyed on the SOURCE repository as well as the name, because the name is chosen
+# when the marketplace is added and this suite has shipped under two of them:
+# matching `wss` alone would miss every machine that added it before the
+# 2026-08-10 rename, which is the population most likely to be carrying residue.
+if [ $coexist_plugin -eq 0 ]; then
+  mkt=$(jq -r '(to_entries // [])[]
+      | select([.key, ((.value.source.repo // "") | split("/") | last)]
+               | map(ascii_downcase)
+               | any(. == "wss" or . == "workflow-secretary-suite"))
+      | .key' "$CONFIG_DIR/plugins/known_marketplaces.json" 2>/dev/null)
+  for mkt_name in wss workflow-secretary-suite; do
+    [ -d "$CONFIG_DIR/plugins/marketplaces/$mkt_name" ] &&
+      mkt="$mkt
+$mkt_name"
+  done
+  mkt=$(printf '%s\n' "$mkt" | sed '/^$/d' | sort -u | paste -sd, -)
+  if [ -n "$mkt" ]; then
+    warn "marketplace remnant: $mkt — registered in
+        plugins/known_marketplaces.json, or cloned under plugins/marketplaces/,
+        with no wss plugin installed from it. That is a teardown that skipped
+        \`claude plugin marketplace remove\`; neither location is under
+        plugins/cache/, so the coexistence check above cannot see it. Remove the
+        marketplace, then delete the clone directory."
+  fi
 fi
 
 # What an uninstall leaves behind: empty enabledPlugins / extraKnownMarketplaces
@@ -473,6 +528,28 @@ elif ! bash -n "$hook" 2>/dev/null; then
   fail "wss-shorthand-flags.sh has a syntax error — this breaks EVERY flag, not one"
 else
   pass "wss-shorthand-flags.sh parses"
+
+  # `declare -A` is bash 4 and fails at RUNTIME, not at parse time, so the
+  # version guard is only worth anything if it runs FIRST. The hook pinned that
+  # ordering to a line number in a comment; the number drifted by ten and
+  # asserted nothing. Check it against the construct instead.
+  guard_ln=$(grep -n 'BASH_VERSINFO' "$hook" | head -1 | cut -d: -f1)
+  decl_ln=$(grep -n '^[[:space:]]*declare -A' "$hook" | head -1 | cut -d: -f1)
+  if [ -z "$decl_ln" ]; then
+    pass "no declare -A in the shorthand hook, so no bash-4 ordering to enforce"
+  elif [ -z "$guard_ln" ]; then
+    fail "wss-shorthand-flags.sh uses declare -A at line $decl_ln with no
+        BASH_VERSINFO guard above it. On bash 3.2 that fails at runtime and
+        leaves an indexed array, whose next subscript evaluates a flag name as
+        arithmetic — stock macOS still ships 3.2 and no CI job covers it."
+  elif [ "$guard_ln" -ge "$decl_ln" ]; then
+    fail "the bash-4 guard (line $guard_ln) is not above the first declare -A
+        (line $decl_ln) in wss-shorthand-flags.sh. A guard below the construct
+        it protects never runs on the one shell it exists for."
+  else
+    pass "the bash-4 guard precedes the first declare -A ($guard_ln < $decl_ln)"
+  fi
+
   flags=$(sed -n 's/^FLAGS=(\(.*\))$/\1/p' "$hook")
   if [ -z "$flags" ]; then
     fail "could not parse the FLAGS array"
@@ -523,13 +600,13 @@ else
           n = split(alts, a, "|")
           for (i = 1; i <= n; i++) if (a[i] == flag) { found = 1; exit }
         } END { exit !found }' "$hook" ||
-        warn "$f maps to '$skill' but has no block_for() case — it injects nothing"
+        warn "\`$f\` maps to '$skill' but has no block_for() case — it injects nothing"
       # `-` is the hook serving the flag itself rather than a missing mapping.
       # There is no skills/ directory to look in and its absence is not a fault.
-      if   [ "$skill" = "-" ]; then pass "$f -> served by the hook, no skill needed"
-      elif [ -f "$CLAUDE_DIR/skills/$skill/SKILL.md" ]; then pass "$f -> $skill (user)"
-      elif [ -f "$PWD/.claude/skills/$skill/SKILL.md" ]; then pass "$f -> $skill (project)"
-      else warn "$f -> $skill, which resolves in neither $CLAUDE_DIR/skills nor this
+      if   [ "$skill" = "-" ]; then pass "\`$f\` -> served by the hook, no skill needed"
+      elif [ -f "$CLAUDE_DIR/skills/$skill/SKILL.md" ]; then pass "\`$f\` -> $skill (user)"
+      elif [ -f "$PWD/.claude/skills/$skill/SKILL.md" ]; then pass "\`$f\` -> $skill (project)"
+      else warn "\`$f\` -> $skill, which resolves in neither $CLAUDE_DIR/skills nor this
         project. skill_exists() gates it, so the flag is inert here rather than
         broken — but if this is the project that should have it, it does nothing."
       fi
@@ -1274,7 +1351,10 @@ log_records_() {
   [ -r "$m" ] || return 0
   command -v jq >/dev/null 2>&1 || return 0
   jq -r '
-    (.WSS.recordMode // {}) | to_entries[] | select(.value == "log") | .key
+    (.WSS.recordMode // {}) | to_entries[]
+    | select((.value == "log")
+             or ((.value | type == "object") and .value.mode == "log"))
+    | .key
   ' "$m" 2>/dev/null | while IFS= read -r k; do
     [ -n "$k" ] || continue
     jq -r --arg k "$k" '
@@ -1365,6 +1445,94 @@ else
     pass "every link anchor resolves ($checked checked)"
   elif [ $checked -eq 0 ]; then
     notice "no link anchors to check"
+  fi
+fi
+
+# --------------------------------------------- set-scoped anchor uniqueness
+
+# A REFERENCE FILE HAS NO ADDRESS OF ITS OWN — the owning skill's key reaches it,
+# and a fragment resolves against the skill's WHOLE SET: `SKILL.md` plus its
+# references. The owner's ruling (`wss/logs/WSS.DECISIONS.md`, the
+# `2026-08-18 (twenty-fifth)` entry) made two conditions part of it rather than
+# advice: resolution is EXACTLY ONE MATCH, and a fragment matching zero or more
+# than one heading in the set is a finding here — never settled by a precedence
+# order, because a SKILL.md-wins rule would let a citation bind silently to the
+# wrong section.
+#
+# WARN-GRADE, and the condition it promotes to fail under: once the whole tree
+# has been clean across two consecutive releases. The named residual is why it
+# starts here — conventional section names recurring inside one skill's set will
+# keep tripping it, and that is the check working rather than a false positive.
+#
+# FENCES ARE SKIPPED. A `#` inside a fenced block is sample text, not a heading;
+# a scan that counts it invents a collision no anchor can reach.
+#
+# THE SLUG RULE IS ANCHOR_PY'S, reused below rather than restated — two slug
+# functions that drift is the failure this check exists to catch.
+AU_PY='
+import os, re, sys
+def slug(t):
+    a = t.lower()
+    a = re.sub(r"[`*_\[\]()]", "", a)
+    a = re.sub(r"[^\w\s-]", "", a)
+    return re.sub(r"\s", "-", a.strip())
+for d in sys.argv[1:]:
+  files = [os.path.join(d, "SKILL.md")]
+  refs = os.path.join(d, "references")
+  if os.path.isdir(refs):
+    files += sorted(os.path.join(refs, f) for f in os.listdir(refs) if f.endswith(".md"))
+  seen = {}
+  for f in files:
+    fence = False
+    try:
+        lines = open(f, encoding="utf-8", errors="replace").read().splitlines()
+    except OSError:
+        continue
+    for n, line in enumerate(lines, 1):
+        st = line.lstrip()
+        if st.startswith("```") or st.startswith("~~~"):
+            fence = not fence
+            continue
+        if fence or not line.startswith("#"):
+            continue
+        a = slug(line.lstrip("#").strip())
+        if a:
+            seen.setdefault(a, []).append("%s:%d" % (f, n))
+  for a, where in sorted(seen.items()):
+    if len(where) > 1:
+        print("%s\t%s\t%s" % (d, a, " and ".join(where)))
+'
+
+head_ "Anchor uniqueness within a skill's set"
+
+if ! command -v python3 >/dev/null 2>&1; then
+  warn "anchor uniqueness unverified (needs python3) — a set with two identical
+        headings passes silently here"
+else
+  # ONE python process for every set, not one per set. The doctor is forked ~144
+  # times by the contract suite, so a per-set spawn is paid 144 times over — it
+  # cost the suite 4.7s of its 79s measured, for a check that reads 26 small
+  # directories. Collect the set list first, hand it over once.
+  # An ARRAY, not a space-joined string: $CLAUDE_DIR may contain a space, and a
+  # word-split string would hand python half a path and silently check nothing.
+  au_sets=0 au_dupes=0; au_dirs=()
+  for skdir in "$CLAUDE_DIR"/skills/*/ "$CLAUDE_DIR"/.claude/skills/*/; do
+    [ -f "$skdir/SKILL.md" ] || continue
+    au_sets=$((au_sets + 1))
+    au_dirs+=("$skdir")
+  done
+  if [ "$au_sets" -gt 0 ]; then
+    while IFS=$'\t' read -r au_dir au_slug au_where; do
+      [ -n "$au_slug" ] || continue
+      au_dupes=$((au_dupes + 1))
+      warn "${au_dir#"$CLAUDE_DIR"/}'#$au_slug' resolves to more than one heading:
+        ${au_where//$CLAUDE_DIR\//}
+        A fragment must match exactly one heading in a skill's set. Rename one
+        of them — a precedence order is not the fix (2026-08-18 twenty-fifth)."
+    done < <(python3 -c "$AU_PY" "${au_dirs[@]}" 2>/dev/null)
+  fi
+  if [ "$au_dupes" -eq 0 ]; then
+    pass "every fragment resolves to exactly one heading in its skill's set ($au_sets set(s) checked)"
   fi
 fi
 
@@ -1465,7 +1633,8 @@ rule_files_() {
   if git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
     git -C "$CLAUDE_DIR" ls-files -z 'skills/*/SKILL.md' 'skills/*/references/*.md' \
       'agents/*.md' 'wss/workflow/*.md' 'wss/workflow/providers/*.md' \
-      'wss/workflow/writers/*.md' 'wss/tests/*.md' 'commands/*.md' \
+      'wss/workflow/writers/*.md' 'wss/rules/*.md' \
+      'wss/tests/*.md' 'commands/*.md' \
       '.claude/skills/*/SKILL.md' |
       while IFS= read -r -d '' p; do printf '%s\0' "$CLAUDE_DIR/$p"; done
   else
@@ -1785,6 +1954,210 @@ AGENTMODELS
       pass "every agents/*.md model: matches its row in the dispatch ladder's
         assignment table, every agent has a row, and every copy names its canon"
     fi
+  fi
+fi
+
+# ------------------------------------ a caller told to pass a tier of its own
+
+head_ "Model-override instructions"
+
+# wss/records/WSS.HAZARDS.md's "One model-tier rule is live, and it is the
+# ladder's" already names the drift this section mechanizes, in its own words:
+# "A skill that restates a tier rather than citing the ladder is the drift to
+# watch for — re-locate by grep, since line numbers move." That watch-for had no
+# mechanism until this section, so the grep it asks for was run by hand or not at
+# all. Re-locate the paragraph by its lead, not by a line number.
+#
+# THE DEFECT IS AN AFFIRMATIVE INSTRUCTION, NOT A VOCABULARY. The motivating
+# instance: wss/workflow/WSS.FAN-OUT.md's brief list told a caller a shard's
+# "tier passed as the launch's model override", while
+# wss/workflow/WSS.DISPATCH-LADDER.md says a caller "passes no model override,
+# because the resolution already happened here". Both were live text and a
+# dispatching skill could follow neither safely. It was filed to
+# wss/records/WSS.BACKLOG.md ("The tooling contracts") rather than queued, and a
+# full-scope wss-survey reader had the file in its read set and did not report it
+# — wss/logs/WSS.DECISIONS.md's "The full check's readers were not reliable".
+# That is the cost this section is priced against: not a hypothetical.
+#
+# WHY THE CITATION-PROXIMITY SECTION BELOW DOES NOT COVER IT. The offending line
+# LINKED to the ladder while contradicting it, so proximity passes it. A citation
+# proves provenance, never agreement — and that gap is the whole reason a
+# separate assertion is needed rather than a wider window there.
+#
+# WHAT IT DOES NOT ASSERT, AND CANNOT. It does not compare the two contracts'
+# meaning; nothing here reads for agreement. It asserts only that no file in
+# scope carries the forbidden instruction SHAPE. A paraphrase that avoids the
+# words — "hand the tier to the launch" — is invisible to it, a deliberate
+# false-negative in the same direction the row-completeness and citation
+# proximity checks already favour: the expensive side to be wrong on is flagging
+# prose that was never restating anything. The ladder itself is excluded by name,
+# because it owns the term and states both the rule and the measured-override
+# figure it is entitled to discuss.
+#
+# SCOPE IS THE TOOLING SOURCES, WHICH DELIBERATELY EXCLUDES wss/records/ AND
+# wss/logs/. The log is append-only history and must keep its original wording
+# even where that wording is the defect being recorded; WSS.HAZARDS.md states the
+# rule correctly today and is the handoff's overflow sibling, so a hit there
+# would be handoff-writer's to fix rather than a shard's.
+#
+# NEGATION IS THE ENTIRE DISCRIMINATOR, so it is guarded rather than assumed.
+# "passes no model override" and "must not pass a model override" are the rule
+# stated CORRECTLY and must stay silent; verified against both, against
+# "never pass the resolved model override", and against the measurement sense in
+# wss/tests/WSS.TOKEN-ECONOMY.md ("three model overrides against one grant"),
+# which carries no passing verb. The negator is accepted only within three words
+# of the term, so a "not" elsewhere in the window cannot mask a real hit.
+#
+# The verb may sit on the line ABOVE the term, as the motivating instance had it,
+# so the window is two lines and the report anchors on the line carrying the term
+# — without that, one occurrence reports twice. No `\b` in the awk: gawk reads it
+# as a literal backspace rather than a word boundary, the live defect the
+# figure-source check's own size-unit pattern still carries. No {n,m} intervals
+# either, which mawk need not support.
+#
+# FAILS RATHER THAN WARNS, and lands green the day it ships. Its sibling
+# assertion above — an agents/*.md model: against the ladder's assignment table —
+# already fails, and the prose half of one invariant should not be softer than
+# the frontmatter half.
+if ! git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+  notice "not a git checkout — the model-override check walks
+      WSS.record.tooling.sources and has nothing to walk"
+else
+  mo_hits=$(rule_files_ |
+    while IFS= read -r -d '' p; do
+      case "$p" in */wss/workflow/WSS.DISPATCH-LADDER.md) continue ;; esac
+      printf '%s\0' "$p"
+    done |
+    xargs -0 -r awk '
+      FNR == 1 { fence = 0; prev = "" }
+      /^[[:space:]]*(```|~~~)/ { fence = !fence; prev = ""; next }
+      fence { next }
+      {
+        cur = tolower($0)
+        cidx = index(cur, "model override")
+        if (cidx > 0) {
+          pre = tolower(prev) " " substr(cur, 1, cidx - 1)
+          if (pre ~ /pass(es|ed|ing)?[[:space:]]/ &&
+              pre !~ /(^|[[:space:]])(no|not|never)([[:space:]]+[^[:space:]]+)?([[:space:]]+[^[:space:]]+)?([[:space:]]+[^[:space:]]+)?[[:space:]]*$/)
+            printf "%s:%d\n", FILENAME, FNR
+        }
+        prev = $0
+      }
+    ' 2>/dev/null | sed "s|^$CLAUDE_DIR/||")
+  mo_n=$(printf '%s\n' "$mo_hits" | grep -c . || true)
+  if [ "$mo_n" -eq 0 ]; then
+    pass "no tooling-source file instructs a caller to pass a model override —
+        the ladder's rule is stated once, in the file that owns it"
+  else
+    fail "these lines instruct a caller to pass a model override, which
+        wss/workflow/WSS.DISPATCH-LADDER.md forbids — resolution happens in its
+        assignment table, so an override either duplicates a row or silently
+        overrules it: ${mo_hits}
+        Point at the ladder's \"Which model runs a task\" rather than restating
+        it. A citation nearby does not settle this: the instance that motivated
+        this check linked to the ladder in the same sentence that contradicted it."
+  fi
+fi
+
+# ------------------------------------------ the supervision ladder's coverage
+
+head_ "Supervision ladder coverage"
+
+# wss/workflow/WSS.SUPERVISION-LADDER.md is the canon for how supervised each
+# record write is; its assignment table was set by the owner and a session
+# never reassigns a cell. This section keeps the TABLE and the MANIFEST from
+# drifting apart, in both directions, the same shape as the agent-model check
+# above: a declared record key with no row is a surface whose supervision is
+# undefined — the exact gap the ladder exists to close — and a row naming a key
+# the manifest vocabulary does not know is a row that silently stopped meaning
+# anything when a key was renamed.
+#
+# WHAT IT DOES NOT ASSERT, AND CANNOT: that a writer honoured its row. The gate
+# that would refuse a prompted-level write with no cited ruling deliberately
+# does not exist yet — structure before enforcement, the owner's rule in
+# CLAUDE.md, reasoning at wss/logs/WSS.DECISIONS.md's 2026-08-17 (sixteenth)
+# entry. This section polices the structure only, which is why it can land in
+# the same change that creates the file.
+#
+# SURFACE TOKENS ARE READ FROM THE TABLE, NOT HAND-KEPT HERE: backticked,
+# key-shaped tokens in the first column of "## The assignment table". Tokens
+# that are not key-shaped — section names like `## State`, file paths like the
+# hazard overflow's — are the named non-key surfaces and are not validated
+# against the manifest. The out-of-scope set is read from the ladder's own
+# "## Out of scope" section rather than restated: tooling.sources lives there
+# today, and this code deliberately does not know that.
+#
+# KEY VOCABULARY COMES FROM wss/workflow/WSS.MANIFEST.md — every WSS.record.*
+# it documents — so a row for a key THIS project does not declare (behaviour,
+# toolbelt) is legal: the table is one table for every project on the suite.
+# Declared keys come from the manifest with all-string paths joined, which
+# recurses into object values, because .WSS.record.tooling is an OBJECT and a
+# jq walk that skips non-string values is exactly how wss-commit-provenance.sh
+# went blind to three of its own records (wss/logs/WSS.DECISIONS.md,
+# 2026-08-17 (fifteenth)).
+sl_file="$CLAUDE_DIR/wss/workflow/WSS.SUPERVISION-LADDER.md"
+sl_manifest="$CLAUDE_DIR/.claude/WSS.WORKFLOW.json"
+sl_vocabfile="$CLAUDE_DIR/wss/workflow/WSS.MANIFEST.md"
+if [ ! -f "$sl_file" ]; then
+  notice "no wss/workflow/WSS.SUPERVISION-LADDER.md — supervision coverage was
+      not checked, so no surface here has a defined supervision level"
+elif [ ! -f "$sl_manifest" ] || [ ! -f "$sl_vocabfile" ]; then
+  notice "supervision ladder present but the manifest or WSS.MANIFEST.md is
+      missing — the table had nothing to be checked against"
+else
+  sl_rows=$(awk '
+      /^## The assignment table/ { t = 1; next }
+      t && /^## /                { exit }
+      t && /^\|/ {
+        split($0, c, "|"); cell = c[2]
+        while (match(cell, /`[^`]+`/)) {
+          print substr(cell, RSTART + 1, RLENGTH - 2)
+          cell = substr(cell, RSTART + RLENGTH)
+        }
+      }
+    ' "$sl_file" | grep -E '^[a-zA-Z]+(\.[a-zA-Z]+)*$' | sort -u)
+  sl_oos=$(awk '
+      /^## Out of scope/ { t = 1; next }
+      t && /^## /        { exit }
+      t {
+        while (match($0, /`[^`]+`/)) {
+          print substr($0, RSTART + 1, RLENGTH - 2)
+          $0 = substr($0, RSTART + RLENGTH)
+        }
+      }
+    ' "$sl_file" | grep -E '^[a-zA-Z]+(\.[a-zA-Z]+)*$' | sort -u)
+  sl_declared=$(jq -r '[.WSS.record | paths(type=="string" or type=="array")]
+      | .[] | select(all(.[]; type=="string")) | join(".")' "$sl_manifest" \
+      2>/dev/null | sort -u)
+  sl_vocab=$(grep -o 'WSS\.record\.[a-zA-Z]*\(\.[a-zA-Z]*\)*' "$sl_vocabfile" |
+      sed 's/^WSS\.record\.//' | sort -u)
+  sl_missing=""
+  for k in $sl_declared; do
+    printf '%s\n' "$sl_oos" | grep -qxF "$k" && continue
+    printf '%s\n' "$sl_rows" | grep -qxF "$k" || sl_missing="$sl_missing $k"
+  done
+  sl_unknown=""
+  for k in $sl_rows; do
+    printf '%s\n' "$sl_vocab" | grep -qxF "$k" || sl_unknown="$sl_unknown $k"
+  done
+  if [ -n "$sl_missing" ]; then
+    fail "these declared record keys have no row in
+        wss/workflow/WSS.SUPERVISION-LADDER.md's assignment table:${sl_missing}
+        A surface with no row has an UNDEFINED supervision level, which is the
+        gap the ladder exists to close. The assignment is the owner's — obtain
+        it rather than inventing a default, and never widen the out-of-scope
+        section to make this pass."
+  fi
+  if [ -n "$sl_unknown" ]; then
+    fail "these supervision-ladder rows name keys wss/workflow/WSS.MANIFEST.md
+        does not document:${sl_unknown}
+        A row for an unknown key stopped meaning anything — usually a key was
+        renamed and the table was not. Fix the table against the manifest
+        vocabulary; do not add vocabulary to make a row true."
+  fi
+  if [ -z "$sl_missing" ] && [ -z "$sl_unknown" ]; then
+    pass "every declared record key has a supervision row ($(printf '%s\n' "$sl_declared" | grep -c .) keys checked
+        against $(printf '%s\n' "$sl_rows" | grep -c .) table tokens), and every row key is manifest vocabulary"
   fi
 fi
 
@@ -2713,13 +3086,13 @@ else
   # vocabulary: the record-write-modes block below checks them against what
   # WSS.record actually declares, which is stricter than a name list.
   KNOWN_KEYS='WSS.manifest WSS.branch WSS.record WSS.recordMode WSS.commands WSS.gate WSS.agents WSS.lanes WSS.audit
-WSS.onSchemaChange WSS.hazards WSS.commitTrailer WSS.sweeps WSS.localCI
+WSS.onSchemaChange WSS.hazards WSS.commitTrailer WSS.sweeps WSS.localCI WSS.prChecks
 WSS.suite WSS.suite.version WSS.suite.commit
 WSS.docs WSS.docs.root WSS.docs.languages WSS.docs.devCommand
-WSS.branch.integration WSS.branch.publish WSS.branch.mergeMethod
+WSS.branch.integration WSS.branch.publish WSS.branch.mergeMethod WSS.branch.release
 WSS.record.todo WSS.record.roadmap WSS.record.releases WSS.record.changelog WSS.record.handoff WSS.record.decisions
 WSS.record.decisionsIndex WSS.record.openDecisions WSS.record.behaviour WSS.record.reference WSS.record.backlog
-WSS.record.stocktake WSS.record.audits WSS.record.toolbelt WSS.record.tooling
+WSS.record.stocktake WSS.record.audits WSS.record.toolbelt WSS.record.tooling WSS.record.setup
 WSS.record.tooling.catalog WSS.record.tooling.inventory WSS.record.tooling.sources
 WSS.commands.typecheck WSS.commands.test WSS.commands.indexRegen WSS.commands.indexCheck
 WSS.commands.testConsentEnv WSS.commands.ci
@@ -2754,6 +3127,60 @@ WSS.gate.coverage'
         JSON and declares a version. Nothing was checked against WSS.MANIFEST.md."
   elif [ $unknown -eq 0 ]; then
     pass "every key is one WSS.MANIFEST.md documents ($keys_seen checked)"
+  fi
+
+  # The QA/staging tier has ONE source and it is not this file: the
+  # `staging-branch` toggle in WSS.record.setup. A staging key here would be a
+  # second source for one fact, which is the duplication the toggle was chosen
+  # over — so this FAILS rather than warning, unlike an ordinary unknown key.
+  # It reads the manifest and nothing else, deliberately: no toggle state can
+  # make it fire, so "toggle on, no manifest key" — the correct configuration —
+  # cannot produce a drift warning from here. Ruling: the decision log's
+  # 2026-08-19 (thirty-seventh) and (thirty-ninth) entries.
+  stg=$(jq -r '
+      (.WSS // empty | keys[]? | "WSS.\(.)"),
+      (["branch","record","commands","agents","lanes","audit","suite","docs"][] as $k
+         | (.WSS[$k] // empty | keys[]? | "WSS.\($k).\(.)"))
+    ' "$manifest" 2>/dev/null | grep -i 'staging' | tr '\n' ' ')
+  if [ -n "$stg" ]; then
+    fail "the manifest declares a staging key: $stg
+        The QA tier's single source is the \`staging-branch\` toggle in the setup
+        record. A manifest key for it is a second source for one fact, and the
+        two drift the first time only one is changed. Remove the key; set the
+        toggle."
+  else
+    pass "no staging key in the manifest — the QA tier stays the setup toggle's"
+  fi
+
+  # WSS.prChecks maps a PR checkbox to the command that ticks it, and the value
+  # is a manifest KEY rather than a command string precisely so there is one
+  # copy of each command. That only holds if the key still resolves: rename or
+  # remove a WSS.commands.* entry and the mapping points at nothing, which would
+  # tick a box from a command that no longer exists. The proposal named this as
+  # the mapping's residual maintenance; this is the half that is detectable.
+  if jq -e '.WSS.prChecks != null' "$manifest" >/dev/null 2>&1; then
+    pc_bad=$(jq -r '
+        (.WSS.prChecks // {}) | to_entries[]
+        | select((.value | type) != "string" or (.value | startswith("WSS.commands.")) == false
+                 or ((.value | split(".")) as $p | $p | length != 3))
+        | "\(.key)=\(.value)"' "$manifest" 2>/dev/null | tr '\n' ' ')
+    pc_dead=$(jq -r '
+        . as $m | ($m.WSS.prChecks // {}) | to_entries[]
+        | select((.value | type) == "string" and (.value | startswith("WSS.commands.")))
+        | . as $e | ($e.value | split(".")[2]) as $k
+        | select(($m.WSS.commands // {}) | has($k) | not)
+        | "\($e.key)→\($e.value)"' "$manifest" 2>/dev/null | tr '\n' ' ')
+    if [ -n "$pc_bad" ]; then
+      fail "WSS.prChecks value that is not a WSS.commands.<name> key: $pc_bad
+        The value names the command key, never the command itself — a command
+        string here is a second copy of one the manifest already declares."
+    elif [ -n "$pc_dead" ]; then
+      fail "WSS.prChecks points at a command this manifest does not declare: $pc_dead
+        --wss-pr would tick that box from a command that does not exist, or skip
+        it silently. Declare the command or drop the mapping."
+    else
+      pass "every WSS.prChecks mapping resolves to a declared command ($(jq -r '.WSS.prChecks | length' "$manifest") checked)"
+    fi
   fi
 
   # The migration stamp. Detection overrides a wrong stamp, so a malformed one
@@ -2914,7 +3341,31 @@ WSS.gate.coverage'
       while IFS= read -r rk; do
         [ -n "$rk" ] || continue
         rec_seen=$((rec_seen + 1))
-        rmode=$(jq -r --arg k "$rk" '.WSS.recordMode[$k] // empty' "$manifest" 2>/dev/null)
+        # Two legal value shapes, per wss/workflow/WSS.MANIFEST.md: the bare
+        # string, and an object carrying `mode` plus a log record's declared
+        # shape (`grows`, `entry`). Read the mode out of either — reading the
+        # object as a string reports the whole JSON blob as an unknown mode.
+        rmode=$(jq -r --arg k "$rk" '.WSS.recordMode[$k]
+                | if type == "object" then (.mode // empty) else (. // empty) end' "$manifest" 2>/dev/null)
+        rgrows=$(jq -r --arg k "$rk" '.WSS.recordMode[$k] | if type == "object" then (.grows // empty) else empty end' "$manifest" 2>/dev/null)
+        rentry=$(jq -r --arg k "$rk" '.WSS.recordMode[$k] | if type == "object" then (.entry // empty) else empty end' "$manifest" 2>/dev/null)
+        case "$rgrows" in ''|tail|head) ;; *)
+          fail "WSS.recordMode.$rk declares grows '$rgrows'. It names the end new
+        entries arrive at and is tail or head — see wss/workflow/WSS.MANIFEST.md."
+          mode_bad=1 ;;
+        esac
+        case "$rentry" in ''|heading|table-row) ;; *)
+          fail "WSS.recordMode.$rk declares entry '$rentry'. It names what an entry
+        is made of and is heading or table-row — see wss/workflow/WSS.MANIFEST.md."
+          mode_bad=1 ;;
+        esac
+        rmut=$(jq -r --arg k "$rk" '.WSS.recordMode[$k] | if type == "object" then (.mutable // empty) else empty end' "$manifest" 2>/dev/null)
+        case "$rmut" in ''|outcome|none) ;; *)
+          fail "WSS.recordMode.$rk declares mutable '$rmut'. It names the one status
+        field the record may have rewritten in place and is outcome or none —
+        see wss/workflow/WSS.RECORD-CONTRACT.md's status-field table."
+          mode_bad=1 ;;
+        esac
         case $rmode in
           log | register | generated) ;;
           '')
@@ -2987,10 +3438,32 @@ WSS.gate.coverage'
   case $ao_git in '' | /*) ;; *) ao_git="$PWD/$ao_git" ;; esac
   if [ -n "$ao_git" ] && [ -f "$CLAUDE_DIR/wss/scripts/wss-append-only.sh" ] &&
      [ -z "${CI:-}${GITHUB_ACTIONS:-}" ] &&
-     jq -e 'any((.WSS.recordMode // {}) | .[]; . == "log")' "$manifest" >/dev/null 2>&1
+     jq -e 'any((.WSS.recordMode // {}) | .[];
+                . == "log" or ((type == "object") and .mode == "log"))' "$manifest" >/dev/null 2>&1
   then
     if grep -qF 'wss-append-only-hook' "$ao_git/hooks/pre-commit" 2>/dev/null; then
-      pass "the append-only pre-commit hook is installed in this clone"
+      # The marker proves a hook was installed once. It does not prove the path
+      # that hook execs still exists: the hook names an ABSOLUTE path on this
+      # machine by design, so a moved, renamed or partially-deleted checkout
+      # leaves the marker intact and the exec dead. That state passed this check
+      # and guarded nothing, which is the whole reason to resolve the target.
+      ao_target=$(sed -n 's/^[[:space:]]*exec[[:space:]]*"\([^"]*\)".*/\1/p' \
+                  "$ao_git/hooks/pre-commit" 2>/dev/null | head -1)
+      if [ -z "$ao_target" ]; then
+        fail "the pre-commit hook carries the append-only marker but execs nothing
+        this check can resolve: $ao_git/hooks/pre-commit
+        Re-install it, which rewrites the file for this checkout:
+          bash $CLAUDE_DIR/wss/scripts/wss-append-only.sh --install-hook"
+      elif [ ! -x "$ao_target" ]; then
+        fail "the pre-commit hook execs a path that is not executable: $ao_target
+        The marker matches, so the hook reads as installed while every commit it
+        should guard runs unguarded — a deletion from a log record reaches CI
+        instead of being refused here.
+        Re-install it, which rewrites the path for this checkout:
+          bash $CLAUDE_DIR/wss/scripts/wss-append-only.sh --install-hook"
+      else
+        pass "the append-only pre-commit hook is installed and its target resolves"
+      fi
     else
       warn "no append-only pre-commit hook in this clone, so a commit that deletes
         a line from a log record is caught by CI afterwards rather than before it
@@ -2998,6 +3471,40 @@ WSS.gate.coverage'
         names an absolute path on this machine, so nothing is missing from the
         repository and every clone installs its own:
           $CLAUDE_DIR/wss/scripts/wss-append-only.sh --install-hook"
+    fi
+  fi
+
+  # wss-append-only.sh hardcodes a log set for a tree whose manifest declares no
+  # WSS.recordMode, and its comment calls that "the contract's log set". Nothing
+  # compared the two. The contract could gain or lose a log record and the
+  # fallback would go on guarding yesterday's set — so a record the contract
+  # calls append-only would be silently unguarded in every tree relying on it.
+  rc_file="$CLAUDE_DIR/wss/workflow/WSS.RECORD-CONTRACT.md"
+  ao_script="$CLAUDE_DIR/wss/scripts/wss-append-only.sh"
+  if [ -f "$rc_file" ] && [ -f "$ao_script" ]; then
+    rc_set=$(sed -n 's/^|[[:space:]]*\*\*Log\*\*[^|]*|\([^|]*\)|.*/\1/p' "$rc_file" |
+             grep -o '`[a-zA-Z]*`' | tr -d '`' | sort -u | tr '\n' ' ')
+    ao_set=$(awk '/^  printf .%s\\n. [a-z]+ .*> "\$keys"$/{
+                    sub(/^  printf .%s\\n. /, ""); sub(/ > "\$keys"$/, ""); print }' \
+             "$ao_script" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+    if [ -z "$rc_set" ]; then
+      fail "could not read the Log row of WSS.RECORD-CONTRACT.md's record-mode
+        table, so the append-only fallback is compared against nothing. A parser
+        that matches no rows must not report the two sides as agreeing."
+    elif [ -z "$ao_set" ]; then
+      fail "could not read wss-append-only.sh's hardcoded log-set fallback, so
+        the contract is compared against nothing. If the fallback was renamed or
+        removed, update this check with it."
+    elif [ "$rc_set" != "$ao_set" ]; then
+      fail "wss-append-only.sh's fallback log set and WSS.RECORD-CONTRACT.md's
+        Log row disagree:
+          contract: $rc_set
+          fallback: $ao_set
+        A tree whose manifest declares no WSS.recordMode falls back to the
+        script's list, so whichever record is missing from it is append-only by
+        contract and unguarded in fact."
+    else
+      pass "the append-only fallback matches the contract's log set ($rc_set)"
     fi
   fi
 
@@ -3257,7 +3764,12 @@ head_ "Handoff budget"
 #
 # Warnings, not failures, on the description-budget reasoning: a file 200 B over
 # is not a defect, and a check that fails a run for it stops being read.
-CARD_CAP=4096
+#
+# CARD_CAP was 4096 until 2026-08-18, when the card was trimmed to ~1.3 KB —
+# values to the setup record, hazard mechanisms to the overflow document —
+# and the cap lowered to hold the trim: without that, the freed space
+# silently refills, which is what the measured growth above shows it does.
+CARD_CAP=1536
 FILE_CAP=24576
 STATE_ENTRY_CAP=1
 
@@ -3349,6 +3861,39 @@ EOF
   fi
 fi
 
+
+# The setup record is injected whole by wss-session-check.sh — the same
+# per-session cost as the handoff card, so the same kind of cap. 2048 B is the
+# record's launch size plus margin, because the refill pattern the card showed
+# (additions 28-62 per commit against deletions of 0-2) applies to any injected
+# surface. Warn rather than fail, for the reasons CARD_CAP warns. No fallback
+# path: an undeclared WSS.record.setup means nothing is injected and nothing
+# is measured.
+SETUP_CAP=2048
+setup_paths=""
+if [ -f "$PWD/.claude/WSS.WORKFLOW.json" ]; then
+  setup_paths=$(jq -r '[.WSS.record.setup // empty]
+                        + [(.WSS.lanes.named // {})[] | .records.setup // empty]
+                        | .[]' "$PWD/.claude/WSS.WORKFLOW.json" 2>/dev/null || true)
+fi
+if [ -n "$setup_paths" ]; then
+  while IFS= read -r spf; do
+    [ -n "$spf" ] || continue
+    [ -f "$PWD/$spf" ] || continue
+    sbytes=$(wc -c <"$PWD/$spf" | tr -d ' ')
+    if [ "$sbytes" -gt "$SETUP_CAP" ]; then
+      warn "$spf is ${sbytes}B, over the ${SETUP_CAP}B setup budget — it is injected
+        whole into every session. The first cut is any row failing the
+        admission test in the record's own header: BOTH multi-consumer AND
+        wrong-or-expensive to derive."
+    else
+      pass "$spf is ${sbytes}B, within the ${SETUP_CAP}B setup budget"
+    fi
+  done <<SETUP_EOF
+$setup_paths
+SETUP_EOF
+fi
+
 # ------------------------------------------------------------ roadmap purity
 
 head_ "Roadmap purity"
@@ -3402,6 +3947,247 @@ EOF
   fi
 fi
 
+# ------------------------------------------- rulebook consumer reachability
+
+# A RULE NOBODY CAN REACH IS NOT ENFORCED, AND NOTHING SAID SO.
+# `wss-rules-checkup.sh` resolves a CONSUMER to its file set and checks those
+# files exist. It never asks the question in the other direction — whether a
+# file carrying rules is named by any consumer at all — so a judge file can hold
+# rows that no consumer will ever read, and every check in the tree stays green.
+#
+# THE GAP IS REAL BUT NOT LIVE TODAY: the consumer table names five consumers
+# resolving to eight of the fourteen files. `WSS.RULES-HOOK.md` and five of the
+# six `prospective/` files are named by none — harmless while they carry no
+# rows, which is exactly why this check counts ROWS rather than files. It fires
+# the moment the fill writes a row into an unreachable file, which is the moment
+# it matters and not before.
+#
+# WARN-GRADE, and the condition it promotes to fail under: once the fill is
+# complete and every judge has a consumer, so an unreachable file is a mistake
+# rather than a stage of the build.
+#
+# THE OTHER FIX WAS REJECTED. Adding a consumer row for the HOOK judge closes
+# today's instance and nothing else; this closes the class as the fill adds
+# files. Do not do both — a row added to satisfy a check, rather than because a
+# consumer needs the file, is the check writing the record it audits.
+CR_PY='
+import os, re, sys
+d = sys.argv[1]
+idx = os.path.join(d, "WSS.RULES-INDEX.md")
+named, intable = set(), False
+try:
+    lines = open(idx, encoding="utf-8", errors="replace").read().splitlines()
+except OSError:
+    sys.exit(0)
+for line in lines:
+    if line.startswith("## Consumer resolution table"):
+        intable = True; continue
+    if intable and line.startswith("## "):
+        break
+    if intable and line.startswith("|"):
+        cells = line.split("|")
+        if len(cells) > 2:
+            for m in re.findall(r"`([^`]+)`", cells[2]):
+                if m.endswith(".md"):
+                    named.add(m)
+ROW = re.compile(r"^### [A-Z]+-[A-Z]+-[0-9]{3}$")
+for sub in ("", "prospective"):
+    base = os.path.join(d, sub) if sub else d
+    if not os.path.isdir(base):
+        continue
+    for fn in sorted(os.listdir(base)):
+        if not fn.endswith(".md"):
+            continue
+        rel = os.path.join(sub, fn) if sub else fn
+        if rel == "WSS.RULES-INDEX.md":
+            continue
+        fence, rows = False, 0
+        for line in open(os.path.join(base, fn), encoding="utf-8", errors="replace").read().splitlines():
+            st = line.lstrip()
+            if st.startswith("```") or st.startswith("~~~"):
+                fence = not fence; continue
+            if not fence and ROW.match(line):
+                rows += 1
+        if rows and rel not in named:
+            print("%s\t%d" % (rel, rows))
+'
+
+head_ "Rulebook consumer reachability"
+
+CR_DIR="$CLAUDE_DIR/wss/rules"
+if [ ! -d "$CR_DIR" ]; then
+  notice "no wss/rules/ — this tree carries no rulebook"
+elif ! command -v python3 >/dev/null 2>&1; then
+  warn "rulebook reachability unverified (needs python3) — a judge file holding
+        rules no consumer names passes silently here"
+else
+  cr_bad=0 cr_files=0
+  while IFS=$'\t' read -r cr_f cr_n; do
+    [ -n "$cr_f" ] || continue
+    cr_bad=$((cr_bad + 1))
+    warn "wss/rules/$cr_f holds $cr_n rule(s) and no consumer names it.
+        wss-rules-checkup.sh resolves consumers to files and never the reverse,
+        so nothing else can see this. Add the file to a consumer's row in
+        WSS.RULES-INDEX.md's table, or move the rules to a file a consumer reads."
+  done < <(python3 -c "$CR_PY" "$CR_DIR" 2>/dev/null)
+  cr_files=$(find "$CR_DIR" -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$cr_bad" -eq 0 ]; then
+    pass "every judge file carrying rules is named by a consumer ($cr_files file(s) walked)"
+  fi
+fi
+
+# ------------------------------------------- structured regions in registers
+
+# THE REGISTER HALF OF "DECLARE, DON'T INFER". A register is prose over a
+# structured body, so structure is REGIONAL rather than whole-file — which is
+# why this is a marker in the file and not another `recordMode` key. Freeform is
+# the safe default: an unmarked record asserts nothing and is not a finding.
+#
+# THE MARKER ONLY REQUESTS GOOD BEHAVIOUR; THIS IS WHAT DETECTS THE CORRUPTION.
+# That is the owner's own framing of why a marker alone was not the deliverable.
+#
+# `entry=table-row` IS THE MANIFEST'S EXISTING VOCABULARY, not a new one —
+# `WSS.recordMode` already admits `entry: "heading" | "table-row"` and
+# `WSS.record.audits` declares `table-row` today. A shape this enum cannot spell
+# is a ruling, not an improvisation: no value is invented here.
+#
+# THE COMMENT FORM IS THE TREE'S OWN. `<!-- handoff:card-ends -->` has been a
+# structural marker inside a record since 2026-08-01, read by five consumers.
+# This extends that convention rather than starting one.
+#
+# WARN-GRADE, and the condition it promotes to fail under: once every register
+# that has a structured region carries a marker for it, so a missing marker and
+# a conforming one stop being indistinguishable.
+SR_PY='
+import re, sys
+OPEN = re.compile(r"^<!--\s*wss:region\s+entry=([a-z-]+)\s*-->\s*$")
+CLOSE = re.compile(r"^<!--\s*wss:region-end\s*-->\s*$")
+for path in sys.argv[1:]:
+    try:
+        lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
+    except OSError:
+        continue
+    shape = None; start = 0; body = []
+    for n, line in enumerate(lines, 1):
+        m = OPEN.match(line)
+        if m:
+            if shape:
+                print("%s\t%d\tregion opened inside an open region" % (path, n))
+            shape, start, body = m.group(1), n, []
+            continue
+        if CLOSE.match(line):
+            if not shape:
+                print("%s\t%d\tregion-end with no open region" % (path, n))
+                continue
+            if shape == "table-row":
+                widths = set()
+                for bn, bl in body:
+                    if not bl.strip():
+                        continue
+                    if not bl.startswith("|"):
+                        print("%s\t%d\tprose inside a table-row region: %s"
+                              % (path, bn, bl.strip()[:48]))
+                        continue
+                    # Count UNESCAPED pipes only. A cell may carry `\|` — the
+                    # catalog does, inside code spans describing CLI alternation
+                    # — and counting those reports a table of uniform rows as
+                    # three different widths.
+                    widths.add(bl.replace("\\|", "").count("|"))
+                if len(widths) > 1:
+                    print("%s\t%d\ttable-row region has rows of %s different widths"
+                          % (path, start, len(widths)))
+            elif shape == "heading":
+                for bn, bl in body:
+                    if bl.strip() and not bl.startswith("#"):
+                        print("%s\t%d\tnon-heading line in a heading region" % (path, bn))
+                        break
+            else:
+                print("%s\t%d\tunknown entry shape %r — not in the manifest enum"
+                      % (path, start, shape))
+            shape = None; body = []
+            continue
+        if shape:
+            body.append((n, line))
+    if shape:
+        print("%s\t%d\tregion opened and never closed" % (path, start))
+'
+
+head_ "Structured regions in registers"
+
+if ! command -v python3 >/dev/null 2>&1; then
+  warn "structured regions unverified (needs python3) — a corrupted marked
+        region passes silently here"
+else
+  # Every declared record path, strings and array members alike, from the
+  # PROJECT manifest — so this check is silent outside a checkout rather than
+  # reporting another tree's state as this one's.
+  sr_marked=0 sr_bad=0; sr_files=()
+  if [ -f "$PWD/.claude/WSS.WORKFLOW.json" ]; then
+    while IFS= read -r sr_rel; do
+      [ -n "$sr_rel" ] && [ -f "$PWD/$sr_rel" ] || continue
+      grep -q '^<!-- wss:region ' "$PWD/$sr_rel" 2>/dev/null || continue
+      sr_marked=$((sr_marked + 1)); sr_files+=("$PWD/$sr_rel")
+    done < <(jq -r '[.WSS.record // {} | .. | strings] | .[]' \
+               "$PWD/.claude/WSS.WORKFLOW.json" 2>/dev/null || true)
+  fi
+  if [ "$sr_marked" -eq 0 ]; then
+    notice "no record declares a structured region — freeform is the default and
+        asserts nothing"
+  else
+    while IFS=$'\t' read -r sr_f sr_n sr_why; do
+      [ -n "$sr_why" ] || continue
+      sr_bad=$((sr_bad + 1))
+      warn "${sr_f#"$PWD"/}:$sr_n — $sr_why
+        A marked region declares how its body is built; this one no longer
+        matches. Fix the body, or move the marker off it."
+    done < <(python3 -c "$SR_PY" "${sr_files[@]}" 2>/dev/null)
+    [ "$sr_bad" -eq 0 ] && pass "every declared structured region conforms to its shape ($sr_marked record(s) marked)"
+  fi
+fi
+
+# --------------------------------------------------- duplicate log ordinals
+
+# AN ORDINAL IS POSITIONAL, SO CONCURRENT SESSIONS COMPUTE THE SAME ONE.
+# `WSS.record.decisions` entries are cited as `YYYY-MM-DD (ordinal-word)`, and
+# the ordinal is assigned by counting that date's existing entries — so two
+# sessions appending to a shared checkout both compute the same next ordinal and
+# both are right when they compute it. `wss/workflow/WSS.ADDRESSING.md` §3 holds
+# the form and the re-read rule; this is the detector that rule needs.
+#
+# NOTHING ELSE SEES IT. The index regenerates happily with two identical rows,
+# `--check` reports it current because the index does match the log, and every
+# citation to that ordinal then resolves to whichever row is found first.
+#
+# WARN-GRADE, and the condition it promotes to fail under: once a duplicate has
+# been observed and repaired at least once, so the repair path is known rather
+# than theoretical. Repairing one means editing an append-only record, which is
+# the owner's call and not a thing to discover mid-fix.
+head_ "Decision-log ordinals"
+
+dl_log=""
+if [ -f "$PWD/.claude/WSS.WORKFLOW.json" ]; then
+  dl_log=$(jq -r '.WSS.record.decisions // empty' "$PWD/.claude/WSS.WORKFLOW.json" 2>/dev/null)
+fi
+if [ -z "$dl_log" ] || [ ! -f "$PWD/$dl_log" ]; then
+  notice "no decision log resolves here — nothing to check for duplicate ordinals"
+else
+  dl_dupes=0
+  while IFS= read -r dl_line; do
+    [ -n "$dl_line" ] || continue
+    dl_dupes=$((dl_dupes + 1))
+    warn "$dl_log carries more than one entry as '$dl_line'.
+        An ordinal is positional, so two sessions appending concurrently compute
+        the same one; every citation to it now resolves to whichever row is
+        found first. Renumber the later entry — appending is the only way that
+        record changes, so the repair is the owner's."
+  done < <(grep -oE '^## [0-9]{4}-[01][0-9]-[0-3][0-9] \([a-z-]+\)' "$PWD/$dl_log" 2>/dev/null \
+             | sed 's/^## //' | sort | uniq -d)
+  if [ "$dl_dupes" -eq 0 ]; then
+    dl_n=$(grep -cE '^## [0-9]{4}-[01][0-9]-[0-3][0-9] \([a-z-]+\)' "$PWD/$dl_log" 2>/dev/null || echo 0)
+    pass "every decision-log ordinal is unique ($dl_n entry heading(s) walked)"
+  fi
+fi
+
 # ----------------------------------------------------------- deferral pointers
 
 head_ "Deferral pointers"
@@ -3451,7 +4237,9 @@ head_ "Deferral pointers"
 # that ruled it, and GENERALITY below is its mitigation.
 #
 # THE CAPTURE NOW RE-ARMS PER MARKER, WHICH IS WHAT CLOSES THE SWALLOW AT ITS
-# ROOT. Every non-backtick-quoted `Deferred (owner|session)` line — wherever
+# ROOT. Every non-backtick-quoted `Parked (owner ruled|session judgment)` line
+# — and every one in the superseded `Deferred (owner|session)` spelling, which an
+# unmigrated adopter still carries — wherever
 # it falls — closes whatever span was open and opens a new one of its own; a
 # span runs to the next such marker, the next unit boundary, or EOF. A
 # standing register can hold several markers with no blank line between them
@@ -3471,7 +4259,7 @@ head_ "Deferral pointers"
 # the residual of the multi-marker warn this replaces, narrower now because
 # re-arming closed the common case outright. It does not occur anywhere in
 # this repo's own backlog today; re-derive with
-# `grep -cE 'Deferred \((owner|session)\).*Deferred \((owner|session)\)' <record>`
+# `grep -cE 'Parked \((owner ruled|session judgment)\).*Parked \(' <record>`
 # rather than trusting that claim.
 #
 # GENERALITY: dp_todo can name any record, not only a `- [ ] ` checklist. A
@@ -3561,14 +4349,16 @@ else
         line = $0
         if (line ~ /^- \[ \] /) { flush(); capturing = 1 }
         else if (line ~ /^## /) { flush(); capturing = 0 }
-        if (line ~ /Deferred \((owner|session)\)/ && line !~ /`Deferred/) {
+        if (line ~ /(Deferred \((owner|session)\)|Parked \((owner ruled|session judgment)\))/ \
+            && line !~ /`(Deferred|Parked)/) {
           flush()
           traw = line
-          n = gsub(/Deferred \((owner|session)\)/, "&", traw)
+          n = gsub(/(Deferred \((owner|session)\)|Parked \((owner ruled|session judgment)\))/, "&", traw)
           if (n > 1) { print FNR "\tcollision\t" n; next }
           mopen = 1; mstart = FNR
           t = line
-          sub(/^.*Deferred \(/, "Deferred (", t)
+          if (t ~ /Parked \((owner ruled|session judgment)\)/) sub(/^.*Parked \(/, "Parked (", t)
+          else                                                    sub(/^.*Deferred \(/, "Deferred (", t)
           mblob = t
         } else if (mopen) {
           t = line; gsub(/^[[:space:]]+/, "", t)
@@ -3583,7 +4373,8 @@ EOF
   if [ "$dp_seen" -eq 0 ]; then
     pass "WSS.record.todo names no file that exists — nothing to check"
   elif [ "$dp_total" -eq 0 ]; then
-    notice "no 'Deferred (owner)'/'Deferred (session)' pointer found — nothing to check"
+    notice "no 'Parked (owner ruled)'/'Parked (session judgment)' pointer found,
+        and none in the superseded 'Deferred (owner|session)' spelling — nothing to check"
   elif [ "$dp_unscoped" -gt 0 ] || [ "$dp_collide" -gt 0 ]; then
     : # the warning above already said it; a pass line here would contradict it
   elif [ "$dp_scoped" -eq 0 ]; then
@@ -3664,10 +4455,10 @@ else
     fail "WSS.record.todo declares github-issues but no 'repo'. It is required —
         wss/workflow/providers/WSS.GITHUB-ISSUES.md."
   elif ! command -v gh >/dev/null 2>&1; then
-    warn "WSS.record.todo is github-issues but gh is not installed, so --wss-todo cannot
+    warn "WSS.record.todo is github-issues but gh is not installed, so \`--wss-todo\` cannot
         file anything on this machine. The manifest is fine; this box is not."
   elif ! gh auth status >/dev/null 2>&1; then
-    warn "WSS.record.todo is github-issues and gh is not authorized here, so --wss-todo
+    warn "WSS.record.todo is github-issues and gh is not authorized here, so \`--wss-todo\`
         cannot file anything. Run: gh auth login"
   elif ! gh repo view "$prov_repo" >/dev/null 2>&1; then
     fail "WSS.record.todo names repo '$prov_repo', which does not resolve. That is a
@@ -4257,10 +5048,15 @@ head_ "Dispatch table vs the ownership matrix"
 #      record that gained an owner without gaining a dispatch route, so an
 #      inspector finding drift there has nowhere to send it.
 #
-# Two keys are excluded from direction 2 by name, because --wss-check inspects
-# neither and a row for either would be dead: `WSS.record.backlog` and
+# Three keys are excluded from direction 2 by name, because --wss-check inspects
+# none of them and a row for any would be dead: `WSS.record.backlog` and
 # `WSS.record.tooling.inventory` appear nowhere in skills/check/SKILL.md.
-# A THIRD divergence is not excluded and fails, which is the whole point.
+# `WSS.record.rules` joins them 2026-08-18 — the rulebook ships no rows yet,
+# its writer (agents/wss-rules-writer.md) only applies rows already decided
+# elsewhere, and nothing today generates the staleness finding a dispatch row
+# would receive; add the row once --wss-check (or its Fourth-block successor)
+# actually inspects rule content.
+# A FOURTH divergence is not excluded and fails, which is the whole point.
 dm_chk="$CLAUDE_DIR/skills/check/SKILL.md"
 dm_own="$CLAUDE_DIR/wss/workflow/WSS.OWNERSHIP.md"
 dm_keys_() { grep -oE 'WSS\.record\.[a-zA-Z]+(\.[a-zA-Z]+)*' | sed 's/\.$//' | sort -u; }
@@ -4279,7 +5075,7 @@ else
                     f{exit}' "$dm_own" | dm_keys_)
   dm_only_chk=$(comm -23 <(printf '%s\n' "$dm_a") <(printf '%s\n' "$dm_b") | tr -d ' ')
   dm_only_own=$(comm -13 <(printf '%s\n' "$dm_a") <(printf '%s\n' "$dm_b") \
-                | grep -vxE 'WSS\.record\.(backlog|tooling\.inventory)' | tr -d ' ')
+                | grep -vxE 'WSS\.record\.(backlog|tooling\.inventory|rules)' | tr -d ' ')
   if [ -z "$dm_a" ] || [ -z "$dm_b" ]; then
     fail "the dispatch table or the ownership matrix parsed to no record keys —
         a header row was renamed and this comparison read nothing. Re-anchor
@@ -4300,7 +5096,7 @@ else
     fi
     [ -z "$dm_only_chk" ] && [ -z "$dm_only_own" ] &&
       pass "every record key in check's dispatch table has an owner in the
-        matrix, and every owned record has a dispatch row ($(printf '%s\n' "$dm_a" | grep -c . ) checked, 2 known-uninspected excluded)"
+        matrix, and every owned record has a dispatch row ($(printf '%s\n' "$dm_a" | grep -c . ) checked, 3 known-uninspected excluded)"
   fi
 fi
 
@@ -4337,6 +5133,64 @@ else
         Two published vintages under one version overwrite one plugin cache
         directory. --wss-release bumps this file beside the changelog entry,
         before the tag — do that now and the next tag ships consistent."
+  fi
+fi
+
+# ------------------------------------------------------- newest-tag route
+
+head_ "Newest-tag route"
+
+# ONE ROUTE, BECAUSE THE COMPARISON IS WHAT NOBODY BUILT. This tree has had
+# four ways to name its newest tag and nothing checked them against each other.
+# `git describe --tags --abbrev=0` walks the CURRENT BRANCH's ancestry, and
+# releases are tagged on `main` merge commits `dev` cannot reach, so on `dev` it
+# returned a tag three releases back and every range computed from it was wrong
+# by that much. `--sort=-creatordate` orders by when a tag was made rather than
+# by version, and without a `v*` filter any non-release tag wins outright.
+# The route below is the one: it sorts by version and admits only release tags.
+#
+# THE PROSE SIDE IS NOT THIS CHECK'S. A record telling a session to run
+# `git describe` is a claim, and `--wss-check` owns stale claims; this check
+# reads executables, where the route is a call rather than an instruction.
+#
+# WARN-GRADE, and the condition it promotes to fail under: once no tracked
+# script has carried a non-canonical route across two consecutive releases.
+# Until then a tree mid-migration would go red on a line nobody had reached yet,
+# which is what a warn ladder exists to avoid.
+#
+# THIS SCRIPT AND THE CONTRACT SUITE ARE EXCLUDED BY PATH, both because they
+# carry route literals as data rather than as calls — the scan would match its
+# own pattern. That exclusion is closed by the explicit self-check below, so
+# the scanner's own route is verified rather than trusted.
+tag_route_canon="--sort=-v:refname"
+if ! git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+  notice "not a git checkout — no tracked scripts to read a tag route from"
+else
+  tr_bad=0 tr_seen=0
+  while IFS=: read -r trf trl trtext; do
+    [ -n "$trf" ] || continue
+    case $trf in wss/tests/wss-doctor.sh|wss/tests/wss-hook-contract.sh) continue ;; esac
+    tr_seen=$((tr_seen + 1))
+    case $trtext in
+      *"$tag_route_canon"*) : ;;
+      *) warn "$trf:$trl names the newest tag by a route this tree does not use.
+        Sorting by anything but version, or omitting the \`v*\` filter, gives a
+        different answer from wss-doctor.sh and wss-probe.sh and nothing
+        compares them. Use \`tag -l 'v*' $tag_route_canon | head -1\`."
+         tr_bad=$((tr_bad + 1)) ;;
+    esac
+  done < <(git -C "$CLAUDE_DIR" grep -nE 'git( -C [^ ]+)? tag .*--sort=' -- '*.sh' 2>/dev/null || true)
+  # The scanner's own route, checked by name rather than by the scan that
+  # cannot see it. `newest_tag=` is assigned exactly once in this file.
+  tr_self=$(grep -c "newest_tag=.*tag -l 'v\*' $tag_route_canon" "$0" 2>/dev/null || echo 0)
+  if [ "$tr_self" -ne 1 ]; then
+    warn "wss-doctor.sh's own newest-tag assignment does not use the canonical
+        route, or was renamed away from \`newest_tag=\`. The scan above excludes
+        this file by path, so this line is the only thing verifying it."
+    tr_bad=$((tr_bad + 1))
+  fi
+  if [ "$tr_bad" -eq 0 ]; then
+    pass "every newest-tag route is \`$tag_route_canon\` ($((tr_seen + 1)) checked, including this script's own)"
   fi
 fi
 
@@ -4382,12 +5236,14 @@ head_ "Figure-source citations"
 # `file:line` citation or a runnable command (one with a space inside). A
 # number with none of those nearby is flagged.
 #
-# A WARNING, never a failure (owner's ruling, 2026-08-13): the records and
-# docs this scans are not clean yet, so a failing gate would turn CI red the
-# day this lands. --strict already turns a warning red, so this is not inert —
-# it is staged. PROMOTE TO A FAILURE once a run of this section reports zero
-# findings: at that point every existing gap has been given a source, and the
-# check is confirming a clean state rather than announcing a known one.
+# A FAILURE. Staged as a warning on the owner's ruling of 2026-08-13, because
+# the records and docs this scans were not clean then and a failing gate would
+# have turned CI red the day it landed. The promotion condition was written
+# here rather than left to judgement: "once a run of this section reports zero
+# findings". A run against eb824fb reported zero on 2026-08-17, so the
+# condition was met and this now confirms a clean state rather than announcing
+# a known one. Nothing watched for that condition arriving; a §0A triage found
+# it, which is the argument for a currency enforcer rather than a comment.
 if ! command -v jq >/dev/null 2>&1 || [ ! -f "$manifest" ]; then
   notice "no manifest to resolve which records are dated logs — the
       figure-source check needs WSS.recordMode to know what to skip, so it
@@ -4459,12 +5315,172 @@ else
     fig_extra=""
     [ "$fig_n" -gt 10 ] && fig_extra="
         ...and $((fig_n - 10)) more"
-    warn "$fig_n figure(s) in $fig_files_checked record/doc file(s) carry
+    fail "$fig_n figure(s) in $fig_files_checked record/doc file(s) carry
         neither a citation nor a recompute command nearby — see
         wss/workflow/WSS.RECORD-CONTRACT.md's \"A figure carries what recomputes
-        it\" and its exception list. Promote this check to a failure once
-        this list is empty:
+        it\" and its exception list:
 $fig_sample$fig_extra"
+  fi
+fi
+
+# ---------------------------------------------------------- citation proximity
+
+head_ "Citation proximity"
+
+# wss/workflow/WSS.RECORD-CONTRACT.md's "A concept is stated once; nothing else
+# restates it by hand": a rule already stated somewhere may be pointed at,
+# mechanically derived, or listed as an exception — never hand-copied without
+# saying where it lives. This section is the mechanical half of that for a
+# NAMED RULE specifically: a `<compound> rule` phrase (the shape this suite
+# already uses — `the mutable-claim rule`, `the read-inheritance rule`)
+# restated with no citation nearby is a hand-copy.
+#
+# RULE IDS DO NOT EXIST YET (wss/records/WSS.TODO.md, Cycle 9's "The
+# citation-proximity check"), so phase one accepts any ANCHOR-SHAPED citation
+# — a markdown link whose target carries a `#fragment` — as the stand-in for
+# the id form that lands once the index does.
+#
+# WHAT COUNTS AS "ALREADY CITABLE" IS DERIVED, NOT HAND-KEPT. A bare `-rule`
+# mention proves nothing by itself: this tree also names plenty of small local
+# conventions "the stop-and-report rule" or "the one-project rule" that were
+# never meant to point anywhere else, and a first cut flagging every such
+# mention found 26 of them with nothing wrong. So pass one walks every file
+# once for a `<word>-<word> rule` phrase sitting on the same or an adjacent
+# line (one line either side — tighter than the check below, so an unrelated
+# anchor two lines off cannot falsely certify a phrase) to an anchor-shaped
+# link, and records the phrase, lower-cased. Pass two re-walks looking for
+# occurrences of an ALREADY-ESTABLISHED phrase with no anchor within two
+# lines, the same window the figure-source check above uses. A phrase that
+# never once sits near a citation anywhere in scope never enters the set pass
+# two checks, so it is never flagged — a deliberate false-negative, the same
+# direction the row-completeness check's own six-verb list favours: a locally
+# named convention flagged for a citation nothing ever asked it to carry is
+# the expensive side to be wrong on.
+#
+# THE FILE DEFINING A RULE IS EXEMPT FROM CITING ITS OWN HEADING. A phrase
+# that is also, verbatim, a heading (`#`/`##`/`###`, `**bold**` stripped)
+# somewhere in the SAME file is that file's canon — WSS.RECORD-CONTRACT.md's
+# own "## The mutable-claim rule" heading and its earlier table-cell pointer
+# ("see the mutable-claim rule below") are what this exists for.
+#
+# TWO MORE WORDS IN THE WINDOW STAND IN FOR A CITATION, matching the
+# figure-source check's own use of bare words as evidence above: "canon"
+# (exception 2's word, same as there) and "links the" — a sentence ABOUT
+# another file's citation of a rule, offered as a worked example, is not
+# itself a restatement.
+#
+# No `\b` anywhere in the awk below, deliberately. gawk reads `\b` as a
+# literal backspace rather than a word boundary (its boundary is `\y`), which
+# is a live defect in the figure-source check's own size-unit pattern above.
+#
+# WARN, NOT FAIL, and clean from the day it lands rather than staged dirty:
+# unlike the figure-source and row-completeness checks, which shipped warning
+# against a tree that was not yet clean, this one was built FIRST specifically
+# so it would land green (wss/logs/WSS.DECISIONS.md, 2026-08-17 (eighth);
+# wss/records/WSS.ROADMAP.md — "building it last was the first draft's
+# mistake"). Promote to fail on the same condition the figure-source check
+# recorded rather than left to judgement: once a run of this section reports
+# zero findings.
+if ! git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+  notice "not a git checkout — the citation-proximity check walks
+      WSS.record.tooling.sources and has nothing to walk"
+else
+  cp_files=$(rule_files_ | tr '\0' '\n')
+  cp_n=$(printf '%s\n' "$cp_files" | grep -c . || true)
+  if [ "$cp_n" -eq 0 ]; then
+    notice "no tooling-source file resolved — nothing to check for citation
+        proximity"
+  else
+    cp_canon=""
+    while IFS= read -r cf; do
+      [ -n "$cf" ] || continue
+      [ -f "$cf" ] || continue
+      h=$(awk '
+          /^[[:space:]]*(```|~~~)/ { fence = !fence; next }
+          fence { next }
+          { lines[NR] = $0 }
+          END {
+            for (i = 1; i <= NR; i++) {
+              line = lines[i]
+              while (match(line, /[a-z][a-z-]*-[a-z]+ rule/)) {
+                phrase = tolower(substr(line, RSTART, RLENGTH))
+                line = substr(line, RSTART + RLENGTH)
+                win = ""
+                for (j = i-1; j <= i+1; j++) if (j >= 1 && j <= NR) win = win " " lines[j]
+                if (win ~ /\]\([^)]*#[A-Za-z0-9_-]+\)/) print phrase
+              }
+            }
+          }
+        ' "$cf" 2>/dev/null)
+      [ -n "$h" ] && cp_canon="$cp_canon$h
+"
+    done <<< "$cp_files"
+    cp_canon=$(printf '%s\n' "$cp_canon" | sed '/^$/d' | sort -u)
+
+    cp_hits=""
+    if [ -n "$cp_canon" ]; then
+      while IFS= read -r cf; do
+        [ -n "$cf" ] || continue
+        [ -f "$cf" ] || continue
+        h=$(awk -v FN="${cf#"$CLAUDE_DIR"/}" -v canon="$cp_canon" '
+            BEGIN {
+              n = split(canon, carr, "\n")
+              for (k = 1; k <= n; k++) if (carr[k] != "") known[carr[k]] = 1
+            }
+            /^[[:space:]]*(```|~~~)/ { fence = !fence; next }
+            fence { next }
+            { lines[NR] = $0 }
+            END {
+              for (i = 1; i <= NR; i++) {
+                if (lines[i] ~ /^#+[[:space:]]/) {
+                  hd = tolower(lines[i]); gsub(/^#+[[:space:]]*/, "", hd); gsub(/\*\*/, "", hd)
+                  heads[hd] = 1
+                }
+              }
+              for (i = 1; i <= NR; i++) {
+                line = lines[i]; tmp = line
+                while (match(tmp, /[a-z][a-z-]*-[a-z]+ rule/)) {
+                  phrase = tolower(substr(tmp, RSTART, RLENGTH))
+                  tmp = substr(tmp, RSTART + RLENGTH)
+                  if (!(phrase in known)) continue
+                  selfcanon = 0
+                  for (hh in heads) if (index(hh, phrase) > 0) selfcanon = 1
+                  if (selfcanon) continue
+                  win = ""
+                  for (j = i-2; j <= i+2; j++) if (j >= 1 && j <= NR) win = win " " lines[j]
+                  if (win ~ /\]\([^)]*#[A-Za-z0-9_-]+\)/) continue
+                  if (win ~ /canon/) continue
+                  if (win ~ /[Ll]inks the/) continue
+                  out = line; gsub(/^[ \t]+/, "", out)
+                  print FN ":" i ": " out
+                }
+              }
+            }
+          ' "$cf" 2>/dev/null)
+        [ -n "$h" ] && cp_hits="$cp_hits$h
+"
+      done <<< "$cp_files"
+    fi
+
+    cp_n_hits=$(printf '%s\n' "$cp_hits" | grep -c . || true)
+    if [ -z "$cp_canon" ]; then
+      notice "no rule name is yet established with a nearby anchor-shaped
+          citation anywhere in $cp_n tooling-source file(s) — nothing for this
+          check to compare a restatement against"
+    elif [ "$cp_n_hits" -eq 0 ]; then
+      pass "no restated rule name in $cp_n tooling-source file(s) sits more
+        than two lines from an anchor-shaped citation"
+    else
+      cp_sample=$(printf '%s\n' "$cp_hits" | sed '/^$/d' | head -10 | sed 's/^/        /')
+      cp_extra=""
+      [ "$cp_n_hits" -gt 10 ] && cp_extra="
+        ...and $((cp_n_hits - 10)) more"
+      warn "$cp_n_hits restatement(s) of an already-cited rule name carry no
+        anchor-shaped citation within two lines — see
+        wss/workflow/WSS.RECORD-CONTRACT.md's \"A concept is stated once;
+        nothing else restates it by hand\":
+$cp_sample$cp_extra"
+    fi
   fi
 fi
 

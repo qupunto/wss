@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# wss-skill-levels.sh — toggle step 1's whole level table, in one
+# wss-skill-levels.sh — skill-toggle step 1's whole level table, in one
 # read-only call: every skill directory under both `skills/` trees, its
 # effective `skillOverrides` level, which settings file set it, which tree
 # it came from, and whether its own frontmatter hides it.
@@ -141,7 +141,7 @@ frontmatter_for() {
   fi
 }
 
-echo "== toggle: effective skill levels =="
+echo "== skill-toggle: effective skill levels =="
 echo "project settings: .claude/settings.json ($(present_absent "$PROJ_SETTINGS"))"
 echo "user settings: $USER_SETTINGS ($(present_absent "$USER_SETTINGS"))"
 echo "project skills: .claude/skills ($(present_absent "$PROJ_SKILLS"))"

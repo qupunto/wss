@@ -330,7 +330,7 @@ ASK
 
 sec "reminder"
 echo "  LOCAL ONLY. Do not open a GitHub issue with this and do not route it"
-echo "  through --wss-report: qupunto/wss is public, this names a private tree."
+echo "  through \`--wss-report\`: qupunto/wss is public, this names a private tree."
 
 }
 

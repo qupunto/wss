@@ -105,6 +105,16 @@ integration branch is what promotes settled ones into `WSS.record.decisions`.
 One writer per file still holds — each lane file has the same owner its unsplit
 record has, per [`WSS.OWNERSHIP.md`](WSS.OWNERSHIP.md)'s matrix.
 
+**Splittable is a subset of `register`, and the intersection with `recordMode`
+has no live case.** All four splittable records above are `register` mode, and
+every record that is not — `decisions`, `changelog`, `stocktake`, `audits` as
+`log`, and the two `generated` ones — is on the never-split list already. So no
+rule is needed for "what happens when a `log` record splits": nothing does.
+Re-derive rather than trusting this — read `WSS.recordMode` in
+`.claude/WSS.WORKFLOW.json` against the two lists above; it is one glance, and
+the invariant is a measurement rather than a design constraint, so a future
+record could break it without anything objecting.
+
 `wss-doctor.sh` fails on any other key under a lane's `records`, and on a
 **half-split**: a splittable record is split for **all** named lanes or none,
 because the lanes left out share the unsplit file — two writers on one path,

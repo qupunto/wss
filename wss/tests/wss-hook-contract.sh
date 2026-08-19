@@ -68,6 +68,28 @@ silent() { # prompt, why
   fi
 }
 
+# A PATH replicating every real executable EXCEPT the named one — proves a
+# "tool not installed" branch for real rather than assuming it from a stub's
+# exit code. The symlink farm is built once and each exclusion derived from it
+# by bulk copy: the previous shape rebuilt it per test with a basename+ln fork
+# per executable, and on WSL — where PATH carries the Windows mounts, so every
+# stat crosses the 9p filesystem — each rebuild cost ~25s. /mnt/* dirs are
+# skipped outright for the same reason: the scripts under test call POSIX
+# tools, and a Windows .exe can never satisfy a `command -v` probe.
+path_without() { # excluded-binary, stub-dir
+  local base="$TMP/path-stubs-all"
+  if [ ! -d "$base" ]; then
+    mkdir -p "$base"
+    ( IFS=':'; for d in $PATH; do
+        case $d in /mnt/*) continue ;; esac
+        [ -d "$d" ] || continue
+        cp -sn "$d"/* "$base"/ 2>/dev/null
+      done )
+  fi
+  rm -rf "$2"; mkdir -p "$2"
+  cp -a "$base"/. "$2"/ && rm -f "$2/$1"
+}
+
 # ---------------------------------------------------------------- structure
 
 head_ "Structure"
@@ -1442,7 +1464,7 @@ OWNFIX
   # whose awk has gone blind passes this whole section: it says nothing about
   # every planted fault below, and saying nothing is what those tests read as
   # the fault being absent.
-  printf '%s' "$out" | grep -q -- '--alpha -> alpha-skill' \
+  printf '%s' "$out" | grep -q -- '`--alpha` -> alpha-skill' \
     && ok "the flag->skill parser resolved a mapping" \
     || bad "flag->skill parser matched nothing on a hook shaped like the real one"
   printf '%s' "$out" | grep -q "no flag is a prefix of another" \
@@ -1584,6 +1606,35 @@ OWNFIX
   [ "$rc_write" -eq 2 ] && printf '%s' "$out_write" | grep -q "README.md is a declared record" \
     && ok "wss-gen-cadence-flags.sh --write refuses at exit 2, naming the sole writer" \
     || bad "wss-gen-cadence-flags.sh --write did not refuse as documented (rc=$rc_write): $out_write"
+
+  head_ "Citation proximity flags the bare restatement and not the cited one"
+
+  # The doctor's "Citation proximity" section derives which rule names are
+  # citable at all from the tree it is walking, rather than from a hand-kept
+  # list, so a fixture has to ESTABLISH a name before it can test a
+  # restatement of it. Line 3 states `sole-writer rule` with an anchor-shaped
+  # link on the next line, which is what pass one records; line 10 repeats it
+  # with nothing near it, far enough down to fall outside the two-line window
+  # pass two allows. Both halves are asserted: a check that flagged
+  # everything would satisfy the first assertion on its own.
+  cprox="$TMP/doc-cprox"
+  docfix "$cprox"
+  printf '%s\n' \
+    '# alpha-skill' '' \
+    'Does the alpha thing. Mind the sole-writer rule' \
+    '([the matrix](../../wss/workflow/WSS.OWNERSHIP.md#the-matrix)).' '' \
+    'Filler one.' 'Filler two.' 'Filler three.' '' \
+    'Elsewhere, the sole-writer rule applies again with nothing pointing at it.' \
+    > "$cprox/skills/alpha-skill/SKILL.md"
+  docommit "$cprox"
+  says "$cprox" "restatement(s) of an already-cited rule name" \
+    "a rule name established beside a citation and then repeated bare is flagged"
+  printf '%s' "$(doc "$cprox" --notes)" | grep -q 'alpha-skill/SKILL.md:10' \
+    && ok "the bare restatement is named at its own line" \
+    || bad "the bare restatement was not named at line 10 — the window or the phrase scan is wrong"
+  printf '%s' "$(doc "$cprox" --notes)" | grep -q 'alpha-skill/SKILL.md:3:' \
+    && bad "the instance sitting beside its own citation was flagged too — the check is not reading the anchor" \
+    || ok "the instance beside its citation stays clean"
 
   # The catalog's method table and wss/tests/WSS.CHECKS.md's are the same rows
   # written twice. Unlike the cadence pair EVERY column must agree — those two
@@ -3611,6 +3662,54 @@ printf '%s' "$out" | grep -q 'installed TWICE' \
   && bad "residue alone was reported as coexistence" \
   || ok "residue alone is not coexistence"
 
+# The remnant `claude plugin marketplace remove` is for — a registration and its
+# clone, neither under plugins/cache/, so the cache-keyed evidence above cannot
+# see either. Warn-grade and silent while an install exists; the four cases are
+# fire, key-on-the-source-repo, unrelated-marketplace, and install-present.
+mkdir -p "$co/plugins"
+printf '{"wss":{"source":{"source":"github","repo":"qupunto/wss"}}}\n' \
+  > "$co/plugins/known_marketplaces.json"
+out=$(doc "$co")
+printf '%s' "$out" | grep -q 'marketplace remnant: wss' \
+  && ok "a wss marketplace registration with no install warns as a remnant" \
+  || bad "a leftover wss marketplace registration passed the doctor clean"
+printf '%s' "$out" | grep -q 'installed TWICE' \
+  && bad "a marketplace registration alone was reported as coexistence" \
+  || ok "a marketplace registration alone is not coexistence"
+
+# Named anything, sourced from the suite: the pre-rename population is the one
+# most likely to be carrying residue, and it registered under the old name.
+printf '{"anything":{"source":{"source":"github","repo":"qupunto/workflow-secretary-suite"}}}\n' \
+  > "$co/plugins/known_marketplaces.json"
+printf '%s' "$(doc "$co")" | grep -q 'marketplace remnant: anything' \
+  && ok "the remnant check keys on the source repo, not on the marketplace name" \
+  || bad "a suite marketplace registered under another name went unflagged"
+
+printf '{"claude-plugins-official":{"source":{"source":"github","repo":"anthropics/claude-plugins-official"}}}\n' \
+  > "$co/plugins/known_marketplaces.json"
+printf '%s' "$(doc "$co")" | grep -q 'marketplace remnant' \
+  && bad "an unrelated marketplace was reported as a wss remnant" \
+  || ok "an unrelated marketplace is not a remnant"
+
+# A clone directory with no registration at all — the other half of the pair.
+mkdir -p "$co/plugins/marketplaces/wss"
+printf '%s' "$(doc "$co")" | grep -q 'marketplace remnant: wss' \
+  && ok "a marketplace clone directory alone warns as a remnant" \
+  || bad "a leftover plugins/marketplaces/wss clone passed the doctor clean"
+
+# With an install present the registration is that install's own, and the
+# coexistence FAIL already describes the machine — two remedies for one state is
+# the noise this silence prevents.
+mkdir -p "$co/plugins/cache/mk/wss/0.0.1"
+out=$(doc "$co")
+printf '%s' "$out" | grep -q 'marketplace remnant' \
+  && bad "the remnant warned while an install was present" \
+  || ok "the remnant stays silent while a wss install is present"
+printf '%s' "$out" | grep -q 'installed TWICE' \
+  && ok "an install beside the checkout still FAILs with a remnant present" \
+  || bad "a remnant plus an install stopped reporting coexistence"
+rm -rf "$co/plugins"
+
 # An adopter's machine: a cached install present, config dir NOT the suite's
 # checkout. The normal plugin case must not be reported as coexistence.
 ad=$(mktemp -d)
@@ -5074,15 +5173,22 @@ else
   # least one machine this runs on — silently ignores --exclude-dir instead of
   # erroring on it (a filter that quietly stops filtering is the failure this
   # scoping exists to avoid). The bare, no-right-answer shape above (pgb) is
-  # proven to fire outside tests/; here it is planted inside tests/ instead,
-  # where the same fixture-carrying convention this suite itself relies on
-  # (pubfix ships tests/wss-hook-contract.sh) means it must never trip.
+  # proven to fire outside wss/tests/; here it is planted inside wss/tests/
+  # instead, where the same fixture-carrying convention this suite itself relies
+  # on (pubfix ships wss/tests/wss-hook-contract.sh) means it must never trip.
+  #
+  # THE PATH IS wss/tests/ AND NOT tests/. It was `tests/` until 2026-08-19,
+  # which pubfix has not created since the reorg, so the redirect below failed,
+  # nothing was planted, and the assertion passed against a fixture with no glob
+  # in it at all — green for the absence of the thing under test. Keep this path
+  # equal to pubfix's own `mkdir -p` list; a redirect into a directory that does
+  # not exist is silent here because only its stderr says so.
   p8="$TMP/pub-strip-bare-intests"; pubfix "$p8"
   { printf '#!/usr/bin/env bash\n'
     printf 'case $1 in */wss:record) echo "the record dir" ;; esac\n'
-  } > "$p8/tests/glob-fixture.sh"
-  chmod +x "$p8/tests/glob-fixture.sh"
-  git -C "$p8" add tests/glob-fixture.sh >/dev/null 2>&1
+  } > "$p8/wss/tests/glob-fixture.sh"
+  chmod +x "$p8/wss/tests/glob-fixture.sh"
+  git -C "$p8" add wss/tests/glob-fixture.sh >/dev/null 2>&1
   git -C "$p8" commit -q -m glob-in-tests >/dev/null 2>&1
   out=$(pubrun "$p8" "$TMP/out-pub-strip-bare-intests"); rc=$?
   [ "$rc" -eq 0 ] && ok "the same bare, no-trailing-segment glob inside tests/ does not trip the pre-strip assertion" \
@@ -5975,11 +6081,25 @@ EOD
   aorun && ok "a deletion above the first entry passes — the header is a register" \
         || bad "the header carve-out is missing; every header fix would be refused"
 
-  # The one mutable field the contract's status table names.
+  # The one mutable field the contract's status table names — and it names it
+  # PER RECORD, so a record that declares none does not get the exemption.
   mkao
   sed -i 's/^\*\*Outcome:\*\* logged$/**Outcome:** fixed this session/' "$P/docs/D.md"
-  aorun && ok "an Outcome block may be updated in any entry" \
-        || bad "an Outcome update was refused, so remediation cannot be recorded"
+  aorun && bad "an Outcome update passed in a record declaring no mutable field" \
+        || ok "a record declaring no mutable field gets no Outcome exemption"
+
+  # ...and the record that DOES declare one keeps it, so remediation stays
+  # recordable. This pair asserted "in any entry" of any log until the guard was
+  # scoped: it built the exemption without reference to which record it was
+  # reading, while the contract's status-field table gives WSS.record.decisions
+  # no mutable field at all. Absent declaration now means none.
+  mkao
+  sed -i 's/"decisions":"log"/"decisions":{"mode":"log","mutable":"outcome"}/' "$P/.claude/WSS.WORKFLOW.json"
+  git -C "$P" add -A >/dev/null 2>&1
+  git -C "$P" commit -qm mutable >/dev/null 2>&1
+  sed -i 's/^\*\*Outcome:\*\* logged$/**Outcome:** fixed this session/' "$P/docs/D.md"
+  aorun && ok "a record declaring mutable:outcome may update an Outcome block" \
+        || bad "mutable:outcome was declared and the update was still refused"
 
   # The draft at either end, rewritten. The changelog's unreleased entry becoming
   # a released one is this case, and it recurs at every release.
@@ -5988,10 +6108,30 @@ EOD
   aorun && ok "the last entry may be rewritten where the same hunk adds lines" \
         || bad "the draft entry allowance is missing; every release cut would be refused"
 
+  # The draft is the entry at the record's DECLARED growing end, and only that
+  # one. This pair read the other way until 2026-08-18 — it asserted that BOTH
+  # ends were drafts, which was true when written, because nothing told the
+  # guard which end grew and it had to allow either. The owner then ruled
+  # direction a property of the record rather than an exemption in the guard:
+  # add without modifying what is there, always at the same end, and prepend and
+  # append become one rule. See the decision log's 2026-08-18 (twenty-fourth).
+  #
+  # With no declaration a record grows at the tail, so its FIRST entry is sealed.
   mkao
   sed -i '/^body a1$/s/.*/body a1, extended\nwith more/' "$P/docs/D.md"
-  aorun && ok "the first entry gets the same allowance — the newest end is not assumed" \
-        || bad "only one end of the file was treated as the draft"
+  aorun && bad "the head entry was a draft under a tail-growing record — the sealed end is not sealed" \
+        || ok "the sealed end refuses a rewrite; only the growing end is the draft"
+
+  # ...and the very same mutation passes once the record declares it grows there.
+  # This is the changelog's case: newest first, by the convention its readers
+  # expect, declared rather than carved out.
+  mkao
+  sed -i 's/"decisions":"log"/"decisions":{"mode":"log","grows":"head"}/' "$P/.claude/WSS.WORKFLOW.json"
+  git -C "$P" add -A >/dev/null 2>&1
+  git -C "$P" commit -qm decl >/dev/null 2>&1
+  sed -i '/^body a1$/s/.*/body a1, extended\nwith more/' "$P/docs/D.md"
+  aorun && ok "a head-growing record makes its FIRST entry the draft" \
+        || bad "grows:head was declared and the head entry was still sealed"
 
   # ...and only where it is a rewrite. A hunk that only removes is an excision
   # wherever it lands, including in the draft.
@@ -6200,7 +6340,12 @@ EOD
   # exempt — a control against reading this as a permission to insert
   # into a settled entry.
   mkao
-  sed -i '1,/^## 2026-01-01/i\\
+  # `/re/i\`, not `1,/re/i\`. The range form inserts before EVERY line in the
+  # range and GNU sed rejects the expression outright — it did, silently, from
+  # the day this was written: the sed failed, nothing was prepended, and the
+  # guard then ran against an UNMODIFIED file and passed. A control that asserts
+  # nothing is worse than a missing one, because it reads as coverage.
+  sed -i '/^## 2026-01-01/i\
 ## 2026-01-00 — zeroth\
 \
 body z1\
@@ -7384,16 +7529,51 @@ else
                 *) bad "a passing consented test run did not report pass: $gout" ;;
   esac
 
+  # A carry-forward is licensed by the TRACKER, not by the caller saying so.
+  # This block used to assert the opposite: it passed the reason "sweep-tracker
+  # licensed a skip" with no stamp existing anywhere and asserted the run was
+  # carried. The reason string WAS the gate and these assertions encoded that,
+  # which is why they had to change with the fix rather than confirm it.
+  gstamp() { # <baseline> <result> — the tracker entry the gauntlet must consult
+    printf '{"sweep":{},"entries":{"test-run":{"baseline":"%s","at":"2026-01-01","result":"%s","test-count":7}}}' \
+      "$1" "$2" > "$gproj/.claude/WSS.SWEEPS.json"
+  }
+
+  rm -f "$gsentinel" "$gproj/.claude/WSS.SWEEPS.json"
+  grun --test-consent --carry-forward "sweep-tracker licensed a skip"
+  case $gout in *"test: not-covered"*) ok "a carry-forward with no test-run stamp is refused" ;;
+                *) bad "an unlicensed carry-forward was not refused: $gout" ;;
+  esac
+  case $gout in *"carry-forward REFUSED"*) ok "and the refusal is reported, with the reason offered" ;;
+                *) bad "the refusal was not reported: $gout" ;;
+  esac
+  [ -f "$gsentinel" ] && bad "a refused carry-forward ran the test command" \
+    || ok "and a refused carry-forward does not quietly run the suite instead"
+
+  gstamp "$gsha" green
   rm -f "$gsentinel"
   grun --test-consent --carry-forward "sweep-tracker licensed a skip"
-  case $gout in *"test: carried"*) ok "--carry-forward reports carried" ;;
-                *) bad "carry-forward did not report carried: $gout" ;;
+  case $gout in *"test: carried"*) ok "a carry-forward the tracker licenses reports carried" ;;
+                *) bad "a licensed carry-forward did not report carried: $gout" ;;
   esac
   case $gout in *"carried forward: sweep-tracker licensed a skip"*) ok "and echoes the reason verbatim" ;;
                 *) bad "the carry-forward reason was not echoed: $gout" ;;
   esac
   [ -f "$gsentinel" ] && bad "carry-forward still ran the test command — it must skip the run entirely" \
     || ok "and --carry-forward outranks --test-consent: the test command never runs"
+
+  gstamp "$gsha" red
+  grun --test-consent --carry-forward "sweep-tracker licensed a skip"
+  case $gout in *"test: not-covered"*) ok "a red test-run stamp does not license a carry-forward" ;;
+                *) bad "a red stamp carried anyway: $gout" ;;
+  esac
+
+  gstamp "${gsha}+dirty" green
+  grun --test-consent --carry-forward "sweep-tracker licensed a skip"
+  case $gout in *"test: not-covered"*) ok "a +dirty baseline does not license a carry-forward" ;;
+                *) bad "a dirty stamp carried anyway: $gout" ;;
+  esac
+  rm -f "$gproj/.claude/WSS.SWEEPS.json"
 
   # --- a failing test is re-run exactly once before being reported ---------
   gcounter="$gproj/counter"; rm -f "$gcounter"
@@ -7461,18 +7641,7 @@ else
   esac
 
   gmanifest '{"WSS":{"commands":{"ci":{"tool":"gh"}}}}'
-  # A PATH replicating every real executable EXCEPT gh — proves the "gh not
-  # installed" branch rather than assuming it from a stub gh's exit code.
-  gstubs="$ggdir/stubs-nogh"; rm -rf "$gstubs"; mkdir -p "$gstubs"
-  ( IFS=':'; for d in $PATH; do
-      [ -d "$d" ] || continue
-      for f in "$d"/*; do
-        [ -f "$f" ] && [ -x "$f" ] || continue
-        n=$(basename "$f")
-        [ "$n" = gh ] && continue
-        [ -e "$gstubs/$n" ] || ln -sf "$f" "$gstubs/$n" 2>/dev/null
-      done
-    done )
+  gstubs="$ggdir/stubs-nogh"; path_without gh "$gstubs"
   out=$(cd "$gproj" && PATH="$gstubs" bash "$ggdir/wss/scripts/wss-mechanical-gauntlet.sh" 2>&1)
   case $out in *"gh is not installed"*) ok "gh named but not on PATH is reported by name" ;;
                *) bad "a missing gh silently produced no message: $out" ;;
@@ -7694,16 +7863,7 @@ else
   [ "$src" -eq 1 ] && ok "an unrecognised sweep version is refused" || bad "wrong sweep version exited $src, not 1"
 
   # --- jq absent --------------------------------------------------------
-  sstubs="$TMP/sweepstamp-stubs-nojq"; rm -rf "$sstubs"; mkdir -p "$sstubs"
-  ( IFS=':'; for d in $PATH; do
-      [ -d "$d" ] || continue
-      for f in "$d"/*; do
-        [ -f "$f" ] && [ -x "$f" ] || continue
-        n=$(basename "$f")
-        [ "$n" = jq ] && continue
-        [ -e "$sstubs/$n" ] || ln -sf "$f" "$sstubs/$n" 2>/dev/null
-      done
-    done )
+  sstubs="$TMP/sweepstamp-stubs-nojq"; path_without jq "$sstubs"
   rm -f "$ssdir/.claude/WSS.SWEEPS.json"
   out=$(cd "$ssdir" && PATH="$sstubs" bash "$STAMP" e --freshness 2>&1); rc=$?
   [ "$rc" -eq 1 ] && ok "jq absent is refused rather than half-writing" || bad "jq-absent exited $rc, not 1"
@@ -7804,16 +7964,7 @@ else
 
   # --- jq absent: DOES explain itself, unlike the malformed-manifest case --
   printf '{}\n' > "$odir/.claude/WSS.WORKFLOW.json"
-  ostubs="$TMP/orient-stubs-nojq"; rm -rf "$ostubs"; mkdir -p "$ostubs"
-  ( IFS=':'; for d in $PATH; do
-      [ -d "$d" ] || continue
-      for f in "$d"/*; do
-        [ -f "$f" ] && [ -x "$f" ] || continue
-        n=$(basename "$f")
-        [ "$n" = jq ] && continue
-        [ -e "$ostubs/$n" ] || ln -sf "$f" "$ostubs/$n" 2>/dev/null
-      done
-    done )
+  ostubs="$TMP/orient-stubs-nojq"; path_without jq "$ostubs"
   out=$(cd "$odir" && PATH="$ostubs" bash "$ORIENT" 2>&1); orc=$?
   [ "$orc" -eq 0 ] && ok "jq absent still exits 0" || bad "jq-absent run exited $orc, not 0"
   case $out in *"note: jq unavailable"*) ok "and jq's absence IS explained in a note" ;;
@@ -7964,16 +8115,7 @@ else
   rm -f "$dadir/.claude/WSS.WORKFLOW.json"
 
   # --- jq absent: same shape of warning as the malformed-manifest case ------
-  dastubs="$TMP/docsaudit-stubs-nojq"; rm -rf "$dastubs"; mkdir -p "$dastubs"
-  ( IFS=':'; for d in $PATH; do
-      [ -d "$d" ] || continue
-      for f in "$d"/*; do
-        [ -f "$f" ] && [ -x "$f" ] || continue
-        n=$(basename "$f")
-        [ "$n" = jq ] && continue
-        [ -e "$dastubs/$n" ] || ln -sf "$f" "$dastubs/$n" 2>/dev/null
-      done
-    done )
+  dastubs="$TMP/docsaudit-stubs-nojq"; path_without jq "$dastubs"
   printf '{"WSS":{"docs":{"root":"customroot"}}}\n' > "$dadir/.claude/WSS.WORKFLOW.json"
   out=$(cd "$dadir" && PATH="$dastubs" bash "$DOCSAUDIT" resolve 2>&1)
   case $out in *"jq is not installed"*"WSS.docs cannot be read"*) ok "jq absent is named, distinct from a malformed manifest" ;;
@@ -8008,9 +8150,9 @@ fi
 
 # ------------------------------------------------------------ wss-skill-levels.sh
 
-head_ "wss-skill-levels.sh: toggle step 1's level table, per-skill settings precedence"
+head_ "wss-skill-levels.sh: skill-toggle step 1's level table, per-skill settings precedence"
 
-LEVELS="$_root/skills/toggle/assets/wss-skill-levels.sh"
+LEVELS="$_root/skills/skill-toggle/assets/wss-skill-levels.sh"
 if [ ! -f "$LEVELS" ]; then
   bad "wss-skill-levels.sh missing at $LEVELS"
 else
@@ -8045,7 +8187,7 @@ else
   case $out in "") bad "output is empty" ;;
                *) ok "output is non-empty" ;;
   esac
-  case $out in *"== toggle: effective skill levels =="*) ok "and carries the header line" ;;
+  case $out in *"== skill-toggle: effective skill levels =="*) ok "and carries the header line" ;;
                *) bad "header line missing: $out" ;;
   esac
   case $out in *"skill"*"level"*"set by"*"tree"*"frontmatter"*) ok "the header row's five columns print" ;;
@@ -8115,16 +8257,7 @@ else
   rm -f "$lproj/.claude/settings.local.json"
 
   # --- no jq on PATH: refuses, prints no table ------------------------------
-  lstubs="$TMP/levels-stubs-nojq"; rm -rf "$lstubs"; mkdir -p "$lstubs"
-  ( IFS=':'; for d in $PATH; do
-      [ -d "$d" ] || continue
-      for f in "$d"/*; do
-        [ -f "$f" ] && [ -x "$f" ] || continue
-        n=$(basename "$f")
-        [ "$n" = jq ] && continue
-        [ -e "$lstubs/$n" ] || ln -sf "$f" "$lstubs/$n" 2>/dev/null
-      done
-    done )
+  lstubs="$TMP/levels-stubs-nojq"; path_without jq "$lstubs"
   out=$(cd "$lproj" && HOME="$TMP/home" CLAUDE_CONFIG_DIR="$lconf" PATH="$lstubs" bash "$LEVELS" 2>&1); lrc=$?
   [ "$lrc" -eq 1 ] && ok "no jq on PATH exits 1" || bad "jq-absent run exited $lrc, not 1"
   case $out in *"alpha "*) bad "jq-absent output still shows an alpha row — a table was rendered" ;;
@@ -8134,7 +8267,7 @@ else
   # --- no skills tree at all: exits 1, table absent -------------------------
   out=$(cd "$TMP/bare" && HOME="$TMP/home" CLAUDE_CONFIG_DIR="$TMP/bare" bash "$LEVELS" 2>&1); lrc=$?
   [ "$lrc" -eq 1 ] && ok "no skills tree at all exits 1" || bad "no-tree run exited $lrc, not 1"
-  case $out in *"== toggle: effective skill levels =="*) bad "no-tree run still printed a table" ;;
+  case $out in *"== skill-toggle: effective skill levels =="*) bad "no-tree run still printed a table" ;;
                *) ok "and the table is absent" ;;
   esac
 
@@ -8166,7 +8299,7 @@ else
   case $out in *"epsilon"*) ok "and epsilon appears in the plugin section" ;;
                *) bad "epsilon is missing from the plugin section: $out" ;;
   esac
-  main_table=$(printf '%s\n' "$out" | sed -n '/^== toggle: effective skill levels ==$/,/^$/p')
+  main_table=$(printf '%s\n' "$out" | sed -n '/^== skill-toggle: effective skill levels ==$/,/^$/p')
   case $main_table in *"epsilon"*) bad "epsilon leaked into the main skill-levels table" ;;
                       *) ok "and epsilon does NOT appear in the main table" ;;
   esac

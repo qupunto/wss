@@ -1,4 +1,4 @@
-# When another skill invokes this one
+# The caller contract for a dispatched wrap
 
 **Read this only where `--wss-wrap` was reached by dispatch, not typed
 directly.** A user-typed `--wss-wrap` skips this file entirely.

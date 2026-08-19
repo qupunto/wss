@@ -251,6 +251,13 @@ kind_of_glob() { # glob -> "kind namerule", empty if unrecognised
     */writers/*.md)                   printf 'writer base' ;;
     */checks/*.md|wss/tests/*.md|*/wss/tests/*.md) printf 'check base' ;;
     */providers/*.md|wss/workflow/*.md|*/wss/workflow/*.md) printf 'contract base' ;;
+    # A judge file is the same class of content as a workflow contract —
+    # normative statements a skill or agent reads to decide what to do — so it
+    # takes the same kind rather than a new one. `prospective/` is deliberately
+    # NOT admitted: those files are the build queue, their basenames are twins
+    # of the live ones (`WSS.RULES-DOC.md` exists in both), and a flat name
+    # index cannot hold both under `base`.
+    wss/rules/*.md|*/wss/rules/*.md)  printf 'contract base' ;;
   esac
 }
 
@@ -294,6 +301,19 @@ for n in "${!IDX_OF[@]}"; do
   [ "$b" = "$n" ] && continue
   if [ -n "${ALIAS[$b]+set}" ]; then ALIAS[$b]="!"; else ALIAS[$b]="$n"; fi
 done
+# Say which basenames were dropped and how many. Dropping is correct — guessing
+# between two files of one name is worse — but doing it in silence reads exactly
+# like there having been none to drop, and a caller who cites one of those
+# entries by basename gets no resolution and no reason for it.
+alias_ambiguous=0
+for b in "${!ALIAS[@]}"; do
+  [ "${ALIAS[$b]}" = "!" ] || continue
+  alias_ambiguous=$((alias_ambiguous + 1))
+  printf 'wss-tools-inventory: ambiguous basename, not aliased: %s\n' "$b" >&2
+done
+[ "$alias_ambiguous" -eq 0 ] || printf \
+  'wss-tools-inventory: %d ambiguous basename(s) dropped — cite those by full path\n' \
+  "$alias_ambiguous" >&2
 
 # ---------------------------------------------------- the ownership matrix
 

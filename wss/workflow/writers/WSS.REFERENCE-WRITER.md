@@ -1,6 +1,8 @@
 # Writing the reference record
 
-> **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md), whose [read-inheritance rule](WSS.WRITERS.md#read-inheritance) this follows. Sole writer of `WSS.record.reference`, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
+> **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md), whose [read-inheritance rule](WSS.WRITERS.md#read-inheritance) this follows. Sole writer of `WSS.record.reference` and of `WSS.record.setup`, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
+
+**How supervised this write is: [`WSS.SUPERVISION-LADDER.md`](../WSS.SUPERVISION-LADDER.md)'s row for the surface — read it before any modify or delete; never restated here.**
 
 What this file may and may not hold is
 [`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md), the authority where the
@@ -124,3 +126,12 @@ Fix the record and **report the drift you found**.
 **None of its own.** Its grant is whatever the caller was granted, and it confers
 nothing — [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md) has the rule. It does not
 commit; the caller does that when its own flag allows.
+
+## The setup record
+
+`WSS.record.setup` is this procedure's too — the table of per-machine facts
+and toggles that `wss-session-check.sh` injects whole into every session. Its
+admission test and staleness rule are in the record's own header; apply them
+before adding a row, and prefer deleting a row that fails them. It is blanked
+on publication by `wss-reset-records.sh`, so nothing in it may be the sole
+copy of suite content.

@@ -345,4 +345,4 @@ fi
 
 printf '\n=== reminder ===\n'
 echo "  LOCAL ONLY. This names every private tree on the machine. Do not open an"
-echo "  issue with it and do not route it through --wss-report: qupunto/wss is public."
+echo "  issue with it and do not route it through \`--wss-report\`: qupunto/wss is public."

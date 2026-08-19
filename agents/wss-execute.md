@@ -51,7 +51,12 @@ Bounded, not a narrative of the edit:
 - **Every file changed**, with the `file:line` ranges touched.
 - **Anything the design specified that you could not confirm on disk**,
   reported per the stop-and-report rule above — even where you proceeded
-  after resolving it yourself, say what the discrepancy was.
+  after resolving it yourself, say what the discrepancy was. **Resolving it
+  yourself reaches exactly as far as the design's meaning being beyond
+  question**: a drifted line number, a renamed path, a misspelt identifier
+  whose referent you can see. **Where resolving it would settle anything the
+  design left open, that is the premise being wrong** — the move there is to
+  stop and report, per the two moves below, not to resolve and mention it.
 - **Any greppable token you left** from proving a guard, named explicitly,
   so the caller's restore-check can find it.
 - **What you did not do**, where the design ran out before covering

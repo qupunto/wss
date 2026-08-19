@@ -40,8 +40,10 @@
    newest audit listing it under `covered`, and
    `git diff --name-only <baseline>..HEAD -- <globs>` is the slice. A path that
    appears only under `not-covered`, or in no block at all, has never been audited
-   and is fully in scope, no diff. **Below the spawn floor, read it here; at or
-   above it, delegate to [`wss-survey`](../../../agents/wss-survey.md)** — brief:
+   and is fully in scope, no diff. **Delegate this read to
+   [`wss-survey`](../../../agents/wss-survey.md)** — the floor comparison is
+   against the floor divided by the turns the read is held, not the floor, and a
+   whole-record read in an audit clears that (SKILL.md's floor paragraph) — brief:
    `WSS.record.stocktake`, named up front; verdict:
    one line per path, its governing baseline commit or `none`.
 
@@ -93,9 +95,9 @@
      unless the tree changed underneath the reason. If you do, say which audit
      dropped it and why.
 
-   Give every auditor the slice of this list touching its dimension. **Below
-   the spawn floor, read it here; at or above it, delegate to
-   [`wss-survey`](../../../agents/wss-survey.md)** — brief:
+   Give every auditor the slice of this list touching its dimension.
+   **Delegate this read to [`wss-survey`](../../../agents/wss-survey.md)**, on
+   the same divided-floor comparison SKILL.md states — brief:
    `WSS.record.stocktake`, named up front; verdict: the three lists above, each
    line naming the finding, its dimension and, for still-open items, its repeat
    count.
