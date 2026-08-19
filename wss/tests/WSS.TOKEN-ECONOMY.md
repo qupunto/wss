@@ -170,7 +170,7 @@ written down yet.
 
 Lens 9 states the rule; this table is the number `wss-doctor.sh`'s chain-budget
 check reads, so raising a ceiling is a decision recorded in a contract rather
-than a silent script edit (`WSS.TODO.md`'s Annex A1; `WSS.ROADMAP.md`'s "Make
+than a silent script edit (`WSS.ROADMAP.md`'s "Make
 the cost visible before it grows"). `wss-tools-inventory.sh` sums each
 `SKILL.md`'s same-window chain under [`WSS.AUDIT-PASS.md`](WSS.AUDIT-PASS.md)'s
 convention and writes it to `.claude/WSS.TOOLS.json` as `chainBytes` — the
@@ -307,7 +307,7 @@ across two different agents is never a clean comparison of their grants.**
 `statusline-setup` is a harness built-in with its own system prompt;
 `wss-execute` is ours. The 441-token gap between them is both differences at
 once and cannot be attributed to either. The same caution applies to reading
-`8,412` against `9,868`: both grants carry four tools and the second is dearer,
+`8,425` against `9,868`: both grants carry four tools and the second is dearer,
 which says *which* tools are held matters, not that it costs more to be allowed
 to write — `agents/wss-survey.md` and `agents/wss-execute.md` also differ in
 system prompt. Compare rows to size a dispatch; do not read a row difference as
@@ -329,7 +329,16 @@ be measured this way.
 one-shot.** A subagent's cost above is paid once, at dispatch. A read kept
 inline instead is not one-time: it sits in the orchestrator's window and is
 re-billed on every later turn of that session. This table gives the spawn side
-only — the inline side's per-turn multiplier is unmeasured here. It needs the
-orchestrating session's own token accounting, separating cached from uncached
-input, which no single dispatch can see, so no figure for it is stated in this
-file.
+only, and **a one-shot comparison against it is the wrong shape** — the owner
+has adopted that correction, so a read held across later turns must clear this
+floor divided by the turns it is held for, and every candidate
+measured against the one-shot form flipped to Survey. The decision log's
+`2026-08-19 (eleventh)` and `(twenty-third)` entries carry the recompute and the
+adoption; the verdict consumes the figure's sign, and no figure is published
+here or there. **The inline side's per-turn multiplier has been measured once
+and is not canon**: it needs the orchestrating session's own token accounting,
+separating cached from uncached input, which no single dispatch can see, so the
+run was the owner's — and two runs at one file size give one figure with no
+error bar. No figure is stated in this file until a second pair supplies one.
+Take it from `wss/logs/WSS.DECISIONS.md`'s `2026-08-18 (tenth)` entry, which
+carries the figure, the mechanism behind it, and what it does not settle.

@@ -22,7 +22,7 @@ A skipped step announced is a step the user can overrule; a skipped step inferre
 from a fallback is one nobody sees. When a skill reports falling back, the fix is
 `--wss-adopt` (`adopt`), which writes the manifest.
 
-## The three files that settle disagreements
+## The files that settle disagreements
 
 Relative from any skill file, which is what makes them resolve in both install
 forms:
@@ -39,12 +39,18 @@ forms:
   file's: [`../../wss/workflow/WSS.NAMING.md`](../../wss/workflow/WSS.NAMING.md) holds the
   `WSS.`/`wss-` grammar and the test for whether a file is the suite's at all.
   A pass settling both — `--wss-adopt`, `update` — reads both.
+- [`../../wss/workflow/WSS.SUPERVISION-LADDER.md`](../../wss/workflow/WSS.SUPERVISION-LADDER.md) — **how
+  supervised each record write is**, per surface and action: when the writer
+  acts alone, when the write cites its authorization, and when the owner
+  answers first. The assignments are the owner's alone.
 
-On worktree lanes all three defer to
+On worktree lanes the first three defer to
 [`../../wss/workflow/WSS.LANE-CONTRACT.md`](../../wss/workflow/WSS.LANE-CONTRACT.md) — read in
 lane mode (a `.claude/WSS.LANE` selector, or `WSS.lanes.named` in the manifest),
 and when deciding whether to adopt lanes at all, the one reader that gate
-cannot detect.
+cannot detect. The supervision ladder does not join that deferral: its rows
+name record keys rather than paths, so a lane's path overrides change nothing
+in it — its own table says so.
 
 Where they resolve to on disk depends on how the suite was installed, and this is
 the one place the two forms genuinely differ:

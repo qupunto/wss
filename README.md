@@ -110,6 +110,7 @@ and in one case (`.credentials.json`) must never leave the machine at all.
 
 ## What's in it
 
+<!-- wss:region entry=table-row -->
 | Path | What |
 |---|---|
 | `settings.json` | Permissions and hook wiring |
@@ -133,12 +134,13 @@ and in one case (`.credentials.json`) must never leave the machine at all.
 | `.claude/skills/` | Where a project's own skills go, resolved before the global suite. This repo keeps none — see the annex for why both of the ones it had turned out to be global concerns with local paths baked in |
 | `workflow/` | The authority files every skill links to instead of carrying its own copy — who may write what, what each record holds, which manifest keys exist, and how a sweep narrows itself — plus the record-writer procedures under `wss/workflow/writers/` and the shared check methods under `workflow/checks/` |
 | `wss/workflow/providers/` | Where a record lives somewhere that is not a file. Only `WSS.record.todo` takes one, and `WSS.GITHUB-ISSUES.md` is the only one that exists — see below |
+<!-- wss:region-end -->
 
 ## What you can turn off, and what you cannot
 
 **As a checkout** — cloning into `~/.claude`, which is what the section below
 does, and the form this suite is developed in — `skillOverrides` in
-`settings.json` controls each skill individually, and `/wss:toggle` is the
+`settings.json` controls each skill individually, and `/wss:skill-toggle` is the
 slash-only editor of that block. This repository uses two levels: `name-only`
 for dispatch-reached skills (the description unloads, the dispatch still
 works) and `user-invocable-only` for heavyweights invoked by slash alone —
@@ -203,8 +205,8 @@ the set to copy rather than one to work out from scratch:
   "full-check": "name-only",
   "lane-record-sync": "name-only",
   "retire": "name-only",
+  "skill-toggle": "user-invocable-only",
   "stocktake": "user-invocable-only",
-  "toggle": "user-invocable-only",
   "track": "name-only"
 }
 ```
@@ -426,6 +428,7 @@ often — and it is the only part of this section that a machine does not genera
 Five of them ask a similar-sounding question and are routinely confused. The
 difference is **what they read**, not how hard they try:
 
+<!-- wss:region entry=table-row -->
 | You want to know | Flag | Reads | Writes |
 |---|---|---|---|
 | Where do we stand, at a glance? | `--wss-overview` | branch and lane, record counts, sweep freshness, nearest milestones — fresh, never from memory | nothing at all — the report is the reply |
@@ -433,6 +436,7 @@ difference is **what they read**, not how hard they try:
 | Is the whole configuration sound? | `--wss-full-check` | records + the docs site + the tooling files, every one, ignoring checkpoints | nothing with an owner; fixes unowned files directly |
 | Where is this project? | `--wss-stocktake` | all of the above plus conventions, public surface, safety nets, and the code via the project's own analysis skill | rebuilds the TODO list, writes an audit entry |
 | Is this document true and well-formed? | `--wss-docs` | one docs site — paths, links, anchors, claims against source | the pages it fixes |
+<!-- wss:region-end -->
 
 `--wss-full-check` is **not** a bigger `--wss-check`. It is `--wss-check` plus five unrelated
 jobs — the docs site, the tooling files, the defect inbox, the prune, the
@@ -456,6 +460,7 @@ card**, which is where the flags live. `bash wss-gen-cadence-flags.sh` checks
 the two against each other and names any that have drifted; it deliberately
 cannot rewrite this file, so a drift it reports is corrected here by hand.
 
+<!-- wss:region entry=table-row -->
 | When | Flag | Why then |
 |---|---|---|
 | Starting anything non-trivial | `--wss-track` | before the work, so the list is the plan rather than a summary |
@@ -470,6 +475,7 @@ cannot rewrite this file, so a drift it reports is corrected here by hand.
 | Before a release, or when you stop trusting the record | `--wss-full-check` | the expensive one; earns its cost when the answer might be "no" |
 | Every month or so, or when picking a project back up | `--wss-stocktake` | rebuilds the TODO list around where things actually are |
 | After editing any skill or agent file | `--wss-tidy` then `--wss-catalog` | immediately, before ending the turn — it is the one with a deadline |
+<!-- wss:region-end -->
 
 **If you only ever use three, use `--wss-track`, `--wss-todo` and `--wss-wrap`.** They are
 the ones that pay on the first day; everything else pays back over weeks.
@@ -492,6 +498,11 @@ message — because unprefixed flags collided with pasted commands. The `wss-`
 prefix removed that collision: no real command carries a `--wss-*` option. The
 one consequence to know: a message that *quotes* a flag as its own bare token
 fires it. With the prefix, an exact token is taken as intent, wherever it sits.
+
+**Suite tooling is safe to paste**, because every script that prints a flag in
+its own output wraps it in a code span — a code span does not decompose, so
+pasting a `wss-doctor.sh` run or any other tool's output fires nothing. The
+convention binds the emitters, not the hook, whose contract above is unchanged.
 
 A flag whose skill does not resolve in the current project is **inert, not
 broken** — `skill_exists()` declines to inject an instruction that cannot be
@@ -516,6 +527,7 @@ writes no record of its own, calling the primitive that does; a **primitive**
 is the smaller step that owns the write, some reached only by another skill
 rather than by a flag of its own (below).
 
+<!-- wss:region entry=table-row -->
 | Flag | Skill | Tier |
 |---|---|---|
 | `--wss-adopt` | `adopt` | orchestrator |
@@ -540,6 +552,7 @@ rather than by a flag of its own (below).
 | `--wss-scout` | `scout` | primitive |
 | `--wss-describe` | `describe` | primitive — dispatches to `behaviour-writer`, which is `WSS.record.behaviour`'s sole writer |
 | `--wss-reference` | `reference` | primitive — dispatches to `reference-writer`, which is `WSS.record.reference`'s sole writer |
+<!-- wss:region-end -->
 
 **What each flag authorizes is deliberately not a column here.** A grant is
 written by hand in two places — the block `wss-shorthand-flags.sh` injects, and the
@@ -550,10 +563,13 @@ authoritative, so the matrix is the single answer to *what may this flag do*.
 Three grants recur there: commit but not push, commit and push, and commit with
 a push that needs a fresh OK in the same turn.
 
-**`--wss-pr` is the only thing that moves work between the two branches.**
-`--wss-wrap` pushes `WSS.branch.integration` and stops; this drafts the PR body from the
-branch range rather than from what the session remembers doing, opens it, watches
-its CI, and merges once you confirm in that turn. `--wss-pr`'s short form has a
+**`--wss-pr` is the only thing that moves work onto the publish branch.**
+`--wss-wrap` pushes `WSS.branch.integration` and stops; this assembles a release
+branch from `WSS.branch.publish`, merges the typed branches you choose into it,
+drafts the PR body from the branch range rather than from what the session
+remembers doing, opens it, watches its CI, and merges once you confirm in that
+turn. **The integration branch is the disposable test bench and is never the
+PR source** — which is what lets it be reset without a release losing anything. `--wss-pr`'s short form has a
 history: no flag may be a prefix of another — a token would decompose into the
 shorter flag plus junk, and `wss-doctor.sh` fails the list on it — and `--wss-pr`
 sat inside the old prune flag, which was renamed and later retired when its
@@ -578,7 +594,7 @@ rather than by you. Nobody wants to "record a baseline", "write the handoff" or
 these are steps inside those. They are **procedure files under
 `wss/workflow/writers/`, not skills** — a caller reads the file and follows it.
 (Four *skills* are also flagless. Three — `/wss:lane-record-sync`, `/wss:retire`
-and `/wss:toggle` — for the opposite reason: they are invoked only by you, never
+and `/wss:skill-toggle` — for the opposite reason: they are invoked only by you, never
 by a phrase or another skill. The fourth, `contracts`, is flagless for a
 third reason again: it is reached by **citation** — a reader following a pointer
 into it — rather than typed or dispatched, which is why

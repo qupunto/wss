@@ -2,6 +2,8 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md), whose [read-inheritance rule](WSS.WRITERS.md#read-inheritance) this follows. Sole writer of `WSS.record.stocktake` and `WSS.record.audits`, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
+**How supervised this write is: [`WSS.SUPERVISION-LADDER.md`](../WSS.SUPERVISION-LADDER.md)'s row for the surface — read it before any modify or delete; never restated here.**
+
 `WSS.record.stocktake` is **the stocktake log**, written a whole entry at a time
 or one `Outcome` at a time; what this file may and may not hold is
 [`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md). **Frozen records spell the
@@ -64,9 +66,6 @@ Its rules are [`WSS.AUDIT-COVERAGE.md`](../WSS.AUDIT-COVERAGE.md) and they are
 followed exactly. **Build `covered` from the auditors' reports, not from the
 plan** — the rule that gets bent is *silence is not coverage*, and it gets bent
 because a wide `covered` list is what makes the next audit cheap.
-
-That motivation is why the claim and the record are separated at all: the skill
-that benefits from broad coverage is not the one that writes it down.
 
 ## What never goes in
 

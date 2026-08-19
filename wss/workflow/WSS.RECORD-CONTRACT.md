@@ -114,6 +114,20 @@ hand-written by nobody.
 | **Log** — append-only | `decisions`, `stocktake`, `audits`, `changelog` | Additive. A wrong entry is a wrong entry; nothing true was lost. |
 | **Register** — rewritten in place | `behaviour`, `reference`, `handoff`, `todo`, `backlog`, `roadmap`, `releases`, `openDecisions`, `toolbelt`, `tooling.catalog` | Destroys the previous true statement. |
 
+**A log grows at one end, and which end is part of the rule rather than an
+exception to it.** The rule is to add without modifying what is already there;
+whether new entries stack upward or downward is irrelevant so long as a given
+record never changes direction. So a prepending record — `WSS.record.changelog`,
+newest first, by the convention its readers expect — is not a carve-out, it is
+the same rule pointed the other way. The consequence is that only the entry at
+the growing end is ever still a draft; **the entry at the other end is sealed**,
+and rewriting it is an excision like any other. Both the direction and what
+counts as an entry are declared per record in `WSS.recordMode`, defaulting to
+tail-growth and `## ` headings — [`WSS.MANIFEST.md`](WSS.MANIFEST.md#recordmode--which-records-are-logs-which-are-registers)
+carries the shape. Owner's ruling, the decision log's `2026-08-18 (twenty-fourth)`
+entry, which also records the record this left wholly unguarded while the guard
+was inferring instead of reading.
+
 Appending a dated entry and rewriting a topic section have different blast radii.
 That is why `WSS.record.decisions` belongs to the append-record primitive and
 `WSS.record.behaviour` belongs to `behaviour-writer`, rather than one owner holding
@@ -146,6 +160,24 @@ protects: alone of the three, its entries are claims about the past and nothing
 else. An audit's `Outcome` and a changelog entry's release status are statements
 about *now* that happen to live in a dated entry — leaving them stale does not
 preserve history, it just makes the file wrong.
+
+**Which record has a mutable field is declared, and absent means none.** This
+table is the authority, and `WSS.recordMode.<key>.mutable` is how the guard
+learns it — a record that declares nothing gets no status-field exemption. The
+guard once applied the `Outcome:` exemption to every log record with no
+reference to which one it was reading, so the field this table denies
+`WSS.record.decisions` was mutable there in practice. (Owner's rule; the
+decision log carries the fixture that found it.)
+
+**A fourth permitted deletion: a pointer kept correct.** A deleted line paired 1:1 with a
+replacement whose basename and every other character are identical — so only
+the directory part of a path changed — is not a rewrite of history; it is
+stopping a reference from rotting when its target moves, and without it an
+absolute-path convention cannot be maintained inside an append-only record at
+all. Renaming a file, or repointing a line at a *different* file, still fails,
+because both change a basename. (Owner's rule.) It was in force in the guard
+before it was written here — the guard's own header enumerated three exemptions
+while its code had four.
 
 The distinction is what keeps this checkable. "Append-only with exceptions" is a
 rule nobody can apply confidently; "bodies never change, and the cells this

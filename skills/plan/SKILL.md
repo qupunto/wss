@@ -5,13 +5,17 @@ description: "Set the next goal, and keep the release list — `WSS.record.roadm
 
 # Goals, and the release list
 
-This skill is the sole writer of two records, and the split between them is the
-thing to hold onto:
+This skill is the sole writer of two records. The **Holds** column condenses
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s split
+table and changes only when that table does; **Splits by lane** is this skill's
+own addition, not the canon's:
 
 | Record | Holds | Splits by lane |
 |---|---|---|
 | `WSS.record.roadmap` | **Goals.** What an area of work is trying to achieve, the blocks that get it there, their order. In that area's own terms. | **yes** |
 | `WSS.record.releases` | **The release list.** One entry per milestone: the version it intends to ship as, which goals it comprises, whether it is marked completed. | **never** |
+
+**How supervised this write is: [`WSS.SUPERVISION-LADDER.md`](../../wss/workflow/WSS.SUPERVISION-LADDER.md)'s row for the surface — read it before any modify or delete; never restated here.**
 
 **No roadmap carries a version number or a completion mark.** Not a lane's, not
 an unsplit project's. That single prohibition is what lets a project hold any
@@ -140,17 +144,17 @@ Versions, the changelog and tags themselves are not yours.
 
 ## A milestone cites goals; it does not restate them
 
-An entry in `WSS.record.releases` names the goals it comprises — by name, by roadmap,
-one direction. It does not copy their prose, and nothing derives it: **you write
-which goals a milestone covers, and that authorship is the point.** It is the
-only place a lane's work and the shipping plan are reconciled.
+The split is [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s
+`WSS.record.releases` row. An entry in `WSS.record.releases` names the goals it
+comprises — by name, by roadmap, one direction. It does not copy their prose,
+and nothing derives it: **you write which goals a milestone covers, and that
+authorship is the point.** It is the only place a lane's work and the shipping
+plan are reconciled.
 
-The cost this accepts, and it is worth stating to the user when it bites:
-**nothing aggregates lane roadmaps.** A lane can meet every goal it holds while
-the milestone citing them still reads open, and no check finds that. The
-alternative — deriving milestone completion from N roadmaps — is a release gate
-that waits on the slowest lane, which is the failure that put goals and the
-release list in different files.
+**The cost this split accepts is
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s** — nothing
+aggregates lane roadmaps, so a milestone can read open while every lane citing
+it is done. Say so to the user when it bites.
 
 ## Declaring an end to milestones — project mode only
 

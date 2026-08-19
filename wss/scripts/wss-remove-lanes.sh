@@ -148,7 +148,7 @@ if [ "$withcontent" -gt 0 ] && [ "$ALLOW_ORPHANS" = 0 ]; then
   echo "REFUSING: $withcontent lane file(s) still hold content." >&2
   echo "Turning the mode off does not delete them, but nothing will read them again —" >&2
   echo "a TODO list item or an unmade decision would sit there unseen. Merge them into" >&2
-  echo "the unsplit records first (--wss-todo, --wss-plan, --wss-log own those writes)," >&2
+  echo "the unsplit records first (\`--wss-todo\`, \`--wss-plan\`, \`--wss-log\` own those writes)," >&2
   echo "or re-run with --allow-orphans to leave them orphaned deliberately." >&2
   exit 1
 fi

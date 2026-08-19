@@ -22,7 +22,7 @@ ramification-first ordering is `skills/track/SKILL.md`'s.
 
 | Rung | Matches when | Where | Tier | Effort |
 |---|---|---|---|---|
-| **Keep** | it needs what the session lived through — a handoff, a wrap, a decision being logged, a commit, the disposition of findings — **or** its whole read set is smaller than the spawn floor below | inline | the session's own | the session's own |
+| **Keep** | it needs what the session lived through — a handoff, a wrap, a decision being logged, a commit, the disposition of findings — **or** its whole read set is smaller than the spawn floor below, divided by the turns the read will be held | inline | the session's own | the session's own |
 | **Survey** | it writes no files, the read set is named before dispatch — by the brief, or by a declared agent's own file — and the verdict format is pinned | agent | bottom | low |
 | **Execute** | a finished design is handed over as an artifact the caller can point at, its exact anchors re-verified at dispatch, and the work applies it | agent | bottom | low |
 | **Analyze** | its output is the authority another rung works from — a plan they execute, a finding they act on, an artifact they cite — **or** the agent must choose its own read set | agent | top | high |
@@ -48,8 +48,15 @@ recomputes each row, and which rows are still unmeasured (and why) are in
 [`WSS.TOKEN-ECONOMY.md`'s "Per-grant spawn
 floor"](../tests/WSS.TOKEN-ECONOMY.md#per-grant-spawn-floor) — cite that table or
 run its command; nothing here restates a figure. Work whose entire job reads
-less than the floor for the grant it would spawn is cheaper inline whatever
-else it looks like, which is Keep's second half. The first half is
+less than the floor for the grant it would spawn is cheaper inline **only if the
+session ends on that turn** — a read kept inline is re-billed on every later
+turn, so what it must clear is the floor divided by the number of turns it will
+be held for, not the floor. **An orchestrator has later turns by construction**,
+which is why every candidate measured against the old one-shot form flipped to
+Survey once the inline side was priced (the decision log's
+`2026-08-19 (eleventh)` entry for the recompute, `(twenty-third)` for the
+owner's adoption of it). The verdict there consumes the figure's *sign* and no
+figure is published on either side. That is Keep's second half. The first half is
 [`CLAUDE.md`](../../CLAUDE.md)'s: delegate what comes back as a verdict, keep what
 needs what the session lived through.
 
@@ -65,8 +72,10 @@ per-grant table linked in the paragraph above — which is in
 **Keep's comparison prices a subagent's one-time spawn cost against a read's
 one-time cost, and the second half of that is not accurate** — a read kept
 inline is re-billed on every later turn of the session that holds it. By how
-much is unmeasured, and the table linked above carries that correction along
-with why no figure for it is stated. It is not repeated here.
+much was measured once and is not canon — one file size, no error bar. The figure and its mechanism are in
+[`wss/logs/WSS.DECISIONS.md`](../logs/WSS.DECISIONS.md)'s `2026-08-18 (tenth)`
+entry; the table linked above carries the same scoping. Neither is repeated
+here.
 
 **A dispatcher whose output is the tier that felt right drifts upward under
 uncertainty.** Same log, the `2026-08-12 (sixth)` entry, carries the batch that
@@ -106,6 +115,7 @@ first; the agent file follows.
 |---|---|---|---|
 | `wss-survey` | Survey | bottom | `haiku` |
 | `wss-execute` | Execute | bottom | `haiku` |
+| `wss-rules-writer` | Execute | bottom | `haiku` |
 | `wss-design` | Design | standard | `sonnet` |
 | `wss-analyze` | Analyze | top | *(none)* |
 | `wss-release-prep` | Analyze | top | *(none)* |

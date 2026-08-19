@@ -325,6 +325,28 @@ user; it will not be shown again."
   : > "$CLAUDE_DIR/.wss-welcomed" 2>/dev/null || true
 fi
 
+# ----------------------------------------------------------------- setup
+# The setup record — stable per-machine facts and the toggle table, injected
+# whole for the same reason the handoff card is: a session must have these
+# before it can look anything up. No fallback and no default path: a project
+# that declares no WSS.record.setup has nothing to inject, and silence is the
+# correct degrade. Size is capped by wss-doctor.sh (SETUP_CAP), like the card.
+# This block runs BEFORE the handoff block so its prepend lands BELOW the
+# card in the final ordering.
+sp=""
+if [ -f "$manifest" ] && command -v jq >/dev/null 2>&1; then
+  sp=$(record_path setup)   # lane-aware — same resolution as the handoff
+fi
+if [ -n "$sp" ] && [ -f "$PWD/$sp" ]; then
+  out="This project's setup record ($sp): per-machine facts and toggles,
+injected into every session. Trust these values over derivation. A stale row
+must be updated or reported to the user — never silently worked around.
+
+$(cat "$PWD/$sp" || true)${out:+
+
+}${out}"
+fi
+
 # --------------------------------------------------------------- handoff
 # See the exception in the header. The harness auto-loads only CLAUDE.md, so
 # every other resolved handoff — declared, or the wss/records/WSS.HANDOFF.md fallback when
@@ -376,6 +398,41 @@ ${card}${out:+
       fi
       ;;
 esac
+
+# ----------------------------------------------------------- pair role
+# A paired checkout carries `.claude/WSS/PAIR` (gitignored), one line per role:
+# `<role>: <session-id> <inbox-socket-path>`. A session's role is the line
+# carrying its own id. No file, no injection — an unpaired checkout pays
+# nothing, which is the whole reason this is a file's presence rather than a
+# manifest key.
+#
+# The card holds only what a session needs BEFORE it can look anything up: that
+# it is paired, which role it holds, and where the protocol is written. Every
+# rule — what each role may write, the relay's item format, the consume step —
+# stays in skills/pair/SKILL.md, because a session can read that the moment
+# it needs to and injected bytes are paid by every session forever.
+#
+# `|| true` throughout, like every guard here: this hook degrades, never fails.
+# An unreadable or malformed file yields no card; wss-doctor.sh is where a bad
+# claims file fails loudly.
+pair_file="$PWD/.claude/WSS/PAIR"
+if [ -f "$pair_file" ] && [ -n "${CLAUDE_SESSION_ID:-}" ]; then
+  pair_role=$(awk -v sid="${CLAUDE_SESSION_ID:-}" \
+    '$2 != "" && index(sid, substr($2,1,8)) == 1 { sub(":","",$1); print $1; exit }' \
+    "$pair_file" 2>/dev/null || true)
+  if [ -n "$pair_role" ]; then
+    out="${out}${out:+
+
+}This checkout is PAIRED and this session is the **${pair_role}**.
+The protocol is \`skills/pair/SKILL.md\` — read it before writing anything
+or before handing work to the other session. In one line each: the designer
+writes only \`.claude/WSS/RELAY/\` items; the executor runs the loop, applies
+those items and owns every commit and push; marks, merges, pushes and outward
+acts never ride the relay, because consent moves in conversation with the
+owner. The other role's address is in \`.claude/WSS/PAIR\`, never from a
+session-listing label."
+  fi
+fi
 
 [ -z "$out" ] && exit 0
 

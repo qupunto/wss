@@ -175,6 +175,11 @@ its file and does not commit** — the grant a skill inherits is the caller's.
 claim of ownership: edit it directly and say what changed. Scripts, CI, the
 harness settings and the `wss/workflow/*.md` contracts are the usual instances.
 
+**A record with no owner is the other case, and is not ordinary work** — it is
+a gap in the matrix, to be surfaced rather than filled. `--wss-check` says the
+same thing from its own side; the two are one rule split by whether the file is
+a record, and neither is a licence to write a record nobody owns.
+
 **A finding about the shape of the workflow rather than a defect in it is not a
 finding.** Say so and leave it for a deliberate change.
 

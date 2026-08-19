@@ -2,6 +2,8 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md), whose [read-inheritance rule](WSS.WRITERS.md#read-inheritance) this follows. Sole writer of `WSS.record.changelog`, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
+**How supervised this write is: [`WSS.SUPERVISION-LADDER.md`](../WSS.SUPERVISION-LADDER.md)'s row for the surface — read it before any modify or delete; never restated here.**
+
 What this file may and may not hold is
 [`WSS.RECORD-CONTRACT.md`](../WSS.RECORD-CONTRACT.md), the authority where the
 two disagree.
@@ -15,16 +17,10 @@ which projects keep a changelog is a decision, not a default.
 
 ## Two changelogs, and only one of them is this procedure's
 
-`WSS.record.changelog` is the **engineering log** — contract names, file paths, the
-reasoning, and any marker the suite's own machinery reads. It is a record, so it
-is blanked when the tree is published: it holds one project's history, and an
-adopter reading an inherited one would believe it.
-
-A project may also keep a **public changelog** at the conventional
-`CHANGELOG.md`, written for people *using* it rather than building it. That file
-is **not** a record, is not declared in the manifest, and is **not** blanked —
-which is the entire point. It is the one that survives publication and the one
-changelog tooling resolves by name.
+The split between `WSS.record.changelog` (the engineering log) and a public
+`CHANGELOG.md` is
+[`WSS.RECORD-CONTRACT.md`'s "Two files named changelog"](../WSS.RECORD-CONTRACT.md#two-files-named-changelog-and-only-one-is-a-record) —
+read it there rather than here.
 
 **This procedure writes the record, and the public file only when a release asks
 for it.** `--wss-release` invokes it once for each — it writes nothing itself.

@@ -20,21 +20,40 @@
 # and both counts are printed.
 #
 # WHAT IS REFUSED. A deleted line inside an entry body. That is the whole rule:
-# amendment is a new entry, so a legitimate change never needs one. Three
+# amendment is a new entry, so a legitimate change never needs one. FOUR
 # deletions are allowed, and each is a clause of wss/workflow/WSS.RECORD-CONTRACT.md
-# rather than a concession to a file:
+# rather than a concession to a file. It said three until 2026-08-19, while the
+# code had four — the fourth had been added with a full comment and never
+# enumerated here, so a session reading this block believed a relocation would
+# be refused:
 #
 #   1. THE HEADER. Everything above the first `## ` heading is the record's
 #      instructions — what it holds, who writes it, which key declares it — and
 #      it describes the record now, so it is rewritten in place like any
 #      register. "A record's header is not one of its entries."
-#   2. AN `Outcome:` BLOCK, in any entry. The contract's status-field table
-#      makes this one field mutable: it states the entry's disposition today,
-#      not a claim about the past. The line and the unbroken block under it.
-#   3. THE FIRST OR LAST ENTRY, and only where the same hunk adds lines. That is
-#      the draft still being written — the changelog's unreleased entry becoming
-#      a released one, the entry appended minutes ago. A hunk that only removes
-#      is an excision wherever it lands, including there.
+#   2. AN `Outcome:` BLOCK, in a record that DECLARES it has one. The
+#      contract's status-field table makes this field mutable for the records it
+#      names and for no others: it states the entry's disposition today, not a
+#      claim about the past. The line and the unbroken block under it. The
+#      record says so with `WSS.recordMode.<key>.mutable: "outcome"`; absent
+#      means none, which is the contract's answer for `WSS.record.decisions` —
+#      alone of the logs, its entries are claims about the past.
+#   3. THE ENTRY AT THE END THE RECORD GROWS AT, and only where the same hunk
+#      adds lines. That is the draft still being written — the changelog's
+#      unreleased entry becoming a released one, the entry appended minutes ago.
+#      Which end that is comes from `WSS.recordMode.<key>.grows` and defaults to
+#      the tail, so the OTHER end is sealed. Growth direction is part of the
+#      rule rather than an exemption to it: add without modifying what is there,
+#      always at the same end, which makes prepend and append one rule. A hunk
+#      that only removes is an excision wherever it lands, including there.
+#   4. A POINTER KEPT CORRECT: a deleted line paired 1:1 with a replacement
+#      whose basename and every other character are identical, so only the
+#      DIRECTORY part of a path changed. That is not rewriting history, it is
+#      stopping a reference from rotting when its target moves — and without it
+#      an absolute-path convention cannot be maintained inside an append-only
+#      record at all. Renaming a file, or repointing a line at a DIFFERENT
+#      file, still fails, because both change a basename. Owner's rule,
+#      2026-08-15; the implementation is the branch at the end of the loop.
 #
 # Everything else fails, and so does a drop in the number of `## ` entries and
 # the deletion of a log file, whatever the line counts say.
@@ -115,7 +134,15 @@ jq -e . "$MANIFEST" >/dev/null 2>&1 || { echo "wss-append-only: $MANIFEST does n
 keys="$TMP/keys"
 modes_walked=0
 if jq -e '.WSS.recordMode | type == "object"' "$MANIFEST" >/dev/null 2>&1; then
-  jq -r '.WSS.recordMode | to_entries[] | select(.value == "log") | .key' "$MANIFEST" > "$keys"
+  # Two legal value shapes. The string form is the original and stays exactly as
+  # it was. The object form carries the same mode plus the record's declared
+  # SHAPE — which end it grows at, and what its entries are made of — so the
+  # guard reads those rather than inferring them. An adopted manifest carries
+  # only strings, which is why every default below is today's behaviour.
+  jq -r '.WSS.recordMode | to_entries[]
+         | select((.value == "log")
+                  or ((.value | type == "object") and .value.mode == "log"))
+         | .key' "$MANIFEST" > "$keys"
   modes_walked=$(jq -r '.WSS.recordMode | length' "$MANIFEST")
   if [ "$modes_walked" -eq 0 ]; then
     echo "wss-append-only: WSS.recordMode is an empty object. Nothing is declared a log," >&2
@@ -141,7 +168,21 @@ while IFS= read -r key; do
     echo "wss-append-only: WSS.recordMode tags '$key' as a log, but WSS.record declares no path for it" >&2
     exit 1
   fi
-  printf '%s\t%s\n' "$key" "$p" >> "$paths"
+  # The declared shape, with today's behaviour as the default for both. `grows`
+  # names the end new entries arrive at; `entry` names what an entry looks like.
+  grows=$(jq -r --arg k "$key" '.WSS.recordMode[$k] | if type == "object" then (.grows // "tail") else "tail" end' "$MANIFEST")
+  entry=$(jq -r --arg k "$key" '.WSS.recordMode[$k] | if type == "object" then (.entry // "heading") else "heading" end' "$MANIFEST")
+  case "$grows" in tail|head) ;; *)
+    echo "wss-append-only: WSS.recordMode.$key declares grows='$grows' — only 'tail' or 'head'" >&2; exit 1 ;; esac
+  case "$entry" in heading|table-row) ;; *)
+    echo "wss-append-only: WSS.recordMode.$key declares entry='$entry' — only 'heading' or 'table-row'" >&2; exit 1 ;; esac
+  # Which status field, if any, this record may have rewritten in place. Absent
+  # means NONE — the safe default, and the contract's answer for every record
+  # that is not named in its status-field table.
+  mutable=$(jq -r --arg k "$key" '.WSS.recordMode[$k] | if type == "object" then (.mutable // "none") else "none" end' "$MANIFEST")
+  case "$mutable" in none|outcome) ;; *)
+    echo "wss-append-only: WSS.recordMode.$key declares mutable='$mutable' — only 'outcome' or 'none'" >&2; exit 1 ;; esac
+  printf '%s\t%s\t%s\t%s\t%s\n' "$key" "$p" "$grows" "$entry" "$mutable" >> "$paths"
 done < "$keys"
 
 if [ "$logs_declared" -eq 0 ]; then
@@ -215,9 +256,20 @@ git diff -M --name-status --no-color "${DIFF_ARGS[@]}" \
 printf 'wss-append-only: %d log record(s) of %d declared modes, %s\n' \
   "$logs_declared" "$modes_walked" "$WHAT"
 
-while IFS=$'\t' read -r key path; do
+while IFS=$'\t' read -r key path grows entry mutable; do
   [ -n "$path" ] || continue
   checked=$((checked + 1))
+  [ -n "$grows" ] || grows=tail
+  [ -n "$entry" ] || entry=heading
+  [ -n "$mutable" ] || mutable=none
+  # What an entry BEGINS with, per the declaration. `audits` is a table of rows
+  # and has no `## ` heading anywhere, so under the old hardcoded pattern it
+  # resolved to zero entries and every one of its lines took the header
+  # exemption — the record was wholly unguarded.
+  case "$entry" in
+    heading)   entry_re='^## ' ;;
+    table-row) entry_re='^[[:space:]]*\|' ;;
+  esac
 
   # The two sides are fetched as content and compared as content. Diffing the
   # declared path instead would be subtly wrong twice: a pathspec is applied
@@ -254,9 +306,9 @@ while IFS=$'\t' read -r key path; do
 
   # Entry starts in the pre-image, and the entry count on both sides.
   starts=()
-  while IFS= read -r n; do starts+=("$n"); done < <(grep -n '^## ' "$pre" | cut -d: -f1)
+  while IFS= read -r n; do starts+=("$n"); done < <(grep -nE "$entry_re" "$pre" | cut -d: -f1)
   pre_entries=${#starts[@]}
-  post_entries=$(grep -c '^## ' "$post" || true)
+  post_entries=$(grep -cE "$entry_re" "$post" || true)
 
   # Entry starts in the post-image too. Needed only where the record grew
   # (post_entries > pre_entries): the discriminator for exemption 3 below is
@@ -279,7 +331,7 @@ while IFS=$'\t' read -r key path; do
   # and the old tail entry's body — exactly the two it exists to stop covering.
   # Both ends then failed OPEN, and no case grown at one end only can see it.
   post_starts=()
-  while IFS= read -r n; do post_starts+=("$n"); done < <(grep -n '^## ' "$post" | cut -d: -f1)
+  while IFS= read -r n; do post_starts+=("$n"); done < <(grep -nE "$entry_re" "$post" | cut -d: -f1)
 
   # Post-image line numbers of the headings this change INSERTED. Counted
   # inside hunks only: `!inhunk` drops the `---`/`+++` file headers, which
@@ -320,11 +372,29 @@ while IFS=$'\t' read -r key path; do
   [ "$tail_grown" -gt 0 ] && post_new_tail="${post_starts[$(( ${#post_starts[@]} - tail_grown ))]:-}"
 
   # Lines an `Outcome:` block covers: the field line and the unbroken block under it.
+  #
+  # SCOPED BY RECORD, and it was not until 2026-08-19. The contract's
+  # status-field table is keyed by record — `WSS.record.stocktake` has
+  # `Outcome`, `WSS.record.decisions` has NONE, deliberately, because alone of
+  # them its entries are claims about the past. This build referenced no key at
+  # all, so every log record got the exemption and an `Outcome:` block could be
+  # deleted from any decision-log entry while the guard printed `intact`.
+  # Probed: an Outcome block plus two detail lines removed from a MIDDLE entry
+  # of a decisions-only log returned ok/rc=0; the control, an ordinary body line
+  # in the same entry, returned rc=1. Middle matters — at either end the draft
+  # exemption covers it anyway and the probe reads as a false negative.
+  #
+  # Which record has a mutable field is DECLARED, per the twenty-fourth entry's
+  # direction, and defaults to none: a record that does not say it has one does
+  # not get the exemption. Adopters keep whatever their own contract says
+  # instead of inheriting this repo's table.
   declare -A outcome_ok=()
+  if [ "$mutable" = outcome ]; then
   while IFS= read -r n; do outcome_ok[$n]=1; done < <(awk '
     /^[[:space:]]*[-*]*[[:space:]]*[*]*Outcome[*]*[[:space:]]*:/ { inblk = 1 }
     /^[[:space:]]*$/ { inblk = 0 }
     inblk { print NR }' "$pre")
+  fi
 
   adds=0; dels=0; bad_lines=0
   bad_where="$TMP/where"; : > "$bad_where"
@@ -355,7 +425,15 @@ while IFS=$'\t' read -r key path; do
     #    defect: a tail append does not stop the head entry being the draft, and
     #    the global test both revoked the head exemption when only the tail grew
     #    and mis-anchored it when both did.
-    if [ "$hunkadds" -gt 0 ] && { [ "$idx" -eq 0 ] || [ "$idx" -eq $((pre_entries - 1)) ]; }; then
+    #
+    #    THE END IS NOW DECLARED, not guessed. A record grows at exactly one
+    #    end, named by `grows`, and only the entry at THAT end is ever the
+    #    draft — the other end is sealed permanently. The owner's ruling: the
+    #    rule is to add without modifying what is there, and whether it stacks
+    #    up or down is irrelevant so long as the direction never changes, so
+    #    prepend and append are one rule rather than a rule and an exemption.
+    if [ "$grows" = head ]; then draft_idx=0; else draft_idx=$((pre_entries - 1)); fi
+    if [ "$hunkadds" -gt 0 ] && [ "$idx" -eq "$draft_idx" ]; then
       if [ "$idx" -eq 0 ] && [ "$head_grown" -eq 0 ]; then continue; fi
       if [ "$idx" -eq $((pre_entries - 1)) ] && [ "$tail_grown" -eq 0 ]; then continue; fi
       if [ "$kind" = I ]; then
@@ -461,9 +539,11 @@ if [ "$violations" -gt 0 ]; then
 
 An append-only record lost a line. Nothing true was ever fixed by deleting it:
 amendment is a new entry, and a correction is a later entry saying so. Restore
-what was removed and append instead. The three deletions that ARE allowed —
-the header above the first entry, an `Outcome:` block, and the draft entry at
-either end where the same hunk rewrites it — are in wss/workflow/WSS.RECORD-CONTRACT.md.
+what was removed and append instead. The four deletions that ARE allowed — the
+header above the first entry; an `Outcome:` block, in a record that declares it
+has one; the draft entry at the end the record GROWS at, where the same hunk
+rewrites it; and a path whose DIRECTORY part alone changed, basename intact —
+are in wss/workflow/WSS.RECORD-CONTRACT.md. The other end is sealed.
 EOF
   exit 1
 fi

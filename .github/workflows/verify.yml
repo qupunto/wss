@@ -25,8 +25,36 @@ on:
   workflow_dispatch:
 
 jobs:
-  verify:
-    runs-on: ubuntu-latest
+
+  # THREE JOBS, ONE WORKFLOW. `wss-orient.sh` and the release gate resolve CI
+  # by the workflow NAME `Verify`, so splitting into separate workflows would
+  # break both. Jobs run in parallel and the workflow keeps its one name and
+  # one conclusion. Every step below is a self-contained check that reads the
+  # checkout and exits, so the partition is by cost rather than by dependency.
+  #
+  # Each job re-checks out: cheap on the self-hosted runner, ~10-15s per job on
+  # `ubuntu-latest`, which is what a fork's PR uses. `fetch-depth: 0` is kept
+  # on all three because the append-only step needs a merge base; the others
+  # do not, and the uniformity is worth more than the seconds.
+
+  lint:
+    # Pushes route to the self-hosted runner registered on the dev box; pull
+    # requests and manual dispatches stay on hosted runners, so the hosted
+    # path keeps being exercised. The `github.repository` guard is
+    # load-bearing: publish.yml ships this file to the public twin, which has
+    # no runner — without the guard every push there would queue forever, not
+    # fail. The same queue-forever failure hits this repo when the runner
+    # service is down, so a run that sits "queued" means check the runner,
+    # not the workflow. VERIFY_RUNNER is an emergency override forcing one
+    # path or the other (`gh variable set VERIFY_RUNNER -b ubuntu-latest`),
+    # normally left unset.
+    #
+    # THIS EXPRESSION IS REPEATED IN EVERY JOB BELOW AND IS KEPT EQUAL BY HAND.
+    # GitHub Actions has no YAML anchors and a job cannot read another job's
+    # `runs-on`; the alternative is a `setup` job whose only output is this
+    # string, which costs a serial round-trip on the very wall clock this split
+    # exists to cut. Change one, change all three.
+    runs-on: ${{ vars.VERIFY_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,8 +84,11 @@ jobs:
           done < <(git ls-files '*.sh')
 
       - name: Shellcheck
-        # Preinstalled on ubuntu runners. Advisory: style opinions here are not
-        # worth failing a config repo over, but the output is worth reading.
+        # Preinstalled on hosted runners; the self-hosted box installs it once
+        # by hand (`apt install shellcheck`) — the `|| true` means a missing
+        # binary silently skips the check rather than failing the run.
+        # Advisory: style opinions here are not worth failing a config repo
+        # over, but the output is worth reading.
         continue-on-error: true
         run: shellcheck -S warning wss/scripts/*.sh wss/tests/*.sh hooks/*.sh .claude/*.sh || true
 
@@ -76,11 +107,43 @@ jobs:
             jq -e . "$f" > /dev/null && echo "ok   $f"
           done
 
+
+  contract:
+    # Same runner expression as `lint`'s, kept equal by hand — the reason,
+    # and what it guards, are stated once there.
+    runs-on: ${{ vars.VERIFY_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The append-only step below compares this branch against the publish
+          # branch, so it needs both of them. The default depth-1 checkout has
+          # no merge base to find and the step would fail rather than pass —
+          # which is correct behaviour and a useless build, so fetch the history
+          # instead. This repo's tracked history is small; the 100 MB in a
+          # working ~/.claude is machine state that was never committed.
+          fetch-depth: 0
+
       - name: Hook contract
         run: bash wss/tests/wss-hook-contract.sh
 
       - name: Append-only guard contract
         run: bash wss/tests/wss-append-only-test.sh
+
+
+  inspect:
+    # Same runner expression as `lint`'s, kept equal by hand — the reason,
+    # and what it guards, are stated once there.
+    runs-on: ${{ vars.VERIFY_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The append-only step below compares this branch against the publish
+          # branch, so it needs both of them. The default depth-1 checkout has
+          # no merge base to find and the step would fail rather than pass —
+          # which is correct behaviour and a useless build, so fetch the history
+          # instead. This repo's tracked history is small; the 100 MB in a
+          # working ~/.claude is machine state that was never committed.
+          fetch-depth: 0
 
       - name: Credentials never travel
         # The repo's whole premise is that one file never leaves the machine, and
@@ -273,3 +336,33 @@ jobs:
             exit 1
           fi
           echo "ok   no credential-shaped content in any tracked file"
+
+  # A single required-check context, so branch protection has one name to
+  # require rather than a list that changes whenever the job graph does.
+  #
+  # This exists because the split into lint/contract/inspect silently broke the
+  # PUBLIC repository: its protection requires a context called `verify`, the
+  # split produces three differently-named ones, and so the publish PR removed
+  # the very context its own merge required. Nothing announced it — the split's
+  # own repo was fine, and the breakage only showed when a publish tried to
+  # land. A protection rule naming job names is coupled to the job graph; this
+  # decouples them.
+  #
+  # `always()` with an explicit result test, never a bare `needs:` — a skipped
+  # dependency counts as success to `needs:` alone, which would make the gate
+  # pass while a job it names never ran.
+  verify:
+    name: verify
+    needs: [lint, contract, inspect]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: All required jobs succeeded
+        run: |
+          set -eu
+          printf 'lint=%s contract=%s inspect=%s\n' \
+            '${{ needs.lint.result }}' '${{ needs.contract.result }}' '${{ needs.inspect.result }}'
+          for r in '${{ needs.lint.result }}' '${{ needs.contract.result }}' '${{ needs.inspect.result }}'; do
+            [ "$r" = success ] || { echo "a required job did not succeed"; exit 1; }
+          done
+          echo "ok   lint, contract and inspect all succeeded"

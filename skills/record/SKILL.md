@@ -34,6 +34,8 @@ record may and may not hold is
 [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md), which is the authority
 if this file and that one ever disagree.
 
+**How supervised this write is: [`WSS.SUPERVISION-LADDER.md`](../../wss/workflow/WSS.SUPERVISION-LADDER.md)'s row for the surface — read it before any modify or delete; never restated here.**
+
 ## Routing: which file, and why it matters
 
 ```
@@ -50,6 +52,37 @@ Is it settled?
 **The first branch is the one to get right.** "Not now, because the project does
 not need it" is a **decision** → `decisions`. "We cannot start because nobody has
 chosen between A and B" is an **open decision** → `openDecisions`.
+
+### `queue-frozen`: additions route to the backlog instead
+
+**Check `→WSS.script.wss-toggle.sh --on queue-frozen` before adding to
+`WSS.record.todo` or `WSS.record.openDecisions`.** While it is on, a NEW entry
+either record would have taken goes to `WSS.record.backlog` instead, in that
+record's own format — the owner has set the work and does not want the queue
+moving until it is finished.
+
+**It is not `wss-doctor.sh`'s `--strict`**, which is a severity flag and
+unrelated. Do not conflate them; they share nothing but a word this one avoids.
+
+**What it does not touch.** Deleting a shipped entry, narrowing one, or
+correcting a claim: the freeze is on **additions**, not on keeping the record
+true. `WSS.record.decisions` is never frozen either — a decision that was made
+gets recorded whatever the queue is doing, and a freeze that suppressed the log
+would lose the reasoning rather than defer the work.
+
+**A critical or blocking finding still reaches the owner** — say it, in the
+reply, the same as always. **But it is saved to the backlog by default even
+then**, unless the owner says otherwise in answering; the toggle changes where
+the finding is *written*, never whether it is *raised*.
+
+**One enforcement point, here, and that is deliberate.** `--wss-start` Phase 6
+and `--wss-check`'s dispatch both hand their findings to this skill rather than
+writing either record themselves, so the freeze applied here covers them without
+a second copy of the rule in each. The entry that asked for this named three
+enforcement points; there is one, because those two callers write no record.
+
+**Absent means off**, so a project that has never declared the toggle behaves
+exactly as before and nothing here fires.
 
 **An entry never lives in both** — [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s
 rule 3, which is where the rule and its reasoning live. Executing it here means
@@ -106,8 +139,9 @@ grant the caller arrived with. Intake confers nothing of its own.
 
 `WSS.record.todo` is the **TODO LIST**: what is genuinely queued, what a batch
 may pick up, what someone is waiting on. `WSS.record.backlog` is everything
-else worth writing down — the non-blocking, non-critical findings a session
-turned up on its way to something else.
+else worth writing down. What each holds is
+[`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md)'s split
+table, not restated here.
 
 **The test is one question: is anything waiting on this?** If a person, a
 release, another entry or a broken thing is waiting, it is queued and goes to
@@ -168,7 +202,7 @@ Three rules that survive the medium, and are the ones most easily lost:
 
 - **The reasoning still goes to `WSS.record.decisions`, never into the item.** An
   issue body is not a decision log. Link to the decision from the item — and
-  note that the file form's closing line, "Deferred (owner|session) — see the
+  note that the file form's closing line, "Parked (owner ruled|session judgment) — see the
   decision log", stops being a pointer the moment it is read on github.com
   rather than three files away. Give a URL or a repo-relative path that resolves from there.
 - **Never fall back to a local file when the provider cannot be reached.** Say
@@ -190,16 +224,21 @@ would bite the implementer. **Not the argument for or against.**
 - [ ] **Short name.**
       What it is, concretely. Which files/tables/endpoints.
       Constraints or gotchas that would bite the implementer.
-      Deferred (owner|session) — see the decision log.
+      Parked (owner ruled|session judgment) — see the decision log.
 ```
 
 **The closing line names whose judgment deferred it, written at filing time.**
-`Deferred (owner)` when the user made the call; `Deferred (session)` when this
+`Parked (owner ruled)` when the user made the call; `Parked (session judgment)` when this
 session judged it premature. Whose judgment a deferral names is the whole
 eligibility test at the next batch start — an owner deferral is a decision not
 to reverse, a session deferral is a question addressed to the next
-`--wss-start` — and a bare "Deferred" forces every batch to open the decision
+`--wss-start` — and a bare "Parked" forces every batch to open the decision
 log to re-derive an attribute the log entry already states.
+**The marker points at the reader, not at the owner.** `Parked (owner ruled)`
+says a ruling already exists and must not be reversed; it does NOT say the owner
+still owes one. **Never write a marker whose plain reading inverts its meaning** —
+the previous spelling did, and the cost is a session reversing the owner's own
+parks because the label invited it.
 
 If a decision blocks it, mark it `[blocked → <what's undecided>]` pointing at
 `WSS.record.openDecisions`.
@@ -251,11 +290,10 @@ it silently stale.
 
 **A deferral pointer is one-way, and this step is the only thing that closes the
 loop.** A parked entry in `WSS.record.todo` cites the decision that will answer
-it — `Deferred (owner) — see the decision log's <date> (<ordinal>) entry` — but
+it — `Parked (owner ruled) — see the decision log's <date> (<ordinal>) entry` — but
 nothing ever walks that link in reverse. A session appending a decision does not
 revisit the entries now pointing at it, so an answered entry sits open and the
-next session describes the same thing a second time. That is the recorded root
-cause of a duplicate pair, and it is **not** "nothing detects duplicates".
+next session describes the same thing a second time.
 
 So, immediately after appending an entry and before this skill returns:
 
@@ -273,10 +311,9 @@ So, immediately after appending an entry and before this skill returns:
    indistinguishable from a skipped one, and an empty result is the ordinary case.
 
 **This adds no script, no record and no commit-time gate**, and that is
-deliberate. A pre-write duplicate check with a ruling menu, a helper script this
-procedure would have to quote, and a refusal in `wss-append-only.sh` were all
-proposed and all rejected: each adds machinery to catch a symptom of a one-way
-link, which is the pattern this step exists instead of.
+deliberate — each rejected alternative adds machinery to catch a symptom of a
+one-way link, which is the pattern this step exists instead of
+(`wss/logs/WSS.DECISIONS.md`'s `2026-08-15 (sixth)` entry).
 
 ## When a deferred item is later done
 

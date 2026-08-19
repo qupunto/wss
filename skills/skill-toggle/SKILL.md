@@ -1,6 +1,6 @@
 ---
-name: toggle
-description: "Toggle what each skill costs at session start — set on, name-only, user-invocable-only or off in settings.json skillOverrides, shown as a table of current levels first. Invoke only as /wss:toggle; it has no flag and is never inferred from a phrase. Levels apply from the next session start."
+name: skill-toggle
+description: "Toggle what each skill costs at session start — set on, name-only, user-invocable-only or off in settings.json skillOverrides, shown as a table of current levels first. Invoke only as /wss:skill-toggle; it has no flag and is never inferred from a phrase. Levels apply from the next session start."
 disableModelInvocation: true
 disable-model-invocation: true
 ---
@@ -35,7 +35,7 @@ disabled, so those flags stop firing while the slash form (if any) survives.
    ```bash
    S="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
    [ -x "$S/wss/tests/wss-doctor.sh" ] || S=$(ls -d "$S"/plugins/cache/*/wss/*/ 2>/dev/null | tail -1)
-   bash "$S"/skills/toggle/assets/wss-skill-levels.sh
+   bash "$S"/skills/skill-toggle/assets/wss-skill-levels.sh
    ```
 
    Those two resolution lines are [`contracts`](../contracts/SKILL.md)'
@@ -48,8 +48,8 @@ disabled, so those flags stop firing while the slash form (if any) survives.
    The script refuses rather than rendering a table it cannot trust: no `jq`,
    unreadable settings, or no skills tree at all exits 1 with the reason.
 
-2. **Collect the changes.** `/wss:toggle <skill> <level>` applies directly;
-   bare `/wss:toggle` asks, with the table as context. `on` means *delete the
+2. **Collect the changes.** `/wss:skill-toggle <skill> <level>` applies directly;
+   bare `/wss:skill-toggle` asks, with the table as context. `on` means *delete the
    entry* — absence is the enabled state; do not write an `on` value.
 
 3. **Refuse what would break, warn what will change:**

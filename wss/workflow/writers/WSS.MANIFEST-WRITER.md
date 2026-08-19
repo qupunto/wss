@@ -2,6 +2,8 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md), whose [read-inheritance rule](WSS.WRITERS.md#read-inheritance) this follows. Sole writer of `.claude/WSS.WORKFLOW.json`, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
+**How supervised this write is: [`WSS.SUPERVISION-LADDER.md`](../WSS.SUPERVISION-LADDER.md)'s row for the surface — read it before any modify or delete; never restated here.**
+
 Which keys may exist at all is [`WSS.MANIFEST.md`](../WSS.MANIFEST.md), the
 authority this procedure validates against.
 

@@ -45,6 +45,10 @@ goes wherever audit coverage is currently thinnest.
   compartmentalization audit (only orchestrators compose); SOLID; code
   coherence; **transparency and reliability**, defined in their own section
   below because neither is self-defining for a suite made of prose.
+- **The ruling dimension** — §12: the ruling system audited as a governed
+  surface — rulebook, arbiters, venues, ladders, checklists — defined in its
+  own section below. It judges the system's own records and machinery; the
+  per-rule enforcement split stays §11's. (Owner's rule.)
 - **The per-skill table** — every skill, with body and description bytes,
   per-invocation load, usefulness, real use graded from artifacts (tags,
   entries, PRs, sweep stamps — never impressions), a trim note at the "could be
@@ -83,12 +87,11 @@ next pass's checklist.
 
 ## Transparency and reliability — the two the order puts first
 
-They are numbered §10 and §11: last in the report, first in the owner's order
+They are numbered §10 and §11: late in the report, first in the owner's order
 (transparency > reliability > efficiency). **The numbering keeps §1–§9
-comparable with the frozen series and says nothing about rank** — efficiency has
-been §1 since pass 1 while neither of these was anywhere, which is the gap they
-close. Both are scored like any other dimension: an anchored 10, and the
-concrete moves that would raise it.
+comparable with the frozen series and says nothing about rank.** Both are
+scored like any other dimension: an anchored 10, and the concrete moves that
+would raise it.
 
 **§10 Transparency — does a run say what it actually did?** Not whether the
 prose promises disclosure, but whether the disclosure survives the unhappy path,
@@ -110,20 +113,57 @@ rule the pass touches, name what holds it up: a script, test, gate or hook
 (**mechanical**), or prose a model may or may not follow (**asserted**). Report
 the split as a count, not an impression. Then, for each mechanical one, whether
 a broken check fails the run or passes vacuously — **a gate that cannot fail is
-`asserted` wearing a script's clothes**, and pass 13's F1 is the worked example.
+`asserted` wearing a script's clothes**.
 The findings this dimension produces: a rule with no detector; a check that
 self-skips on a file it cannot see; a claim written in two places where a change
 can half-land; an enforcement whose last real firing nobody can date. **§9
 inventories the mechanisms; this dimension judges whether the rules have any** —
 do not repeat the inventory here.
 
-## The report's shape
+## §12 Ruling — the ruling system as a governed surface
 
-**This section exists so a pass never has to open its predecessor to learn what
-a report looks like.** That was the standing reason to read the previous report
-in full, and reading it for *shape* is how each pass inherited the last one's
-prose habits along with its structure — the series runs from roughly 8 KB to
-45 KB on one rubric, which is a spread in style, not in findings.
+The vocabulary is canon, not this file: rule, judge, venue, consequence,
+gate, router, tier, domain, custody state, currency enforcer and the two
+ladders are [`../rules/WSS.RULES-INDEX.md`](../rules/WSS.RULES-INDEX.md)'s and
+[`WSS.SUPERVISION-LADDER.md`](../workflow/WSS.SUPERVISION-LADDER.md)'s. This
+dimension judges the system itself — its records, its arbiters, its ladders —
+never the per-rule enforcement split, which is §11's, and never the mechanism
+inventory, which is §9's.
+
+Findings come from execution, like everywhere else in this rubric:
+
+- **Schema conformance, exercised** — `wss-rules-checkup.sh` (and the JSON
+  generator, once it exists) run against a scratchpad fixture holding one
+  malformed row; the run must fail loud, never skip a row silently.
+- **Custody honesty** — per judge, one sampled `held` row's mechanism made to
+  fire on a synthetic breach. A row claiming `held` whose check cannot fail
+  is `asserted` wearing custody.
+- **Exception currency** — every `bound_expires` evaluated against the tree;
+  a met expiry still standing is a finding.
+- **Consumer resolution, both directions** — the index's consumer table
+  resolves, and no consumer's own files cite a rule outside its declared set.
+- **Precedence completeness** — known rule-vs-rule collisions each resolve to
+  a `precedence` row, a ruling, or an open decision; reported as a count.
+- **Prohibitions without a blocking venue, as a count** — rows with
+  `kind: prohibition` not `held` at a venue that can refuse or fail.
+- **Ladder coverage** — the doctor's supervision-ladder check re-exercised in
+  both directions, dispatch-ladder drift both ways, and the
+  unassigned-surface fail-closed default exercised once with a fixture key.
+- **Gates fail loud** — an action proceeding without a verdict must be as
+  loud as an action blocked despite one; probe the known silent paths.
+- **Log-only rulings, sampled** — each either promoted to a row or
+  deliberately SESSION-filed. Shrinking that floor is this dimension's
+  principal path up.
+
+**An empty rulebook scores as "structure verified, nothing filled"** — a
+result distinguishable from never-looked-at, and never a fail: rows land
+under their own milestone, and this dimension does not front-run it
+(structure before enforcement, owner's rule). Anchored like every
+dimension — the 10 is every rule resolvable in one bounded read to its judge,
+venue and consequence; every held claim surviving its breach fixture; zero
+met expiries standing; the log-only floor at zero.
+
+## The report's shape
 
 ```
 # Independent Audit — Pass N
@@ -136,6 +176,7 @@ prose habits along with its structure — the series runs from roughly 8 KB to
 ## 9. THE INSPECTION STACK                                           ~1.5 KB
 ## 10. TRANSPARENCY   obligations exercised, fixture and output         ~1 KB
 ## 11. RELIABILITY    mechanical vs asserted, and fails-closed          ~1 KB
+## 12. RULING         the system's own records and machinery, exercised  ~1 KB
 ## FINDINGS                             ranked; ~1 KB each, count free
 ## PROVEN CLEAN                         numbered, with the evidence      ~1 KB
 ## LAST STEP — duplicates against `WSS.record.audits`                ~0.5 KB
