@@ -20,7 +20,7 @@ arrow written before a Job 3, 4 or 5 edit lands describes a tree that no longer
 exists.
 
 **Every skill, agent, script and hook entry in `.claude/WSS.TOOLS.json` needs a
-matching row here, and every catalog row of those four kinds needs a matching
+matching row here, and every catalog row of those kinds needs a matching
 entry there.** `wss-doctor.sh` verifies that pairing on every run (not
 `--check`, which is `wss-tools-inventory.sh`'s flag, not this script's) — keep
 it true rather than letting either side drift. A contract, reference or writer
@@ -42,6 +42,8 @@ and `.claude/agents/*.md`, and say so.
 
 Who owns what else is
 [`wss/workflow/WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md).
+
+**How supervised this write is: [`WSS.SUPERVISION-LADDER.md`](../../wss/workflow/WSS.SUPERVISION-LADDER.md)'s row for the surface — read it before any modify or delete; never restated here.**
 
 ## When it triggers
 

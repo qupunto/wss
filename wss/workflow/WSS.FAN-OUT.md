@@ -83,9 +83,7 @@ Every shard's brief carries, explicitly:
   standing caveat that line numbers drift and the file plus description is the
   real reference. Re-locate rather than concluding an item is stale.
 - **Every exact old-string the brief hands over has been re-grepped immediately
-  before dispatch.** A design authored in an earlier wave goes stale under a
-  sibling that rewrote the paragraph it quoted, and a shard applying it
-  faithfully then fails on a string that no longer exists. The re-verification is
+  before dispatch.** The re-verification is
   the **caller's**, never the shard's: Execute's premise is that no judgement is
   needed, and a shard told to re-locate its own anchors is exercising the
   judgement its tier does not pay for. Where an anchor has moved, re-locate it by
@@ -93,8 +91,21 @@ Every shard's brief carries, explicitly:
   fresh string.
 - **Its file ownership list**, and the instruction to stop rather than write
   outside it.
-- **Its rung from [the dispatch ladder](WSS.DISPATCH-LADDER.md)** — its tier
-  passed as the launch's model override.
+- **No git command that touches a path outside its own file-ownership list —
+  `reset`, `checkout`, `restore`, `clean`, `stash`, or any other command that
+  can rewrite or discard working-tree content.** The unit of parallelism is
+  one shared working tree (above), so every shard's `git status` shows every
+  other shard's — and the caller's own — legitimate in-progress work as, from
+  that shard's local view, unexplained dirt. A shard "cleaning" the tree
+  before writing its own files destroys work it was never told existed.
+  `wss/logs/WSS.DECISIONS.md`'s `2026-08-17 (twenty-fifth)` entry has the
+  reasoning.
+- **Its rung from [the dispatch ladder](WSS.DISPATCH-LADDER.md)**, named in the
+  brief so the assignment is checkable rather than felt. **What the launch call
+  itself passes is that file's and is not restated here** — see its "Which model
+  runs a task", which fixes the whole chain from task type to the agent's own
+  `model:` key. This file settles partitioning; the ladder settles dispatch, and
+  the division is the same one the anchor-freshness rule already follows.
 - **The operative sentences of any decision entries that bear on it** — quoted
   once from the index, not looked up by name by every shard. Plus the relevant
   slice of the behaviour record for what a rule currently *is*.
@@ -127,3 +138,17 @@ Every shard's brief carries, explicitly:
   ([`writers/WSS.GIT-WRITER.md`](writers/WSS.GIT-WRITER.md)).
 - **Do not touch any record file.** Report what changed and why; the caller's
   own record phase writes it.
+
+## When a shard stops, the question routes to the records or to the owner
+
+**A rung that stops on a question hands the caller a problem, not a license.**
+The caller has exactly two legal moves: answer it from the records — the
+decision log, the behaviour record, the reference — quoting the operative
+entry in the re-brief so the answer is checkable; or derive it to the owner,
+batched into the same ask as the open decisions. The caller's own judgment is
+not a source. Every rung already refuses to guess — Analyze stops on a false
+premise, Design stops rather than designing around one, Execute has no third
+option between executing as written and stopping — so a caller that quietly
+settles the question itself and re-briefs is the last place a guess survives,
+and it survives wearing the re-brief's authority. The doctrine is the owner's:
+`wss/logs/WSS.DECISIONS.md`'s `2026-08-18 (eighteenth)` entry.

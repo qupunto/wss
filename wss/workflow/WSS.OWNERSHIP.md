@@ -13,6 +13,8 @@ Shared ownership does not stay shared for long: two skills that both write a fil
 end up each carrying a paragraph negotiating which one really owns it, deferring
 to each other on different axes. That negotiation is the symptom, not the fix.
 
+**How supervised each write is — free, evidence-gated, prompted or forbidden, per surface and action — is [`WSS.SUPERVISION-LADDER.md`](WSS.SUPERVISION-LADDER.md)'s and never this matrix's: this file says who writes, that one says how attended the write is.**
+
 ## Two tiers
 
 | Tier | Writes | Fires on |
@@ -93,6 +95,15 @@ unevenly stops being one.
 resolve, that cited sections exist, and that manifest keys are real — it does not
 watch writes, and nothing diffs a commit against the matrix.
 
+**A `WSS.record.*` name in this matrix's "Sole writer of" column does not say
+which file declares its path.** Usually `.claude/WSS.WORKFLOW.json`; for a
+record no global skill reads, it may instead be
+`.claude/WSS.LOCAL-RECORDS.json` — `WSS.MANIFEST.md`'s "Not manifest keys"
+carve-out. `wss-commit-provenance.sh` merges both into one key space, so the
+row is spelled identically either way. Who writes new entries *into*
+`.claude/WSS.LOCAL-RECORDS.json` itself is not yet settled — `manifest-writer`
+owns the manifest proper and has not been asked to take this on.
+
 ## The matrix
 
 | Verb | Flag | Skill or procedure | Tier | Sole writer of | Authorization the flag grants |
@@ -102,13 +113,14 @@ watch writes, and nothing diffs a commit against the matrix.
 | list the flags | `--wss-flags` `--wss-help` | *the hook itself* | — | **nothing** — it reads `wss-shorthand-flags.sh`'s own FLAGS array and prints what resolves here | — |
 | alerts | `--wss-alerts` | *the hook itself* | — | **nothing** — it toggles the machine-local state file the alert hook reads, which is a preference rather than a record | — |
 | track | `--wss-track` | `track` | primitive | the session task list | — |
-| defer | `--wss-todo` | `record` | primitive | `WSS.record.todo`, `WSS.record.backlog`, `WSS.record.openDecisions`, `WSS.record.decisions` and its generated `WSS.record.decisionsIndex` | — |
+| defer | `--wss-todo` | `record` | primitive | `WSS.record.todo`, `WSS.record.backlog`, `WSS.record.openDecisions`, `WSS.record.decisions` and its generated `WSS.record.decisionsIndex`, plus the two project-local standing registers `WSS.record.exerciseDebt` and `WSS.record.ruleEnforcementStatus` (`.claude/WSS.LOCAL-RECORDS.json` — same judgment-based, appended-over-time shape as the backlog, per `WSS.MANIFEST.md`'s "Not manifest keys") | — |
 | record | `--wss-log` | `record` *(same skill as `--wss-todo`)* | primitive | `WSS.record.decisions` and its generated `WSS.record.decisionsIndex` — **and the delete from `WSS.record.openDecisions`** that settling an entry entails, which is the same skill's file and so not a second writer | — |
 | order | `--wss-plan` | `plan` | primitive | `WSS.record.roadmap` — every lane's copy — **and** `WSS.record.releases`, the release list, which never splits | — |
 | scout | `--wss-scout` | `scout` | primitive | `WSS.record.toolbelt` — the registry of adopted capabilities; the reasoning behind each row goes through `--wss-log`, which is `record`'s file | — |
 | catalog | `--wss-catalog` | `catalog` | primitive | `WSS.record.tooling.catalog` | COMMIT, not push |
 | tidy | `--wss-tidy` | `tidy` | primitive | stale claims, the prose prune, the token-economy sweep, the rot-resistance sweep and the routing sweep inside `WSS.record.tooling.sources` | COMMIT, not push |
 | measure | — | `wss-tools-inventory.sh` | primitive | `WSS.record.tooling.inventory` | — |
+| fill rulebook rows | — | `agents/wss-rules-writer.md`, dispatched by whichever caller has already decided a row (none yet — planned under the roadmap's Fourth block) | primitive | `WSS.record.rules` — `wss/rules/`'s judge files and index (`.claude/WSS.LOCAL-RECORDS.json`, per `WSS.MANIFEST.md`'s "Not manifest keys": no other adopting project's global skill reads this project's own rulebook rows) | — |
 | build | `--wss-start` | `start` | orchestrator | source code | COMMIT as the work lands, not push |
 | document | `--wss-docs` | `docs`, which dispatches to [`writers/WSS.DOCS-WRITER.md`](writers/WSS.DOCS-WRITER.md) | orchestrator | **nothing** — it settles whether a subject earns a page, which page, and which tier, then hands the target over | — |
 | draw | `--wss-diagram` | `docs` *(same skill as `--wss-docs`)* | orchestrator | **nothing** — one ad-hoc diagram, placed here and written by the same primitive, landing as a page in the site's annex directory | — |
@@ -116,9 +128,9 @@ watch writes, and nothing diffs a commit against the matrix.
 | stamp | — | [`writers/WSS.SWEEP-TRACKER.md`](writers/WSS.SWEEP-TRACKER.md) | primitive | `WSS.sweeps` — the checkpoint cache | — |
 | hand over | — | [`writers/WSS.HANDOFF-WRITER.md`](writers/WSS.HANDOFF-WRITER.md) | primitive | `WSS.record.handoff` | — |
 | note | — | [`writers/WSS.CHANGELOG-WRITER.md`](writers/WSS.CHANGELOG-WRITER.md) | primitive | `WSS.record.changelog` | — |
-| declare | — | [`writers/WSS.MANIFEST-WRITER.md`](writers/WSS.MANIFEST-WRITER.md) | primitive | `.claude/WSS.WORKFLOW.json` | — |
+| declare | — | [`writers/WSS.MANIFEST-WRITER.md`](writers/WSS.MANIFEST-WRITER.md) | primitive | `.claude/WSS.WORKFLOW.json` **and** `.claude/WSS.LOCAL-RECORDS.json` — its project-local sibling, same key-to-path shape, so one procedure writes both rather than a second one existing for a file that differs only in which keys it may hold | — |
 | describe | `--wss-describe` | `describe`, which dispatches to [`writers/WSS.BEHAVIOUR-WRITER.md`](writers/WSS.BEHAVIOUR-WRITER.md) | primitive | `WSS.record.behaviour` — the writer's; the skill is a route to it and writes nothing | — |
-| reference | `--wss-reference` | `reference`, which dispatches to [`writers/WSS.REFERENCE-WRITER.md`](writers/WSS.REFERENCE-WRITER.md) | primitive | `WSS.record.reference` — the writer's; the skill is a route to it and writes nothing | — |
+| reference | `--wss-reference` | `reference`, which dispatches to [`writers/WSS.REFERENCE-WRITER.md`](writers/WSS.REFERENCE-WRITER.md) | primitive | `WSS.record.reference` and `WSS.record.setup` — the writer's; the skill is a route to them and writes nothing | — |
 | log an audit | — | [`writers/WSS.AUDIT-WRITER.md`](writers/WSS.AUDIT-WRITER.md) | primitive | `WSS.record.stocktake` — the stocktake log — plus `WSS.record.audits`, the index of independent passes, one row per report | — |
 | write a page | — | [`writers/WSS.DOCS-WRITER.md`](writers/WSS.DOCS-WRITER.md) | primitive | the documentation site — every page and annex page, their `_sidebar.md` and `index.md` rows, the translation mirrors, and the diagrams inside any of them | — |
 | commit | — | [`writers/WSS.GIT-WRITER.md`](writers/WSS.GIT-WRITER.md) | primitive | commits and tags | — |
@@ -132,7 +144,7 @@ watch writes, and nothing diffs a commit against the matrix.
 | report upstream | `--wss-report` | `report` | orchestrator | **nothing with an owner** — it appends to the machine-local inbox, which any session in any project may write | none — opening the upstream issue needs a fresh OK in that turn |
 | synch lanes | — | `lane-record-sync` | orchestrator | **nothing with an owner** — every finding is appended to the addressed lane's transfer queue, which has no single writer; it drains `WSS.lanes.conflicts`, the queue it is the sole consumer of; and the run's entry goes through `audit-writer` | none — **and it has no flag by design.** Slash-invoked only, so it can never fire from a phrase, a batch or another skill. A flagless row can confer no grant, because there is no hook block to state one and no flag for `git-writer` to trace back to; the user is present throughout a slash-only run, so asking costs one question. Its git work is **local and fast-forward-only, through `git-writer`** — nothing authored, nothing pushed — and **the push is never on offer**, since those local landings would otherwise reach the remote as a side effect of tidying up. Its close-out hands to `--wss-wrap`, which inherits that nothing and **asks for its own commit in that turn** — the same shape as `report upstream` above |
 | retire | — | `retire` | orchestrator | **nothing** — the retire and reset scripts delete, the export script archives, and a deletion is not a record write; the dirty tree it leaves is the user's to commit or restore | none — **and it has no flag by design.** Slash-invoked only, and its own frontmatter blocks model invocation, so a deletion can never fire from a phrase, a batch or another skill; each destructive action runs only where the user checked its box in that turn |
-| toggle | — | `toggle` | orchestrator | **nothing with an owner** — it rewrites `skillOverrides` in the user's `settings.json`, which is settings rather than a record | none — **and it has no flag by design.** Slash-invoked only, and its frontmatter blocks model invocation, so a change to what sessions load can never fire from a phrase, a batch or another skill |
+| toggle | — | `skill-toggle` | orchestrator | **nothing with an owner** — it rewrites `skillOverrides` in the user's `settings.json`, which is settings rather than a record | none — **and it has no flag by design.** Slash-invoked only, and its frontmatter blocks model invocation, so a change to what sessions load can never fire from a phrase, a batch or another skill |
 | prepare for audit | — | `wss-preflight` *(repo-only; `.claude/skills/`)* | orchestrator | **nothing with an owner** — bounded fixes land in files the matrix does not claim (scripts, CI, the `wss/workflow/*.md` contracts); every record write goes through that record's own writer under this grant | commit, **not** push — an audit runs against a local tree, and publishing an unaudited change set of that size is what the audit exists to prevent. **No flag by design**, and its frontmatter blocks model invocation: a run that rewrites prose across the tooling files and commits must never fire from a phrase or a batch |
 | audit | — | `wss-audit` *(repo-only; `.claude/skills/`)* | orchestrator | **nothing with an owner** — the frozen report it files under `wss/logs/audits/` is not a declared record and so has no writer to be; the index row is emphatically not its own and goes through `audit-writer` | commit, **not** push. **No flag by design**, same frontmatter block. It applies no finding: the report is frozen when it lands, and remediation is a separate decision |
 
@@ -260,6 +272,21 @@ A skill never decides how much it is allowed to do. The grant in the table above
 is conferred by the user typing the flag, and it is stated in the hook block that
 fires — so a skill cannot widen its own permissions by editing its own
 instructions.
+
+**This layer and the harness's own ask-list are not in contest, and reading them
+as rival authorities is the mistake to avoid.** The grant above settles *which
+records a skill may write, and whether it may commit or push*. `settings.json`'s
+permission rules settle *which shell commands prompt the user before running*.
+A command can be pre-approved by the harness and still be forbidden here, and a
+skill can hold a write grant for a record while every command it would use to
+write it prompts. They answer different questions about different objects, so
+neither overrides the other and no precedence rule between them is owed.
+
+**What a suite-written file may be *called* is a third axis again**, and it is
+[`WSS.NAMING.md`](WSS.NAMING.md)'s — the filename grammar. That file points here
+for who may write a record; this is the pointer back. Ownership is not
+authorship: being a file's sole writer does not make its format ours, which is
+the distinction that file's own closing section draws.
 
 **A skill invoked by another skill inherits the caller's grant, never its own
 flag's.** This is the rule that keeps dispatch from being a privilege escalator:
@@ -413,7 +440,7 @@ emitted on every path, so a block always states a grant even when it cannot read
 one.
 
 **Where this column is `—` the flag's block writes its own line and calls
-nothing** — there is no grant to derive, and the five such blocks carry
+nothing** — there is no grant to derive, and some such blocks carry
 elaboration this column deliberately does not hold. **What the column itself may
 not carry is elaboration**: anything beyond the grant belongs in the block's
 `Irreversible, in force before the skill loads:` list, not here. That rule used

@@ -8,6 +8,58 @@ reasoning behind each change, is `WSS.CHANGELOG.md`. This file is deliberately
 free of that: if an entry here only makes sense to someone editing the suite, it
 belongs in the other one.
 
+## 0.15.1 — 2026-08-19
+
+**Two Claude sessions can now share one checkout without stepping on each
+other.** One designs and answers questions; the other runs the work and owns
+every commit. A new `pair` skill states which is which, what each may
+write, and how finished planning moves between them — as files in a directory,
+rather than as messages that can silently fail to arrive.
+
+**Your session is told which role it holds when it starts**, and nothing is
+injected at all if you are not running a pair — an unpaired checkout pays
+nothing for this.
+
+**Fixed:** a diagnostic message could appear as the stated reason a check
+failed, when it was neither the cause nor anything you could act on.
+
+## 0.15.0 — 2026-08-19
+
+**How your work ships now has a shape, and the suite carries it instead of
+contradicting it.** Each unit of work goes on its own branch off `main`, named
+for what it is — `feature/`, `fix/`, `refactor/`, `docs/`, `chore/`. The
+integration branch becomes a disposable test bench: work is proved there, but
+nothing ships from it, so it can be thrown away and rebuilt without losing
+anything a release depends on. A release is assembled by choosing branches
+onto a release branch, and that branch is what the pull request to `main`
+comes from.
+
+**Pull requests no longer come from the integration branch.** If you never
+tell the suite what to call release branches, it assumes `release/v<version>`
+and says so. This is the release that shipped through its own flow first.
+
+**If your project has a QA stage, you can now say so.** Turn on the staging
+tier and releases pass through `staging`, with QA approval gating the pull
+request to `main`. It is off by default, and off means nothing changes.
+
+**Pull request descriptions are now a checklist the suite fills in with
+evidence.** Before drafting, it runs the checks; every tick has the command
+that earned it written beside it, a failed check stays unticked with the
+failure quoted, and the lines only a person can honestly answer are left for
+you.
+
+**Batch work lands as one commit per idea, each on its own typed branch**,
+instead of arriving as a single mixed commit — so reverting one idea no
+longer means unpicking the others.
+
+**One command changed its name.** The skill that switches other skills on and
+off is `skill-toggle` now, not `wss-toggle` — the old name claimed far
+more than the skill did.
+
+**Nothing in your project needs to change for this release.** Updating
+applies nothing, because nothing is owed: every new behaviour reads a setting
+you may declare, and does something sensible out loud when you have not.
+
 ## 0.11.1 — 2026-08-17
 
 **If you were waiting on 0.11.0, this is the one to take.** 0.11.0 was tagged but
@@ -346,7 +398,7 @@ treats it as fatal.
 now start with it injected, exactly as a declared mapping always did.
 Previously it was silently unread, and nothing told you.
 
-**`/wss:toggle` controls what each skill costs at session start.** It shows
+**`/wss-toggle` controls what each skill costs at session start.** It shows
 every skill's current load level, changes it safely — refusing a level that
 would break a skill other skills depend on, and warning when a change would
 silence one of the `--wss-*` flags — and can only be invoked by name, never by

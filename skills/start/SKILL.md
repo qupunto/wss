@@ -86,6 +86,13 @@ so step 3 below is never optional because of it.
    to catch. If the dirt is not this session's, stop and say so rather than
    building on it.
 
+   **Peer sessions serialize on the one checkout, and the serialization has a
+   shape.** Whoever holds it works its branch; `WSS.branch.integration` is
+   rebuilt only by the holder, never by a session that arrived second. A second
+   session that wants the tree yields it — it does not rebuild the bench under
+   the one that has it. The decision log's `2026-08-19 (thirty-eighth)` entry,
+   and the paired designer/executor protocol built on it is `(forty-seventh)`.
+
    **In a lane worktree, two moves come first.** Lane mode is on where a
    `.claude/WSS.LANE` selector is present, or the manifest declares
    `WSS.lanes.named`. Where it is, **read
@@ -100,6 +107,16 @@ so step 3 below is never optional because of it.
 3. **Read the three planning records**, plus `WSS.record.decisionsIndex` — the
    block's `== planning records ==` section already named each one's resolved
    path, existence and size; the content is only in the files themselves.
+
+   **What counts as a finding while reading them is
+   [`WSS.RECORD-READING.md`](../../wss/tests/WSS.RECORD-READING.md)**, whose runner
+   this phase is — read it before trusting any entry's citations or concluding
+   that nothing is eligible. It holds the greps for a blocker sitting outside
+   `WSS.record.openDecisions`, the deferral-authority test that decides whether
+   Phase 2 may reverse a parked entry, and the reason a dead citation and a real
+   blocker are indistinguishable at selection time. **An empty open-decisions
+   record is not the evidence it looks like**, and that method is where the
+   locations a blocker has actually hidden in are kept.
 
    **This is also where the TODO LIST gets its duplicate read-back.** The
    write-time rule in `skills/record/SKILL.md` — check for an equivalent
@@ -121,7 +138,7 @@ so step 3 below is never optional because of it.
 
    Output is clusters of `file:line` pairs, each with a proposed disposition.
    **It detects and asks; it never merges** — entries carry different
-   deferral authorities, and `Deferred (owner)` versus `Deferred (session)` is
+   deferral authorities, and `Parked (owner ruled)` versus `Parked (session judgment)` is
    the whole eligibility test Phase 2 applies at the next `--wss-start`, so an
    automatic merge would silently change what a later batch may reverse. Put
    every cluster to the user as a ruling, batched into Phase 1 alongside the
@@ -272,7 +289,17 @@ a single message, and the brief's required fields, including one this skill
 states again because it drives the launch call itself:
 
 - **Its rung from [the dispatch ladder](../../wss/workflow/WSS.DISPATCH-LADDER.md)**
-  — assigned in Phase 3, passed as this launch's model override.
+  — assigned in Phase 3, and cited in the same breath as the launch, per that
+  file's "Citing a rung". **Route the shard to its rung's declared agent and let
+  that agent's own `model:` be the tier.** That key is the resolved end of a chain
+  the ladder fixes at every link — task type picks the agent, the agent's rung is
+  what the agent is, the rung's tier is the ladder's table — which is why
+  `wss-doctor.sh` fails an `agents/*.md` whose frontmatter disagrees with its row.
+  **What the launch call itself passes is settled once, in the ladder's "Which
+  model runs a task", and is not restated here** — including the one case that
+  reaches for the tier mapping directly, which is no agent covering the task type
+  at all. The ladder calls that a gap in itself, to be reported rather than
+  settled quietly by the caller.
 
 Route each shard to its owner from `agents.*` — this skill writes no feature
 code itself:
@@ -294,7 +321,7 @@ so. Do not substitute a different *role's* agent, which is how a test shard ends
 writing feature code; routing by rung on an undeclared role is not the same move,
 because every rung agent is role-agnostic by construction.
 
-**This inverts the old default, and the cost is real: say it plainly.** A shard
+**The cost is real: say it plainly.** A shard
 whose rung's tool grant withholds something the work turns out to need now fails
 rather than proceeding on the widest possible grant — the ladder treats that as a
 match failure working correctly, not as a reason to widen the fallback back out.
@@ -302,15 +329,16 @@ Grant cost is priced per spawn, absolute, so the common case (undeclared) is wha
 had to stop being the expensive one.
 
 Undeclared is the normal case, not a misconfiguration: `--wss-adopt` tells a
-project with no agent files to omit `agents` entirely, on the strength of this
-fallback — now the rung-agent fallback, not `general-purpose`. Inline is the
+project with no agent files to omit `agents` entirely, on the strength of the
+rung-agent fallback. Inline is the
 exception — for a shard too small to be worth a brief — because a shard run inline
 spends its whole read-and-edit cycle in the orchestrator's context, and every
 phase after it pays that context back on every call it makes.
 
 In this skill's own phasing, the fan-out method's "consented run" a test shard
 budgets an iteration after is Phase 5's; a shard's commit happens in Phase 5
-step 3, through `git-writer`; its record entries are written in Phase 6.
+step 3, through `git-writer` — as part of the batch commit, never as a commit
+of its own; its record entries are written in Phase 6.
 
 ## Phase 5 — Integrate and verify, once
 
@@ -344,10 +372,37 @@ In order, and none of these are optional:
    working until a nonsense error appears far from the cause.
 2. **`WSS.commands.typecheck`.** Cross-shard type breakage lives here and nowhere
    else — it is the one failure no individual shard can see.
-3. **Commit each shard separately** through `git-writer`, telling it which files
-   belong to which shard — the partition is yours to know, the trailer and the
-   staging rules are its. Before the suite, not after: the suite may reset state
-   destructively, and a crash mid-run should cost the run, not the work.
+3. **Commit the whole batch grouped by CONCEPT** — never per shard, never per
+   file — through `git-writer`, and **wait until every shard has finished
+   first**. Sharding exists so parallel work cannot collide in one commit; it
+   is not a unit of history. A commit is one concept and may span a dozen files
+   across several shards — a fix to a workflow is one fix however many shards
+   touched it — and per-shard commits bloat the history with divisions no
+   reader of it cares about. The decision log's `2026-08-19 (thirty-ninth)`
+   entry, which supersedes the earlier one-branch-per-shard-batch draft.
+
+   - **One commit per concept, each on its own typed branch off
+     `WSS.branch.publish`**, per the taxonomy: `feature/` `fix/` `refactor/`
+     `docs/` `chore/` `release/`, as `folder/short-hyphenated-description`,
+     lowercase, an issue id after the slash spelled as the tracker spells it.
+   - **Nothing commits directly to `WSS.branch.integration`.** It is a
+     disposable test bench, rebuilt at will, so a commit that exists only there
+     dies when it is rebuilt. **Even a one-liner gets a `chore/` branch**
+     (`(thirty-fifth)`).
+   - **Every message follows the commit profile** — `(fortieth)`.
+   - **The grouping is your judgment at commit time and nothing downstream can
+     check it, so state it in the wrap**: which concepts you cut, and which
+     shards fed each. A grouping nobody is shown is a grouping nobody can
+     challenge.
+   - **Capture every shard's report before committing, not after.** Waiting for
+     the batch moves the commit further from the work that explains it. The
+     edits themselves survive a compaction — they are on disk — but the
+     reasoning does not, and the reasoning is what the message was for. That is
+     the cost this ruling accepted; it is not an argument for committing per
+     shard, and it is not a licence to write a thin message.
+
+   Before the suite, not after: the suite may reset state destructively, and a
+   crash mid-run should cost the run, not the work.
 4. **Ask for suite consent, then run `WSS.commands.test` once.** Use the coverage
    command, not a bare test run — a green suite says nothing about the coverage
    gate, and `WSS.gate.coverage` is what CI enforces. A coverage gate can sit red
@@ -397,8 +452,11 @@ is the read/write race Phase 3 describes.
 1. **`--wss-todo`** — remove what shipped, and rewrite anything that turned out
    bigger than its checkbox with what was actually learned. Completed items
    *leave*; they are not kept struck through.
-2. **`--wss-log`** — any non-obvious call a shard made while building. Phase 1's
-   decisions are already recorded.
+2. **`--wss-log`** — any non-obvious call a shard made while building, and,
+   whenever a Design-rung shard ran this wave, the rationale behind its design —
+   always, never waved through as obvious. A design returns into this session's
+   context and nothing else preserves its why. Phase 1's decisions are already
+   recorded.
 3. **`behaviour-writer` and `reference-writer`** — what the *code* changed:
    `WSS.record.behaviour` for runtime rules, `WSS.record.reference` for schema and
    architecture. Straight to the owning primitive, not through `--wss-docs`, which

@@ -155,6 +155,12 @@ wss/flags/
 !.claude/WSS.WORKFLOW.json
 !.claude/WSS.HANDOFF.md
 !.claude/WSS.HAZARDS.md
+# Project-local records no global skill reads — kept out of the manifest per
+# WSS.MANIFEST.md rule 1, still commit-provenance checked via
+# wss-commit-provenance.sh's local_records read. Tracked here so writes to it
+# are checked and history-backed; never shipped — wss-publish.sh removes it
+# and Gate 2's .claude/ whitelist backstops a dropped rm.
+!.claude/WSS.LOCAL-RECORDS.json
 !.claude/agents/
 !.claude/agents/**
 !.claude/skills/

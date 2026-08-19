@@ -2,6 +2,8 @@
 
 > **A procedure, not a skill** — see [`WSS.WRITERS.md`](WSS.WRITERS.md), whose [read-inheritance rule](WSS.WRITERS.md#read-inheritance) this follows. Sole writer of the sweep checkpoint, per [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md).
 
+**How supervised this write is: [`WSS.SUPERVISION-LADDER.md`](../WSS.SUPERVISION-LADDER.md)'s row for the surface — read it before any modify or delete; never restated here.**
+
 One file, one job. It owns the sweep checkpoint — the cache that lets a sweeping
 skill re-read only what changed since it was last approved, instead of paying
 full price on every invocation. Which sweeps use it is not listed here: the
@@ -41,9 +43,7 @@ them is an error worth stopping for.
 The caller hands over its method and, per scope, the globs it covered and the
 globs it did not. **It does not hand over a baseline** — the write step
 computes it. A typed baseline can drift from the commit it claims to be; a
-computed one cannot, and the drift that closes is one this suite actually had
-(`wss/logs/WSS.DECISIONS.md`, "Tooling splits three ways, and the collector is a
-script because none of it is judgment").
+computed one cannot.
 
 1. **Refuse a stamp that carries no coverage.** A caller offering only a commit
    id is claiming its whole scope by omission. Ask it for its `covered` and

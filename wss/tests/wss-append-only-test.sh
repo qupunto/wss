@@ -146,13 +146,27 @@ smuggle_tail_both_ends_mut() {
   printf '\n## Entry 4\nBody four.\n' >> "$REPO/log.md"
 }
 
-# The other direction the per-end rule must get right, and the one a global
-# "did the record grow" test got WRONG: the tail grows, the head does not, so
-# the head entry is still the draft and rewriting it is still exempt. A fix
-# that asked about growth globally would refuse this.
-head_draft_survives_tail_append_mut() {
+# The end a record grows at is DECLARED, not inferred, and only the entry at
+# that end is ever the draft. This case asserted the opposite until 2026-08-18 —
+# that a head entry stayed a draft while the tail grew — which was correct while
+# the guard had to allow either end, because nothing told it which one grew.
+# The owner then ruled direction a property of the record: add without modifying
+# what is there, always at the same end, so prepend and append are one rule
+# rather than a rule plus an exemption. Decision log, 2026-08-18 (twenty-fourth).
+#
+# This fixture declares no direction, so it grows at the tail and its head is
+# sealed. Same mutation as before; the expectation is inverted.
+head_sealed_under_tail_growth_mut() {
   perl -0pi -e 's/^Body one\.\n/Body one.\nThe head draft is still being drafted.\n/m' "$REPO/log.md"
   printf '\n## Entry 4\nBody four.\n' >> "$REPO/log.md"
+}
+
+# ...and the same rewrite is exempt once the record says it grows at the head.
+# This is the changelog: newest first, by the convention its readers expect.
+head_draft_when_head_declared_mut() {
+  perl -0pi -e 's/"changelog": "log"/"changelog": {"mode":"log","grows":"head"}/' \
+    "$REPO/.claude/WSS.WORKFLOW.json"
+  perl -0pi -e 's/^Body one\.\n/Body one.\nThe head draft is still being drafted.\n/m' "$REPO/log.md"
 }
 
 fails=0
@@ -197,10 +211,11 @@ run_case smuggle_middle fail smuggle_middle_mut
 run_case grow_both_ends pass grow_both_ends_mut
 run_case smuggle_head_both_ends fail smuggle_head_both_ends_mut
 run_case smuggle_tail_both_ends fail smuggle_tail_both_ends_mut
-run_case head_draft_survives_tail_append pass head_draft_survives_tail_append_mut
+run_case head_sealed_under_tail_growth  fail head_sealed_under_tail_growth_mut
+run_case head_draft_when_head_declared  pass head_draft_when_head_declared_mut
 
 if [ "$fails" -eq 0 ]; then
-  echo "wss-append-only-test: all 11 cases behaved as required"
+  echo "wss-append-only-test: all 12 cases behaved as required"
   exit 0
 else
   echo "wss-append-only-test: $fails case(s) did not behave as required"

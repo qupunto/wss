@@ -24,7 +24,8 @@ writer to invoke where the matrix names the skill.
 | `WSS.record.handoff` | `handoff-writer` |
 | `WSS.record.behaviour` | `behaviour-writer` |
 | `WSS.record.reference` | `reference-writer` |
-| `WSS.record.todo` (a file, or a provider — see below), `WSS.record.openDecisions`, `WSS.record.decisions` | `--wss-todo` / `--wss-log` |
+| `WSS.record.setup` | `reference-writer` |
+| `WSS.record.todo` (a file, or a provider — see below), `WSS.record.openDecisions`, `WSS.record.decisions`, `WSS.record.exerciseDebt`, `WSS.record.ruleEnforcementStatus` | `--wss-todo` / `--wss-log` |
 | `WSS.record.decisionsIndex` — a stale generated index, per check 4 | `--wss-todo` / `--wss-log`, which owns `WSS.commands.indexRegen` |
 | `WSS.record.roadmap` — every lane's copy — and `WSS.record.releases` | `--wss-plan` |
 | `WSS.record.toolbelt` | `--wss-scout` |
@@ -167,7 +168,11 @@ owner will have to re-derive it anyway.
 
 Then dispatch. If a finding has no owner, say so plainly rather than fixing it
 yourself: an unowned record file is a gap in the matrix and worth surfacing as
-one.
+one. **That applies to a record and to nothing else.** A file with no owner
+that is not a record — a script, CI, the harness settings, a
+`wss/workflow/*.md` contract — is ordinary work rather than a gap, and
+`--wss-full-check` says so at the matching point in its own procedure. The two
+instructions read as opposite only where the record half goes unstated.
 
 **A silent inspection is as good as no inspection.** Say what you checked, what
 you found, and what you dispatched — including "nothing" where that is the

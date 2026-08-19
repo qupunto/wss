@@ -216,6 +216,21 @@ fi
 # a literal string by the time bash split argv — nothing here re-globs it.
 git add -- "${files[@]}"
 
+# A REFUSED COMMIT MUST NOT LEAVE THE INDEX STAGED. `set -e` aborts this script
+# the moment `git commit` is rejected — by the provenance guard, the append-only
+# guard, or any other pre-commit hook — but the `git add` above has already run,
+# so without this the staged set OUTLIVES the failure. The next invocation then
+# commits its own `--files` PLUS whatever the refused one left behind, under the
+# new call's authority, and `--files` exists precisely so nothing can reach for
+# a file it did not name. Observed 2026-08-19: a provenance refusal left a
+# record staged, and the following narrower commit inherited it.
+#
+# Only what THIS invocation staged is reset, never the whole index — a caller
+# that staged something itself keeps it. `|| true` covers the no-HEAD case,
+# where `git reset -- <path>` has nothing to reset against.
+committed=0
+trap '[ "$committed" -eq 1 ] || git reset -q -- "${files[@]}" 2>/dev/null || true' EXIT
+
 # --- assemble the message ---------------------------------------------------
 # Body, one blank line, then the trailer paragraph with NO blank line
 # between its two lines. Git parses only the LAST paragraph of a message as
@@ -223,7 +238,7 @@ git add -- "${files[@]}"
 # and the verification query below finds nothing (WSS.GIT-WRITER.md, "Git
 # parses only the last paragraph of a message as trailers").
 tmp_msg=$(mktemp)
-trap 'rm -f "$tmp_msg"' EXIT
+trap 'rm -f "$tmp_msg"; [ "$committed" -eq 1 ] || git reset -q -- "${files[@]}" 2>/dev/null || true' EXIT
 
 {
   printf '%s\n' "$message"
@@ -236,6 +251,7 @@ if [ -n "$writer" ]; then
   export WSS_WRITER="$writer"
 fi
 git commit -F "$tmp_msg"
+committed=1
 
 # --- verify the trailer actually parsed -------------------------------------
 # Checked with the same query a reader would run, rather than assumed correct

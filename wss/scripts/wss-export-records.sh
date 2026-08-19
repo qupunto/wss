@@ -184,5 +184,5 @@ echo "exported to $ARCHIVE:"
 sed 's/^/  /' "$list"
 if [ "$LEGACY" -eq 1 ]; then
   echo "note: read the PRE-RENAME manifest .claude/workflow.json — this is a"
-  echo "snapshot only; migrate the tree with --wss-update."
+  echo "snapshot only; migrate the tree with \`--wss-update\`."
 fi

@@ -77,10 +77,15 @@ and its four-tool grant floors far lower, so a record can clear it while
 sitting well under the figure a `general-purpose` dispatch would have to beat.
 Take the row from
 [`WSS.TOKEN-ECONOMY.md`'s per-grant table](../../wss/tests/WSS.TOKEN-ECONOMY.md#per-grant-spawn-floor);
-no figure is repeated here. Below the floor, Keep's own second clause
-holds and the read stays inline — where a young project's `WSS.record.stocktake`
-or `WSS.record.decisionsIndex` sits. Each site below names the brief to switch
-to once its record outgrows the floor.
+no figure is repeated here. **Compare against the floor divided by the turns the
+read will be held, not against the floor** — a read kept inline is re-billed on
+every later turn, and an audit has many. That correction is the owner's, adopted
+from the recompute in the decision log's `2026-08-19 (eleventh)` entry and ruled
+in `(twenty-third)`; the verdict consumes its sign and no figure is published.
+**In practice this resolves to Survey for every record this skill reads whole**,
+including `WSS.record.stocktake` and `WSS.record.decisionsIndex`, which the
+one-shot form left inline. Keep's second clause still holds below that divided
+floor — a genuinely small record, or a run ending on the turn that reads it.
 
 ## Delegate reading, keep deciding
 

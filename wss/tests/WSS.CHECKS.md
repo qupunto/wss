@@ -7,9 +7,7 @@ skill itself resolves.
 
 ## Why they are not in the skills that own them
 
-Most of these are borrowed. `--wss-full-check` and `--wss-stocktake` run the same
-record taxonomy `--wss-check` does; `--wss-full-check` runs `--wss-docs`' audit and `--wss-tidy`'s
-claim rule. A method borrowed by **citing another skill's headings** breaks
+A method borrowed by **citing another skill's headings** breaks
 silently on a rename — the borrower checks nothing while reporting success — so
 each method is its own file, and `wss-doctor.sh`'s section-citation check polices
 the citations that remain.
@@ -28,6 +26,7 @@ baked into one poisons it for the next borrower.
 | Method | What it finds | Run by |
 |---|---|---|
 | [`WSS.RECORD-DRIFT.md`](WSS.RECORD-DRIFT.md) | the classes of drift in a record, and the things that look like drift and are not | `--wss-check`, `--wss-full-check`, `--wss-stocktake` |
+| [`WSS.RECORD-READING.md`](WSS.RECORD-READING.md) | a record entry that reads actionable or ineligible and is neither — a half-true citation, a count with no command behind it, a blocker written outside the open-decisions record, a dead path indistinguishable from a block | `--wss-start` |
 | [`WSS.DOCS-AUDIT.md`](WSS.DOCS-AUDIT.md) | a docs site's internal correctness — paths, links, anchors, enumerations, page-level accuracy against source | `--wss-docs`, `--wss-full-check` |
 | [`WSS.TOOLING-CLAIMS.md`](WSS.TOOLING-CLAIMS.md) | mutable claims inside the tooling files, which are deleted rather than corrected | `--wss-tidy`, `--wss-full-check` |
 | [`WSS.MECHANICAL-GAUNTLET.md`](WSS.MECHANICAL-GAUNTLET.md) | a non-green result from the project's own verifications — doctor, typecheck, suite, CI — and what each outcome means | `--wss-full-check`, `--wss-stocktake` |

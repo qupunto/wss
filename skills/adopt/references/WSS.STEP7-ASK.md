@@ -16,6 +16,13 @@ Everything answerable from the repo should already be answered by now.
   them.
 - **`WSS.gate.coverage`** — only where a coverage tool is configured. Ask for the
   thresholds CI actually enforces, not aspirations.
+- **The rulebook, where the tree carries `wss/rules/`** — "This suite ships a
+  rulebook of judged rules, accumulated on the machine it came from. Inherit
+  them as your starting rules, or start your own rulebook with the same
+  structure and no rows?" **Offer inherit first**, and say why: inheriting and
+  truncating later is one command, while starting fresh and wanting them back
+  means going to the published tree. Step 9c carries the answer out. Where the
+  tree has no `wss/rules/`, do not raise it.
 - **`WSS.commitTrailer`** — offer `Claude-Session`; it is what `--wss-wrap` stamps and
   what makes concurrent sessions distinguishable.
 - **`WSS.commands.testConsentEnv`** — only if the suite is gated behind a token.

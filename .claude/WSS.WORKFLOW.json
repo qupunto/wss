@@ -3,7 +3,12 @@
     "manifest": "workflow/v2",
     "branch": {
       "integration": "dev",
+      "release": "release/v<version>",
       "publish": "main"
+    },
+    "prChecks": {
+      "tests pass": "WSS.commands.test",
+      "typecheck clean": "WSS.commands.typecheck"
     },
     "commitTrailer": "Claude-Session",
     "record": {
@@ -13,13 +18,15 @@
       "releases": "wss/records/WSS.RELEASES.md",
       "changelog": "wss/logs/WSS.CHANGELOG.md",
       "handoff": "wss/records/WSS.HANDOFF.md",
+      "setup": "wss/records/WSS.SETUP.md",
       "decisions": "wss/logs/WSS.DECISIONS.md",
       "decisionsIndex": "wss/generated/WSS.DECISIONS-INDEX.md",
       "openDecisions": "wss/records/WSS.OPEN-DECISIONS.md",
       "stocktake": "wss/logs/WSS.STOCKTAKE.md",
       "audits": "wss/logs/WSS.AUDITS.md",
       "reference": [
-        "README.md"
+        "README.md",
+        "wss/records/WSS.HARNESS.md"
       ],
       "tooling": {
         "catalog": ".claude/WSS.TOOLING.md",
@@ -31,6 +38,7 @@
           "wss/workflow/*.md",
           "wss/workflow/providers/*.md",
           "wss/workflow/writers/*.md",
+          "wss/rules/*.md",
           "wss/tests/*.md",
           "commands/*.md"
         ]
@@ -41,13 +49,23 @@
       "backlog": "register",
       "roadmap": "register",
       "releases": "register",
-      "changelog": "log",
+      "changelog": {
+        "mode": "log",
+        "grows": "head"
+      },
       "handoff": "register",
+      "setup": "register",
       "decisions": "log",
       "decisionsIndex": "generated",
       "openDecisions": "register",
-      "stocktake": "log",
-      "audits": "log",
+      "stocktake": {
+        "mode": "log",
+        "mutable": "outcome"
+      },
+      "audits": {
+        "mode": "log",
+        "entry": "table-row"
+      },
       "reference": "register",
       "tooling.catalog": "register",
       "tooling.inventory": "generated"

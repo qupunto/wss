@@ -33,7 +33,11 @@ Resolve every path from `.claude/WSS.WORKFLOW.json` rather than guessing:
   maintenance release it is the evidence for shipping now.
 - **`WSS.record.stocktake`** — unremediated high-severity findings disqualify a
   milestone however finished it looks.
-- **The git history** for the range since the last tag.
+- **The git history** for the range since the last tag, read on
+  `WSS.branch.publish` and not on whatever branch the caller is standing on.
+  A release is assembled on a `release/v<version>` branch and reaches publish
+  through a PR, so a range taken from the integration branch describes work
+  that may never ship and omits work that already did.
 
 ## What to return
 

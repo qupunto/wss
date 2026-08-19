@@ -54,6 +54,7 @@ roadmap|# Roadmap
 releases|# Release list
 changelog|# Changelog
 handoff|# Handoff
+setup|# Setup
 decisions|# Decision log
 decisionsIndex|# Decisions index
 openDecisions|# Open decisions
@@ -143,11 +144,31 @@ while IFS='|' read -r key heading; do
   abs=$(contained "$rel" "$key") || { refused=1; skipped=$((skipped + 1)); continue; }
   blanked+=("$rel")
   before=$(wc -c < "$abs" | tr -d ' ')
+  # A STRUCTURED-REGION MARKER SURVIVES THE BLANKING — owner's ruling,
+  # 2026-08-19: "structured regions have a reason to be". The marker is part of
+  # the record's SHAPE, not its content, so an adopter receives a blanked record
+  # that still declares how its body is built. Each surviving region is emitted
+  # EMPTY: the opening marker and its end, back to back, in source order. A
+  # record with no marker is written exactly as before — one heading, byte for
+  # byte — which is what keeps this change invisible to every existing caller.
+  regions=$(awk '
+    /^<!--[[:space:]]*wss:region[[:space:]]+entry=/ { print; print "<!-- wss:region-end -->" }
+  ' "$abs")
   if [ "$WRITE" -eq 1 ]; then
-    printf '%s\n' "$heading" > "$abs"
-    printf '  blank  %-14s %s (was %s bytes)\n' "$key" "$rel" "$before"
+    if [ -n "$regions" ]; then
+      printf '%s\n\n%s\n' "$heading" "$regions" > "$abs"
+    else
+      printf '%s\n' "$heading" > "$abs"
+    fi
+    after=$(wc -c < "$abs" | tr -d ' ')
+    printf '  blank  %-14s %s (was %s bytes -> %s)\n' "$key" "$rel" "$before" "$after"
   else
-    printf '  would  %-14s %s (%s bytes -> %s)\n' "$key" "$rel" "$before" "${#heading}"
+    if [ -n "$regions" ]; then
+      would=$(printf '%s\n\n%s\n' "$heading" "$regions" | wc -c | tr -d ' ')
+    else
+      would=$(( ${#heading} + 1 ))
+    fi
+    printf '  would  %-14s %s (%s bytes -> %s)\n' "$key" "$rel" "$before" "$would"
   fi
   changed=$((changed + 1))
 done <<EOF
