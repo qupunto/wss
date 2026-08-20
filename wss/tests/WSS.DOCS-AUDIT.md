@@ -1,7 +1,7 @@
 # Auditing docs for drift
 
 > **A shared method, not a skill.** See [`WSS.CHECKS.md`](WSS.CHECKS.md). `--wss-docs` runs it
-> over the site it just wrote or was asked to verify; `--wss-full-check` runs it at full
+> over the site it just wrote or was asked to verify; `--wss-health-check --deep` runs it at full
 > scope. §0 resolves the project's own shape and every later section is a check; the
 > scope that selects which pages get the expensive treatment is the runner's, and
 > deliberately not in this file.

@@ -80,9 +80,21 @@ session start. **Where both lines are held by other sessions, a new session
 asks rather than assuming one** — there is no third role, and guessing makes
 two sessions believe they hold the same one.
 
-**A claim is live while its socket path exists.** Sockets are per-session and
-die with the session, so an absent socket is a dead claim and the line may be
-taken. That is the whole liveness test: **do not read liveness from
+**The socket proves DELIVERABILITY, never liveness.** It is named after the
+*process*, not the session — one process hosts many sessions in turn, so a
+socket outlives every session that ever claimed a role through it. **A socket
+that exists tells you a message will arrive; it tells you nothing about who is
+there to read it.** Measured, not assumed: a claim was once removed while its
+socket still existed, the removal read as a fault, and the socket was simply
+that process's PID with a new session behind it.
+
+**So liveness comes from claiming, not from checking.** A session writes its
+own claim at session start, overwriting whatever line stood for that role. The
+newest claim is the live one, and a line for a session that has ended is
+corrected by the next session of that role starting — not by anyone inspecting
+it. **Never re-assert a claim on another session's behalf**: it cannot be known
+from outside whether that session still exists, and a restored line is
+indistinguishable from a current one. That is the whole liveness test: **do not read liveness from
 `ListAgents`**, which reports an ancestor as busy and a stopped orphan as idle.
 Consumers get the designer's address from this file, never from a label.
 

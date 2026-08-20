@@ -38,7 +38,7 @@ supplies the dispositions and the approved shape.
 6. **Hand any decision this audit produced to `--wss-log`, and let it regenerate the
    index.** `WSS.record.decisions` and `WSS.record.decisionsIndex` are `record`'s,
    and the index is generated — never hand-run `WSS.commands.indexRegen` here.
-7. **`WSS.record.stocktake` last — through [`audit-writer`](../../../wss/workflow/writers/WSS.AUDIT-WRITER.md),
+7. **`WSS.record.stocktake` last — through [`audit-writer`](../../wss/workflow/writers/WSS.AUDIT-WRITER.md),
    which owns it.** Hand it the material this audit produced: the tree and
    whether it was clean, the scope, the method, which findings you re-checked by
    hand against which are agent-reported, the test and CI results, the findings,
@@ -47,7 +47,7 @@ supplies the dispositions and the approved shape.
    **Build `covered` from the auditors' reports, not from your plan**, and hand
    *that* over rather than a summary of your intentions. The four rules that make
    it mechanical rather than a judgement call are
-   [`WSS.AUDIT-COVERAGE.md`](../../../wss/workflow/WSS.AUDIT-COVERAGE.md); the one that gets bent
+   [`WSS.AUDIT-COVERAGE.md`](../../wss/workflow/WSS.AUDIT-COVERAGE.md); the one that gets bent
    is *silence is not coverage*, and it gets bent because a wide `covered` list is
    what makes your next run cheap. Separating the claim from the record is what
    keeps it reviewable.
@@ -59,9 +59,9 @@ supplies the dispositions and the approved shape.
 8. **Then hand `sweep-tracker` a freshness-only entry** keyed `stocktake` — the
    name, the `baseline` and the date, and nothing else. **No coverage and no
    findings**: those went to `WSS.record.stocktake` in step 7, and
-   [`WSS.AUDIT-COVERAGE.md`](../../../wss/workflow/WSS.AUDIT-COVERAGE.md) keeps them out of a
+   [`WSS.AUDIT-COVERAGE.md`](../../wss/workflow/WSS.AUDIT-COVERAGE.md) keeps them out of a
    cache that gets deleted. What this buys is that `--wss-overview` can say when
    this last ran without opening the audit record at all — and it licenses no
    narrowing, because an entry with no scopes leaves the next run's slice
    untouched. The shape is
-   [`WSS.SWEEP-CHECKPOINT.md`](../../../wss/workflow/WSS.SWEEP-CHECKPOINT.md)'s.
+   [`WSS.SWEEP-CHECKPOINT.md`](../../wss/workflow/WSS.SWEEP-CHECKPOINT.md)'s.

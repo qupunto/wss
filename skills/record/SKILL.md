@@ -76,7 +76,7 @@ then**, unless the owner says otherwise in answering; the toggle changes where
 the finding is *written*, never whether it is *raised*.
 
 **One enforcement point, here, and that is deliberate.** `--wss-start` Phase 6
-and `--wss-check`'s dispatch both hand their findings to this skill rather than
+and `--wss-health-check`'s dispatch both hand their findings to this skill rather than
 writing either record themselves, so the freeze applied here covers them without
 a second copy of the rule in each. The entry that asked for this named three
 enforcement points; there is one, because those two callers write no record.
@@ -282,7 +282,7 @@ Four rules that are not stylistic:
   bullet each, not a dozen tiny ones.
 
 **Then regenerate the index** with `WSS.commands.indexRegen`. It is generated, never
-hand-edited, and a later `--wss-check` fails if you skip it. Where the manifest
+hand-edited, and a later `--wss-health-check` fails if you skip it. Where the manifest
 declares no index command, say the index was not regenerated rather than leaving
 it silently stale.
 
@@ -344,8 +344,9 @@ and `WSS.record.reference`.
 ## Being invoked by something else
 
 Orchestrators call this skill rather than writing the record themselves —
-`--wss-start` when it settles an open decision or removes a shipped item, `--wss-stocktake`
-when it dispositions a finding, `--wss-check` when it dispatches one.
+`--wss-start` when it settles an open decision or removes a shipped item,
+`--wss-health-check` when it dispatches a finding or its `--deep` TODO resort
+dispositions one.
 
 When called that way, the caller supplies the content and you own the placement,
 the format, and the index.

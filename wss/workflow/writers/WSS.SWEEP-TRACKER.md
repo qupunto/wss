@@ -96,7 +96,7 @@ computed one cannot.
 Delete the resolved checkpoint file, or the single entry. Both are safe by
 construction — the next sweep sees no baseline and runs in full.
 
-Prefer `--wss-full-check` when the intent is "re-verify everything": it sweeps at
+Prefer `--wss-health-check --deep` when the intent is "re-verify everything": it sweeps at
 full scope *and* leaves fresh entries behind, where deleting the file leaves the
 next ordinary sweep to pay for it.
 

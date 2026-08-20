@@ -85,7 +85,7 @@ this file decides what the numbers mean.
    contract reports stale work as done.
 
 8. **Delta over full.** Can it read what changed since a baseline instead
-   of everything? Proven: `--wss-check` runs incrementally, and a delta
+   of everything? Proven: `--wss-health-check`'s default mode runs incrementally, and a delta
    survey reads the range rather than the series. Drawback: the baseline
    must be recorded somewhere the next run trusts — which is lens 7's machinery,
    not a new one.

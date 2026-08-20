@@ -92,8 +92,8 @@ support a claim about the suite, whatever the checkpoint says.
 — [`WSS.AUDIT-COVERAGE.md`](WSS.AUDIT-COVERAGE.md) keeps `WSS.record.stocktake` out of this
 cache deliberately — may still stamp an entry holding nothing but its name,
 `baseline` and `at`, so that *when did this last run* is answerable without
-parsing the record that holds the findings. `--wss-stocktake` writes one, keyed
-`stocktake`.
+parsing the record that holds the findings. `--wss-health-check --deep`'s TODO
+resort writes one, keyed `stocktake`.
 
 Such an entry carries **no `scopes`, and therefore licenses nothing**: the
 reading procedure below resolves a path in neither list as never swept, so the
@@ -104,10 +104,12 @@ coverage.
 Stamp the entry including when the result is **red**. A red result carried
 forward is exactly as useful as a green one, and rather more urgent.
 
-## Four rules, and they are the whole value
+## Five rules, and they are the whole value
 
-Generalised from [`WSS.AUDIT-COVERAGE.md`](WSS.AUDIT-COVERAGE.md), which states them for
-the audit record. Same rules, one statement.
+Rules 1-4 are generalised from [`WSS.AUDIT-COVERAGE.md`](WSS.AUDIT-COVERAGE.md),
+which states them for the audit record — same rules, one statement. **Rule 5 is
+this cache's own**, and it governs a different question from the other four:
+they say what a written stamp may claim, it says whether one is written at all.
 
 **1. The slice a run was given is an upper bound, never the claim.** A sweep can
 cover less than it was pointed at. It can never cover more.
@@ -134,10 +136,8 @@ It is not a false stamp; it addresses the wrong thing. A record describing code
 that moved, where the record itself did not move, comes back unchanged, and only
 the runner's own blast radius stands against that. Record scopes are the case
 that arises in practice: `covered` is the record file **plus the code globs the
-run read to verify it** —
-[`check`](../../skills/check/SKILL.md#scope-comes-from-the-checkpoint)'s
-pairing — and a run that verified a record by reading the record has no second
-half to pair. It claims nothing forward, so it writes `covered: []` and the next
+run read to verify it** — the pairing every record-scope check makes — and a
+run that verified a record by reading the record has no second half to pair. It claims nothing forward, so it writes `covered: []` and the next
 sweep reads that scope in full.
 
 **Where every scope in an entry does that, the entry is `complete: false`.** That
@@ -146,6 +146,19 @@ for a stamp that cannot produce coverage, and it is what `wss-doctor.sh` checks
 for — `complete: true` beside an empty `covered` is a whole scope claimed by
 saying nothing, which rule 3 forbids. An entry with a mix keeps `complete: true`:
 the scopes that did pair evidence still claim what they covered.
+
+**5. A stamp is written only for a healthy scope: no findings, or every finding
+the run made fixed or dispatched.** A finding left with no home — neither fixed
+inline nor handed to the owner that would fix it — withholds the stamp for the
+scope it lives in, so that scope's files stay inside every later run's slice
+until someone acts. **"Acted upon" includes dispatched**: a finding fixed on the
+spot and one filed to its owner both have a home, and neither blocks the stamp.
+**This is a health assertion rather than a coverage one**, which is why it sits
+beside rules 1-4 rather than inside them — those govern what a stamp may claim
+once written, this governs whether writing one is honest. The ruling is the
+decision log's `2026-08-19 (eighty-fourth)` entry, which vetoed the drafted
+alternative that a stamp records what was *read*: that would let a
+known-unhealthy file age out of scope on the strength of having been looked at.
 
 ## Reading a checkpoint
 

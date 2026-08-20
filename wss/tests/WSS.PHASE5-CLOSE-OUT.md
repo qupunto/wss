@@ -11,9 +11,10 @@ currency pass, and commits in coherent pieces through `git-writer`.
 grant at your scope, no `/clear` declaration, and no milestone question — this
 procedure continues afterwards with the Fix-now dispositions below.
 
-**`--wss-stocktake` and `--wss-full-stocktake` are standing authorization to commit and push**,
-exactly as `--wss-wrap` is, and it does not need asking again. The grant comes from
-the flag, not from this file — [`WSS.OWNERSHIP.md`](../../../wss/workflow/WSS.OWNERSHIP.md) is
+**`--wss-health-check --deep`'s TODO resort is standing authorization to commit**,
+needing no fresh ask, the same as `--wss-wrap`'s — though its grant does not
+extend to a push, unlike `--wss-wrap`'s own. The grant comes from
+the flag, not from this file — [`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md) is
 where it is stated.
 
 That authorization is **scoped to the audit's own record**: the `WSS.record.stocktake`
@@ -41,8 +42,8 @@ different role's agent:
 | A security finding that needs proving before anyone fixes it | `WSS.agents.exploit` |
 | A goal or roadmap block to add, reorder or reprioritise, or a milestone in `WSS.record.releases` | `--wss-plan` |
 | A version or a tag, or drift between the documents and `git tag` | `--wss-release` — it decides; `changelog-writer` and `--wss-plan` write |
-| A stale claim in **this project's** skill or agent file | `--wss-tidy`, which owns them — dispatch, do not fix it here |
-| A defect in a file belonging to **this suite** — including one this audit is running | **File it and stop.** Not `--wss-tidy`, not a fix in place — destination and reasoning in [`WSS.OWNERSHIP.md`](../../../wss/workflow/WSS.OWNERSHIP.md#a-file-belonging-to-the-installation-is-never-edited-from-a-project-session) |
+| A stale claim in **this project's** skill or agent file | `--wss-health-check`, which owns them — dispatch, do not fix it here |
+| A defect in a file belonging to **this suite** — including one this audit is running | **File it and stop.** Not `--wss-health-check`, not a fix in place — destination and reasoning in [`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md#a-file-belonging-to-the-installation-is-never-edited-from-a-project-session) |
 | Anything the user decided not to do now | `--wss-todo` (already done in Phase 3) |
 
 **Prove a defect with a failing test before fixing it wherever possible.**

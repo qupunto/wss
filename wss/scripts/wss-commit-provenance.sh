@@ -10,6 +10,10 @@
 #   wss-commit-provenance.sh --install-hook
 #   wss-commit-provenance.sh --dir /path/to/project
 #
+# WSS_ERRORS_FILE (env, optional) — path the UNKNOWN-provenance registration
+# (see --assert below) appends to; defaults to "${CLAUDE_DIR:-.}/WSS.ERRORS.md".
+# Set only to redirect a probe at a fixture; production commits use the default.
+#
 # The block is SELF-DECLARED, so this catches mistakes rather than misconduct:
 # what it sees is a session writing a record from the wrong skill, which is the
 # one failure no tree-level check can reach, having no baseline to diff against.
@@ -475,13 +479,44 @@ if [ "$MODE" = "assert" ]; then
   # Get all writer values from the block
   writers=$(printf '%s\n' "$found_block" | grep '^record:' | awk -F'|' '{print $2}' | sed 's/^ *writer: //' | awk '{print $1}' | sort -u)
 
+  # sixty-seventh (owner, 2026-08-19): a record/commit path that predates the
+  # provenance design never fails CI for lacking it. An absent or UNDECLARED
+  # authority normalizes to UNKNOWN, and every UNKNOWN occurrence is
+  # registered in the error log rather than silently tolerated or fatally
+  # refused — provenance's core is who and when, the when in ISO form.
+  unknown_reason=""
   if [ -z "$authority" ]; then
-    printf 'NOTICE: authority is missing (UNDECLARED)\n'
-    exit 0
+    unknown_reason="absent"
+  elif [ "$authority" = "UNDECLARED" ]; then
+    unknown_reason="UNDECLARED"
   fi
 
-  if [ "$authority" = "UNDECLARED" ]; then
-    printf 'NOTICE: authority is UNDECLARED — this path is not yet taught to pass --writer\n'
+  if [ -n "$unknown_reason" ]; then
+    # sixty-eighth: this registration is the error log's first producer. A
+    # failure to WRITE the log (missing dir, read-only) is not itself a
+    # runtime breakage of THIS check — it must never turn into a non-zero
+    # exit here; degrade to the NOTICE alone.
+    errfile="${WSS_ERRORS_FILE:-${CLAUDE_DIR:-.}/WSS.ERRORS.md}"
+    at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    by=$(grep '^Claude-Session:' "$MSGFILE" 2>/dev/null | head -1 | sed 's/^Claude-Session: *//' || true)
+    [ -n "$by" ] || by="unknown"
+    subject=$(head -1 "$MSGFILE" 2>/dev/null | cut -c1-80 || true)
+    {
+      if [ ! -s "$errfile" ]; then
+        printf '# Errors\n\n'
+        printf 'Machine-local runtime-breakage log — never committed, never shipped. An\n'
+        printf 'error is when something breaks: a gate that cannot report, an API that\n'
+        printf 'stops responding, a ruling lost and never applied, a mechanical failure\n'
+        printf "of the suite's own scripts. Not a design flaw, not a finding, not an\n"
+        printf "amendment — the owner's definition is the decision log's \`2026-08-19\n"
+        printf '(sixty-eighth)` entry. Every entry carries who and when, the when in ISO\n'
+        printf 'form (the `(sixty-seventh)` entry). Append-only by convention.\n\n'
+        printf '## Entries\n'
+      fi
+      printf 'at: %s | by: %s | what: provenance UNKNOWN (%s authority) | where: wss-commit-provenance.sh | context: %s\n' \
+        "$at" "$by" "$unknown_reason" "$subject"
+    } 2>/dev/null >> "$errfile" || true
+    printf 'NOTICE: authority is %s — normalized to UNKNOWN and registered in WSS.ERRORS.md\n' "$unknown_reason"
     exit 0
   fi
 

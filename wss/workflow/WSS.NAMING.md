@@ -31,7 +31,7 @@ hidden lowercase file if it were a cache.
 
 | Role | Form | Examples |
 |---|---|---|
-| A name the harness resolves as an identifier | `wss-<name>`, lowercase — the filename *is* the invocation | `skills/check/`, `commands/log.md` |
+| A name the harness resolves as an identifier | `wss-<name>`, lowercase — the filename *is* the invocation | `skills/health-check/`, `commands/log.md` |
 | Executable | `wss-<name>.sh`, lowercase | `wss-doctor.sh`, `hooks/wss-alert.sh` |
 | Anything a person is meant to read or notice | `WSS.<FUNCTION>` | `wss/records/WSS.TODO.md`, `.claude/WSS.WORKFLOW.json`, `WSS.ALERTS-ON` |
 | Machine bookkeeping with no reader | `.wss-<name>`, hidden | `.wss-alert.stamp` |
@@ -121,7 +121,7 @@ it:
 produced on every docs scaffold and is still not ours, because docsify defined
 it. Conversely a page the suite always emits under a name of its own —
 `WSS.OVERVIEW.md` — is ours, while a topic annex a project chose to write
-(`annex/WSS.LANE-SYNCHING.md`) is that project's.
+is that project's.
 
 ## A boundary case is the owner's to rule, not this file's
 

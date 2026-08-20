@@ -200,7 +200,7 @@ skill was restructured into a router plus seven step references on
 2026-08-14 and that shape has still never had a real run — a fixture-green
 refactor of a never-run skill moves the risk to someone's first real
 invocation, which is exactly what this register exists to track. It stays.
-**`stocktake`'s router split joins on 2026-08-14, by this list's own
+**`wss-stocktake`'s router split joins on 2026-08-14, by this list's own
 rule.** The skill was restructured that day into a router plus six phase
 references and the shape has never had a real run — the same footing as
 `lane-record-sync` above and for the same reason: a fixture-green
@@ -217,7 +217,7 @@ what each split added with
 rather than from a figure here; both directories also hold older references
 the split did not create, so a plain `ls` overcounts.
 **These two are the mode-exclusive pair, and that cuts both ways.** It is
-why their split is a genuine saving where `stocktake`'s is mostly a
+why their split is a genuine saving where `wss-stocktake`'s is mostly a
 re-routing — the untaken paths are never opened — and it is also what puts
 the risk in the routing itself: a sequential router that picks wrong still
 reads everything, while one of these opens the wrong reference set and the

@@ -50,6 +50,28 @@ test sits in `wss/tests/wss-hook-contract.sh` under "A task-notification is
 not the user". Whether the harness feeding notifications through this event
 is intended is an upstream question, filed as `qupunto/wss#21`.
 
+## A peer session is not the user
+
+`UserPromptSubmit` has a **second** non-user ingress: a cross-session message
+from a peer session arrives as `.prompt` too. Observed live 2026-08-20 — a
+peer's boundary report reading "route findings to `--wss-tidy`, a flag that is
+retiring" fired that flag's whole block through
+`hooks/wss-shorthand-flags.sh`, presenting COMMIT authority nobody granted.
+
+**The shape, measured across every delivery in this machine's transcripts
+(`grep -rl 'Another Claude session sent a message' ~/.claude/projects
+--include='*.jsonl'`, nine sessions, zero exceptions):** `.prompt` begins at
+position 0 with the literal sentence `Another Claude session sent a message:`,
+the `<cross-session-message from=… from-name=… from-mode=…>` open tag on the
+line after it, the peer's text inside, and a trailing harness paragraph about
+treating it as a teammate's request. The hook refuses the prose sentence and
+that tag together, and the bare tag alone in case a harness change ever drops
+the prose — start-anchored both ways, so a user quoting a peer's message
+inside a prompt of their own still fires the flags they typed. The
+both-directions test sits in `wss/tests/wss-hook-contract.sh` under "A peer
+session is not the user", and was watched failing against a hook with the
+guard stripped before it counted.
+
 ## Two facts only a probe establishes
 
 Two harness facts no session can establish by reasoning, both measured by

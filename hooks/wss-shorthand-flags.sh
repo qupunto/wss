@@ -78,12 +78,28 @@ case $prompt in
   '<task-notification>'*) exit 0 ;;
 esac
 
+# A peer session is not the user either, and it is a SECOND ingress into this
+# same event: a cross-session message arrives as `.prompt`, and a peer's report
+# quotes flag names as data exactly as a subagent's does. On 2026-08-20 a
+# boundary report reading "route findings to --wss-tidy, a flag that is
+# retiring" fired the whole --wss-tidy block, presenting COMMIT authority
+# nobody granted. Every observed delivery begins at position 0 with the literal
+# sentence below, followed on the next line by the `<cross-session-message ...>`
+# open tag. Requiring BOTH keeps the same start-anchored promise the guard
+# above makes — a user pasting a peer's message into a prompt of their own
+# still fires the flags they typed — and the bare tag is refused as well, so a
+# harness that ever drops the prose line does not silently reopen this.
+case $prompt in
+  '<cross-session-message '*) exit 0 ;;
+  'Another Claude session sent a message:'*'<cross-session-message '*) exit 0 ;;
+esac
+
 # The invariant this list must keep: NO FLAG IS A PREFIX OF ANOTHER. Where that
 # holds, a token can never be split into a shorter flag plus junk and the order
 # below does not matter. `--wss-stocktake` and `--wss-full-stocktake` look like they collide and
 # do not — the latter has its own leading dashes. wss-doctor.sh checks the invariant
 # rather than trusting this comment; add a flag that violates it and it fails.
-FLAGS=(--wss-full-stocktake --wss-pr --wss-full-check --wss-release --wss-stocktake --wss-report --wss-adopt --wss-flags --wss-start --wss-track --wss-docs --wss-check --wss-tidy --wss-catalog --wss-todo --wss-wrap --wss-plan --wss-help --wss-log --wss-alerts --wss-overview --wss-scout --wss-describe --wss-reference --wss-diagram --wss-update)
+FLAGS=(--wss-full-stocktake --wss-pr --wss-full-check --wss-release --wss-stocktake --wss-report --wss-adopt --wss-flags --wss-start --wss-track --wss-docs --wss-check --wss-tidy --wss-catalog --wss-health-check --wss-triage --wss-todo --wss-wrap --wss-plan --wss-help --wss-log --wss-alerts --wss-overview --wss-scout --wss-describe --wss-reference --wss-diagram --wss-update)
 
 # Split into whitespace-separated tokens. `set -f` because an unquoted
 # expansion would otherwise glob `*` in the prompt against the filesystem.
@@ -233,21 +249,23 @@ lanes_named_() {
 skill_for() {
   case $1 in
     --wss-flags | --wss-help | --wss-alerts) echo - ;;
+    # RETIRED — served by this hook's own stub, never by a skill. `-` is what
+    # keeps them reachable after their skills were deleted: the dispatch loop
+    # skips the existence gate for it, so the stub fires instead of silence.
+    --wss-check | --wss-full-check | --wss-tidy | --wss-stocktake | --wss-full-stocktake) echo - ;;
     --wss-track) echo track ;;
     --wss-todo | --wss-log) echo record ;;
     --wss-wrap) echo wrap ;;
     --wss-start) echo start ;;
     --wss-release) echo release ;;
     --wss-pr) echo pr ;;
-    --wss-stocktake | --wss-full-stocktake) echo stocktake ;;
     --wss-adopt) echo adopt ;;
     --wss-update) echo update ;;
     --wss-docs | --wss-diagram) echo docs ;;
-    --wss-tidy) echo tidy ;;
     --wss-catalog) echo catalog ;;
-    --wss-check) echo check ;;
+    --wss-health-check) echo health-check ;;
+    --wss-triage) echo triage ;;
     --wss-report) echo report ;;
-    --wss-full-check) echo full-check ;;
     --wss-plan) echo plan ;;
     --wss-overview) echo overview ;;
     --wss-scout) echo scout ;;
@@ -520,59 +538,87 @@ Irreversible, in force before the skill loads:
   stay as written.
 EOF
     ;;
-  --wss-check)
+  --wss-check | --wss-full-check | --wss-tidy | --wss-stocktake | --wss-full-stocktake)
     cat <<'EOF'
-The user included the `--wss-check` flag. That is an explicit, unconditional
-instruction to invoke the `check` skill now and health-check the
-project's record for claims that no longer match reality and for updates the code
-owes but never got.
+That flag is RETIRED. The five check skills it belonged to are now one:
 
-Authorization: none — and this skill writes NOTHING.
+    run `--wss-health-check`, and add `--publish` before a release.
 
-Irreversible, in force before the skill loads:
-- Do not fix what you find. Report it, then dispatch each finding to the skill
-  that OWNS that file, and let that owner re-verify before writing. Your finding
-  is a hypothesis, and a share of findings do not reproduce when re-checked.
-- Run the grep that would DISPROVE a negative claim before repeating it. The
-  usual way "nothing does X" goes wrong is a grep matching the wrong call shape.
-- Chronological decision entries are NOT stale. An entry describing a decision
-  later reversed is correct as written. Never dispatch a rewrite of one.
+Do not go looking for the old skill — it is deleted, not moved, and no
+fallback resolves it. Take the mode that matches what the flag used to mean:
+
+  --wss-check         -> `--wss-health-check` (the bare run: checkpoint-narrowed,
+                         fixes dispatched and applied)
+  --wss-full-check    -> `--wss-health-check --deep` (every checkpoint ignored)
+  --wss-stocktake     -> `--wss-health-check --deep`, whose TODO resort is the
+  --wss-full-stocktake    old stocktake, ask-gated
+  --wss-tidy          -> `--wss-health-check --deep`; the prose lenses run inside it
+  --wss-preflight     -> `--wss-health-check --publish`
+
+Triage is no longer part of any of them: it is `--wss-triage`, user-invoked
+only. The ruling is the decision log's `2026-08-19 (eighty-second)` entry.
+
+THIS STUB EXPIRES AT THE NEXT MAJOR VERSION and is to be deleted then — it
+exists for muscle memory across one version boundary, not as a permanent alias.
+The release drift check catches it if it outlives that date.
 EOF
     ;;
-  --wss-full-check)
+  --wss-health-check)
     cat <<'EOF'
-The user included the `--wss-full-check` flag. That is an explicit, unconditional
-instruction to invoke the `full-check` skill now — re-verify every file
-the project keeps for its functional value, at FULL scope: the records, the docs
-site, and the tooling files.
-
-Authorization: none — and this skill writes nothing that HAS AN OWNER.
+The user included the `--wss-health-check` flag. That is an explicit,
+unconditional instruction to invoke the `health-check` skill now — the
+mechanical floor, then every declared record and tooling file, read for drift
+and staleness. Do not ask which mode; read the flags below and take the mode
+the user actually typed.
+EOF
+    grant_ --wss-health-check
+    cat <<'EOF'
+`--shallow` is the exception to that grant: it writes nothing at all.
 
 Irreversible, in force before the skill loads:
-- IGNORE every sweep checkpoint. Full scope means re-reading files a previous
-  sweep listed as covered. Do not narrow to a diff.
-- Stamp the checkpoints at the end, through `sweep-tracker`, and stamp ONLY what
-  was actually read. An area whose reader died or returned a vague report is
-  not-covered; coverage claimed and not earned is inherited by every cheap sweep
-  after it and nothing downstream can detect the difference.
+- THE FOUR MODES ARE MUTUALLY EXCLUSIVE. `--shallow` reads and reports and
+  applies NOTHING; the bare run adds dispatch-and-apply; `--deep` ignores every
+  checkpoint and ask-gates a TODO resort; `--publish` narrows to the shipping
+  set with the publish gates in its floor. They do not combine, and `--publish`
+  is a mode rather than a scope you add to a depth flag.
+- A CHECKPOINT IS STAMPED ONLY FOR A HEALTHY SCOPE: no findings, or every
+  finding fixed or dispatched. A finding left with no home withholds the stamp,
+  so its files stay inside the next run's slice until someone acts. The
+  definition lives once, in `wss/workflow/WSS.SWEEP-CHECKPOINT.md`'s rule 5 —
+  never restate it, and never stamp to record what was merely READ.
+- `--shallow` that ends with findings STAMPS NOTHING and asks whether to escalate
+  to the default run. On yes the findings hand through — the escalated run starts
+  at dispatch-and-apply and never re-runs the survey.
 - Do not fix what you find IN A FILE THAT HAS AN OWNER. Dispatch each such
-  finding to the skill that OWNS that file and let that owner re-verify first —
-  your finding is a hypothesis, and a share of them do not reproduce. An owner
-  invoked from here inherits THIS flag's grant, which is none: it writes its
-  file and does not commit.
-- A file with NO owner in the matrix is ordinary work: edit it directly and say
-  what changed. Scripts, CI, the harness settings and the `wss/workflow/*.md`
-  contracts are the usual instances. Read this rule with the one above it —
-  "dispatch everything" is what an earlier version of this block said, and it
-  forbids the repair of a broken hook script that WSS.OWNERSHIP.md licenses.
+  finding to the skill that owns it and let that owner re-verify first — your
+  finding is a hypothesis, and a share of them do not reproduce. An owner
+  invoked from here inherits THIS flag's grant.
 - Run the grep that would DISPROVE a negative claim before repeating it.
 - The append-only logs — decisions, audits, changelog — are OUT of scope. An
-  entry describing a decision later reversed is correct as written. The only
-  thing to check about them is whether a generated index has gone stale.
-- Source code and the test suite are OUT of scope. The suite is
-  --wss-full-stocktake's. Code analysis proper — correctness, security, the data
-  model — is a PROJECT's own skill, which --wss-stocktake invokes where one exists
-  and reports as not run where none does. No flag here delivers it on its own.
+  entry describing a decision later reversed is correct as written.
+- REPORT the inbox's open count at hand-off and NEVER triage it. Triage is
+  `--wss-triage`'s, user-invoked only, and no mode here runs it.
+EOF
+    ;;
+  --wss-triage)
+    cat <<'EOF'
+The user included the `--wss-triage` flag. That is an explicit, unconditional
+instruction to invoke the `triage` skill now — work the suite's own defect
+inbox, deciding which filed defects reproduce, which went stale under a moving
+tree, and which were never true.
+EOF
+    grant_ --wss-triage
+    cat <<'EOF'
+Irreversible, in force before the skill loads:
+- The method is `wss/tests/WSS.INBOX-TRIAGE.md` and is not restated in the
+  skill. Read it.
+- RE-VERIFY EVERY DEFECT AGAINST THE CURRENT TREE before dispositioning it. A
+  report filed days ago describes a tree that has moved, and "went stale" and
+  "was never true" are different verdicts that must not be collapsed.
+- File what survives through its owner — `--wss-todo` for work, `--wss-log` for
+  a ruling. This skill writes no record itself.
+- Nothing dispatches here. No `--wss-health-check` mode runs triage, and its
+  reported open count is a number, never an instruction to start.
 EOF
     ;;
   # The filing template near the end of this block, and its twin in the
@@ -580,54 +626,6 @@ EOF
   # reads the fence out of wss/workflow/WSS.OWNERSHIP.md at runtime, so the format
   # has one statement and no site can drift from it. Nothing here needs
   # changing when that fence changes.
-  --wss-tidy)
-    cat <<'EOF'
-The user included the `--wss-tidy` flag. That is an explicit, unconditional
-instruction to invoke the `tidy` skill now — run the five sweeps over
-`WSS.record.tooling.sources` (stale claims, prose prune, token-economy,
-rot-resistance, routing) and fix what they find inside those files.
-EOF
-    grant_ --wss-tidy
-    cat <<'EOF'
-Irreversible, in force before the skill loads:
-- In PRUNE mode, propose first and cut second: a proposed cut is a hypothesis,
-  and this is the one job where being wrong is silent — nothing fails when a
-  rule stops being stated, it just stops being followed. NEVER cut inside a
-  section another skill hands VERBATIM to a subagent, or a heading another
-  file cites (grep for the anchor first, run the doctor after), or the last
-  statement of a rule, or an agent file's `description` and `tools:` list. A
-  description you touch gets shorter or stays the same, never longer.
-- DELETE a stale mutable claim rather than correcting it. That one line is the
-  part that overrides the instinct to be helpful, so it is here rather than only
-  behind a link. Everything else the rule decides — what a skill or agent file
-  may carry at all, and why a corrected count goes stale again — is stated once,
-  in the "The mutable-claim rule" section of
-  ~/.claude/wss/workflow/WSS.RECORD-CONTRACT.md. READ IT before editing any such file.
-- Say in the commit what you removed and why. It is the only audit trail an
-  erasure gets.
-- After any edit that restructures a file — a rename, a section moved, a skill
-  or agent added or removed — run `bash wss/scripts/wss-tools-inventory.sh` and then invoke
-  `--wss-catalog`. Skipping this leaves the catalog describing the pre-tidy tree.
-- NEVER edit a file belonging to THIS SUITE — its own skills, agents, workflow
-  contracts and scripts — from a session working in another project. Not even
-  the skill currently running, and not even when the defect is obvious. Under a
-  plugin install the suite is at ${CLAUDE_PLUGIN_ROOT}; in a checkout it is the
-  ~/.claude repository. Editing it under a plugin is not refused — it is
-  destroyed at the next plugin update, silently.
-- This does NOT restrict the working project's own skills and agents. Those are
-  what WSS.record.tooling.sources globs, and editing them is this flag's whole job.
-  Nor does it cover a personal ~/.claude/skills/ that is not this suite.
-- Instead, APPEND the finding to WSS.BUG-REPORTS.md in the config directory
-  ($CLAUDE_CONFIG_DIR, else ~/.claude) — the one file any session in any project
-  may write to — then stop. It is gitignored and so ships with no template:
-EOF
-    bugtpl_
-    cat <<'EOF'
-  Never report only into the conversation — that loses the finding at the next
-  /clear. Filing IS the action, not a step on the way to fixing it. Triage
-  needs a checkout; from a plugin install, raise it upstream as well.
-EOF
-    ;;
   --wss-catalog)
     cat <<'EOF'
 The user included the `--wss-catalog` flag. That is an explicit, unconditional
@@ -909,32 +907,6 @@ Irreversible, in force before the skill loads:
   anything.
 EOF
     ;;
-  --wss-full-stocktake)
-    cat <<'EOF'
-The user included the `--wss-full-stocktake` flag. That is an explicit,
-unconditional instruction to run the `stocktake` skill at FULL scope —
-invoke it now, without asking for confirmation first.
-
-The rest of the message is scope or emphasis, not a question to answer first.
-EOF
-    grant_ --wss-full-stocktake
-    cat <<'EOF'
-Irreversible, in force before the skill loads:
-- Full scope means audit history is ignored ENTIRELY. Do not read coverage
-  baselines out of the audit record and do not skip anything because a previous
-  pass covered it. Everything is in scope, including whatever past passes listed
-  as not-covered.
-- Full scope does NOT mean attempting code analysis inline. That is a
-  project-scoped code-analysis skill's, invoked from Phase 1 where one exists;
-  where none does, report "no code analysis ran" rather than implying the code
-  was examined.
-- The push grant does NOT extend to remediation code written afterwards. That is
-  ordinary work: commit it and ask.
-- Close out through the `wrap` skill rather than pushing by hand, so its
-  rails apply — a push publishes a ref, so check what rides along, and never
-  force-push or resolve a rejection by force.
-EOF
-    ;;
   --wss-docs)
     cat <<'EOF'
 The user included the `--wss-docs` flag. That is an explicit, unconditional
@@ -978,42 +950,6 @@ In force before the skill loads:
   outcome of this flag.
 - The catalog's interaction diagram is not this flag's to touch: `--wss-catalog`
   draws that one.
-EOF
-    ;;
-  --wss-stocktake)
-    cat <<'EOF'
-The user included the `--wss-stocktake` flag. That is an explicit, unconditional
-instruction to run the `stocktake` skill incrementally — invoke it now,
-without asking for confirmation first.
-
-The rest of the message is scope or emphasis, not a question to answer first.
-EOF
-    grant_ --wss-stocktake
-    cat <<'EOF'
-Irreversible, in force before the skill loads:
-- This skill asks WHERE THE PROJECT IS, not whether its code is correct. Its
-  dimensions are the record, the project's consistency against its own stated
-  conventions, its public interface, and whether the safety nets a release needs
-  actually exist. Deep code analysis — correctness, security, the data model,
-  test quality — belongs to a PROJECT-SCOPED code-analysis skill, which this one
-  invokes when `.claude/skills/` has one. Do not attempt those dimensions
-  inline.
-- Where the project has NO such skill, say so in the plan and in the report:
-  "no code analysis ran". Never let silence imply the code was examined and
-  found clean.
-- Incremental means resolving each dimension's slice from the audit record and
-  re-reading only what changed since the governing baseline. Apply the
-  blast-radius rule strictly, WHETHER OR NOT there is a manifest: a changed
-  schema or migration voids the narrowing for every dimension, a changed
-  dependency manifest or lockfile voids consistency, and anything touching auth,
-  roles or ownership widens rather than narrows. `audit.invalidates` and
-  `WSS.lanes.*` only ever ADD to that set. The record and safety-net dimensions are
-  never incremental. When in doubt, widen.
-- The push grant does NOT extend to remediation code written afterwards. That is
-  ordinary work: commit it and ask.
-- Close out through the `wrap` skill rather than pushing by hand, so its
-  rails apply — a push publishes a ref, so check what rides along, and never
-  force-push or resolve a rejection by force.
 EOF
     ;;
   --wss-overview)
@@ -1146,7 +1082,7 @@ if [ -n "${seen[--wss-full-check]:-}" ] && flag_fires --wss-full-check; then
 fi
 
 # Either stocktake flag absorbs `--wss-check` — again only where the absorber
-# fires. stocktake runs --wss-check's method over --wss-check's files as its
+# fires. wss-stocktake runs --wss-check's method over --wss-check's files as its
 # record dimension and says so — "invoke one or the other, never both" — so
 # firing both sweeps the record twice, and the second sweep reports the first
 # one's writes as fresh drift.

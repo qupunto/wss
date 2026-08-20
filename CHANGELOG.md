@@ -8,6 +8,49 @@ reasoning behind each change, is `WSS.CHANGELOG.md`. This file is deliberately
 free of that: if an entry here only makes sense to someone editing the suite, it
 belongs in the other one.
 
+## 0.16.0 — 2026-08-19
+
+**A paired session's finished planning now lands by itself.** The session that
+designs drops an item; the session that runs the work picks it up at its next
+wrap, files it through the same command you would have run by hand, notes who
+wrote it, and clears it once it is in. An item it cannot read comes back to you
+untouched rather than being guessed at. Turn it on with the `paired-sessions`
+toggle — off, it does nothing and says nothing.
+
+**If your TODO list is a GitHub issues repository, nothing loads it for you any
+more.** It has stopped being a list read at session start and become an inbox
+you ask for. When you do ask, each issue is worked, answered or closed there and
+then, instead of being copied into a task list that immediately starts drifting
+from it. Sessions that used to open with your issue list now open with your
+roadmap.
+
+**One command now asks whether your project is healthy.** `--wss-health-check`
+replaces the scatter of separate check commands with a single one that takes a
+depth: look without touching anything, fix what it finds, distrust its own
+shortcuts and re-read everything, or narrow to just the files you are about to
+publish. It records a clean bill of health **only when the run actually was
+clean** — if it finds something and nobody deals with it, those files stay on
+the list for next time instead of being quietly marked done. **The older check
+commands still work**; they retire in a later release.
+
+**Triaging filed bug reports is now something you ask for, not something that
+happens to you.** `--wss-triage` does it on request. No health check runs it —
+the health check only tells you how many are open.
+
+**Your toggles have a file of their own**, out of the setup notes they were
+sharing, and it lists every toggle that exists with its current state — not only
+the ones you have changed — and what flipping each one actually does beyond
+being read.
+
+**This release does need something applied to your project.** If you have
+toggles set, updating moves them into the new file. Skip that and they read as
+off, silently: an unset toggle and a toggle the suite can no longer find look
+identical to everything that reads one.
+
+**A pairing claim tells you where a message can be delivered, not whether the
+other session is still alive.** Those are not the same thing, and the file no
+longer reads as if they were.
+
 ## 0.15.1 — 2026-08-19
 
 **Two Claude sessions can now share one checkout without stepping on each

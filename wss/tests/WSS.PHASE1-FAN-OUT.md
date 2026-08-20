@@ -6,7 +6,7 @@ commit, its share of the carry-over list, and the brief below.
 
 **Where no `WSS.agents.audit` role is declared** — the common case on a project that
 has just adopted this — route each auditor to its rung's own agent,
-[`wss-survey`](../../../agents/wss-survey.md), matching the Survey rung the router
+[`wss-survey`](../../agents/wss-survey.md), matching the Survey rung the router
 already assigned it. **Never a general-purpose subagent, and never a different
 role's declared agent.** The brief travels entirely in the prompt, so nothing is
 lost except the role's own standing instructions. Name the rung agent used in
@@ -18,7 +18,7 @@ dimension, and name them in that auditor's prompt. It reads `WSS.record.behaviou
 and `WSS.record.reference` for current state, the named entries for the *why*, and
 opens the full log only if something contradicts what it is looking at.
 **Delegate that single lookup to
-[`wss-survey`](../../../agents/wss-survey.md)** — once, not once per dimension,
+[`wss-survey`](../../agents/wss-survey.md)** — once, not once per dimension,
 which is what keeps every auditor from repeating the read; the divided-floor
 comparison SKILL.md states puts a whole-record read on this side of it — brief:
 `WSS.record.decisionsIndex` plus the list of dimensions
@@ -51,7 +51,7 @@ brief assumes the project has routes, or a database, or a server.
 
 | Dimension | Brief |
 |---|---|
-| **`record`** | **Hand the auditor [`wss/tests/WSS.RECORD-DRIFT.md`](../../../wss/tests/WSS.RECORD-DRIFT.md).** One change: the auditor reports, it does not dispatch or edit. |
+| **`record`** | **Hand the auditor [`wss/tests/WSS.RECORD-DRIFT.md`](../../wss/tests/WSS.RECORD-DRIFT.md).** One change: the auditor reports, it does not dispatch or edit. |
 | **`consistency`** | Layering, naming, error shapes, duplication that a fourth copy will turn into a bug, dead code, abstraction level **against the project's own stated conventions**, which are in `WSS.record.reference`. Not performance without a measured problem. |
 | **`interface`** | The contract this project offers its callers, whichever form it takes: surfaces that changed shape without a version, undocumented or accidentally-public surface, inconsistent errors and exit codes, and defaults that are hard to reverse once depended on. Judged from outside, against what `WSS.record.behaviour` and `WSS.record.reference` claim it offers. |
 | **`safety-nets`** | A **presence** check, not a review. Does a test suite exist, and does the full run pass. Does CI exist, does it run on the branches that matter, and does it actually gate a merge. Is there a lockfile. Are the destructive operations gated behind `permissions.ask`. Every answer is yes/no plus evidence. Whether the tests are *good* is the project code-analysis skill's question. |

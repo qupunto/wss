@@ -39,8 +39,8 @@ convention the table below already uses for `changelog-writer`, `git-writer` and
 rest. This skill decides what **the site** holds and `docs-writer` writes it; those
 two files are records, not pages, and belong to neither.
 
-**Dispatch findings about them straight to the owner** — `--wss-check`,
-`--wss-full-check`, `--wss-start` and `--wss-stocktake` do this already; the split is
+**Dispatch findings about them straight to the owner** — `--wss-health-check`
+and `--wss-start` do this already; the split is
 [`WSS.OWNERSHIP.md`](../../wss/workflow/WSS.OWNERSHIP.md#when-to-split)'s.
 
 What stays here is the judgement, not the write: **whether a subject belongs on
@@ -64,7 +64,7 @@ long-form docs site under `docs/` should hold. Hand these back instead of firing
 | PR descriptions | `pr` (`--wss-pr`), which drafts the body from the branch range. It is not a record and is never written to a file here |
 | A one-line README tweak | Just edit it; no site, no taxonomy — **unless** the manifest maps the README into `WSS.record.reference`, which makes it `reference-writer`'s |
 | A runtime rule, or stack/architecture/data-model material | `behaviour-writer` and `reference-writer`, which own `WSS.record.behaviour` and `WSS.record.reference` |
-| A project's *append-only* record — TODO list, roadmap, decision log, audit log | The record primitives: `--wss-todo`/`--wss-log`, `--wss-plan`, `--wss-stocktake`. Appending a dated entry is not writing a page, and those files are never placed by tier |
+| A project's *append-only* record — TODO list, roadmap, decision log, audit log | The record primitives: `--wss-todo`/`--wss-log`, `--wss-plan`, `--wss-health-check --deep`'s TODO resort for the audit log. Appending a dated entry is not writing a page, and those files are never placed by tier |
 
 **A project-scoped docs skill wins.** If `.claude/skills/` contains a skill that owns this
 project's documentation, it encodes conventions this one cannot know — defer to it and say so.
@@ -104,7 +104,7 @@ through this table.
 **Audit mode is about this site's *internal correctness*** — do the paths exist, do links and
 anchors resolve, do enumerations and `## Key files` still match source. It is not about whether
 a project's record *owes* an update: "a diff touched the routes and `WSS.BEHAVIOUR.md` never changed"
-is `--wss-check`'s finding, not this skill's. Don't run both against the same request.
+is `--wss-health-check`'s finding, not this skill's. Don't run both against the same request.
 
 **An existing site is the authority on its own conventions** — read two or three of its pages
 first and match them wherever they differ from this skill. When a project states those

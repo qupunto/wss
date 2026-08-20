@@ -54,11 +54,13 @@ disabled, so those flags stop firing while the slash form (if any) survives.
 
 3. **Refuse what would break, warn what will change:**
    - A **dispatch-reached skill** — one any other skill invokes, whether or
-     not the user also can (check the catalog's who-invokes-whom table) —
+     not the user also can (check the who-invokes-whom table in the catalog
+     `WSS.record.tooling.catalog` resolves to — `.claude/WSS.TOOLING.md`
+     with no manifest) —
      must never go `off` or `user-invocable-only`: both block model
      invocation, which is what a dispatch is, and the break is silent at the
      call site. `name-only` is the floor for these. Refuse and say why —
-     `full-check` is the standing example: it has its own flag, yet
+     `health-check` is the standing example: it has its own flag, yet
      `--wss-release` dispatches to it before every tag.
    - A **flagged skill** moving to `user-invocable-only` or `off` loses its
      flag and its phrase triggers; only the slash form remains (and `off`

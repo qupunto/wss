@@ -78,7 +78,7 @@ unresolvable dispatches to nothing, silently."
 fi
 
 # ------------------------------------------------------------- sweep age
-# A sweep checkpoint that is far behind HEAD means the next --wss-check or --wss-docs
+# A sweep checkpoint that is far behind HEAD means the next --wss-health-check or --wss-docs
 # will re-read a lot. Worth one line so the user can choose to run it; not worth
 # a line while it is fresh. 40 commits is a nudge threshold, not a rule.
 # The manifest may relocate the checkpoint (`WSS.sweeps`, wss/workflow/WSS.MANIFEST.md), and
@@ -219,8 +219,8 @@ depends on one makes the call by accident."
       out="${out}${out:+
 
 }$n open item(s) in $td, unchanged for $b commits of work.
---wss-stocktake re-checks the TODO list against what the code now does, and rebuilds
-it around the answer."
+--wss-health-check --deep re-checks the TODO list against what the code now does
+(ask-gated), and rebuilds it around the answer."
     fi
   fi
 
@@ -237,7 +237,7 @@ it around the answer."
   # WSS.record.decisions and WSS.record.stocktake are deliberately absent. The decision log
   # is append-only, so its age carries no signal — a project with nothing to
   # decide correctly never touches it. Audits are already covered by the sweep
-  # nudge above, which fires on --wss-stocktake's own checkpoint at 40.
+  # nudge above, which fires on health-check's own checkpoint at 40.
   rd=$(jq -r '.WSS.record.roadmap // empty' "$manifest" 2>/dev/null || true)  # see above
   if [ -n "$rd" ] && [ -f "$PWD/$rd" ]; then
     n=$(grep -c '^[[:space:]]*- \[ \]' "$PWD/$rd" 2>/dev/null || true)
@@ -299,7 +299,7 @@ gh issue list -R qupunto/wss" ;;
 
 }$up open issue(s) on qupunto/wss await triage — findings filed
 upstream by adopters. gh issue list -R qupunto/wss;
---wss-full-check's triage reads these alongside the local inbox." ;;
+--wss-triage reads these alongside the local inbox." ;;
   esac
 fi
 

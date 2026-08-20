@@ -22,7 +22,7 @@ Feature | Fix | Refactor | Docs | Build | Chore
 - [ ] tests pass — `<command>`, `<N>` passed
 - [ ] typecheck clean — `<command>`
 - [ ] doctor clean — `wss/tests/wss-doctor.sh`, 0 failures
-- [ ] records current — `--wss-check`
+- [ ] records current — `--wss-health-check`
 
 ## Attestations
 

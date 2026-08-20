@@ -1,6 +1,6 @@
 ---
 name: catalog
-description: "Owns the tooling catalog — `WSS.record.tooling.catalog` — a human-readable index of every skill and agent, what each is for, and who invokes whom. SHORTHAND: `--wss-catalog`. Use whenever a skill or agent is created, edited or removed, or after `--wss-tidy` edits anything. Also on \"update the tooling catalog\", \"who invokes whom\", \"add this skill to the catalog\"."
+description: "Owns the tooling catalog — `WSS.record.tooling.catalog` — a human-readable index of every skill and agent, what each is for, and who invokes whom. SHORTHAND: `--wss-catalog`. Use whenever a skill or agent is created, edited or removed, or after `--wss-health-check` edits anything. Also on \"update the tooling catalog\", \"who invokes whom\", \"add this skill to the catalog\"."
 ---
 
 # The tooling catalog
@@ -9,15 +9,15 @@ One job: keep `WSS.record.tooling.catalog` — a human-readable index of every
 skill and agent, what each is for, and the diagram of who invokes whom — true
 of the tree the run ends with.
 
-**The cross-skill contract with `--wss-tidy`.** `wss-tools-inventory.sh` is the
+**The cross-skill contract with `--wss-health-check`.** `wss-tools-inventory.sh` is the
 discovery step neither skill skips. Before this skill renders or edits
 anything, run `bash wss/scripts/wss-tools-inventory.sh` (no `--root` flag) to regenerate
 `.claude/WSS.TOOLS.json` — `WSS.record.tooling.inventory` — so the catalog
 describes what is actually on disk rather than what the last run left behind.
-`--wss-tidy` runs the same script and then invokes this skill after any edit
+`--wss-health-check` runs the same script and then invokes this skill after any edit
 that restructures a file, for the same reason from the other side: a row or an
-arrow written before a Job 3, 4 or 5 edit lands describes a tree that no longer
-exists.
+arrow written before a prune, token-economy or rot-resistance edit lands
+describes a tree that no longer exists.
 
 **Every skill, agent, script and hook entry in `.claude/WSS.TOOLS.json` needs a
 matching row here, and every catalog row of those kinds needs a matching
@@ -49,7 +49,7 @@ Who owns what else is
 
 - A skill or agent is created, removed, or has its `description` or purpose
   edited in a way that changes what it does or when it's used.
-- After `--wss-tidy` edits anything — the re-open half of the contract above.
+- After `--wss-health-check` edits anything — the re-open half of the contract above.
 
 Not needed for internal changes that don't alter purpose, like rewording a
 section.
@@ -91,7 +91,7 @@ its placement has to be chosen.
 
 **The derived copy is only as current as the handoff**, so making it is part of
 this procedure rather than a courtesy — and where the catalog moved but the site
-did not, that is a finding for `--wss-check`, not something to fix by editing the
+did not, that is a finding for `--wss-health-check`, not something to fix by editing the
 page.
 
 **The handoff goes out once, from the catalog the run ends with.** Where a later
@@ -122,7 +122,7 @@ and arrow it asserted.
 ## What this skill does not do
 
 It does not run the sweeps and it does not edit the `WSS.record.tooling.sources`
-files — those are `--wss-tidy`'s, and the contract above is how the two meet. It
+files — those are `--wss-health-check`'s, and the contract above is how the two meet. It
 does not write `.claude/WSS.TOOLS.json`: that record is
 `wss-tools-inventory.sh`'s, which this skill triggers and never edits by hand.
 And it writes no other record — a tooling task belongs in `WSS.record.todo` and

@@ -2,7 +2,7 @@
 
 Gating is deliberately not a manifest key — a stack's destructive commands
 belong in the project's own `.claude/settings.json`, per
-[`WSS.MANIFEST.md`](../../../wss/workflow/WSS.MANIFEST.md). `--wss-stocktake` checks for that gate
+[`WSS.MANIFEST.md`](../../../wss/workflow/WSS.MANIFEST.md). `--wss-health-check --deep`'s TODO resort checks for that gate
 under `safety-nets`, so a project adopted without it starts life owing a
 finding this step can settle while the tooling is already open.
 

@@ -77,6 +77,7 @@ that cannot resolve one says so and continues.
 | `WSS.record.changelog` | path | `wss/logs/WSS.CHANGELOG.md` |
 | `WSS.record.handoff` | path | `wss/records/WSS.HANDOFF.md` |
 | `WSS.record.setup` | path | — (no fallback; see below) |
+| `WSS.record.toggles` | path | `wss/records/WSS.TOGGLES.md` |
 | `WSS.record.decisions` | path | `wss/logs/WSS.DECISIONS.md` |
 | `WSS.record.decisionsIndex` | path (generated) | — (see below) |
 | `WSS.record.openDecisions` | path | `wss/records/WSS.OPEN-DECISIONS.md` |
@@ -128,13 +129,22 @@ writer of a file the user also edits. Nothing warns about that: the mapping is
 the consent.
 
 **`WSS.record.setup` is injected whole by `wss-session-check.sh`, and has no
-fallback.** It holds the per-machine facts and toggle values a session must
+fallback.** It holds the per-machine facts a session must
 have before it can look anything up; the admission test is in the record's own
 header, and `wss-doctor.sh` caps its size (`SETUP_CAP`) the way it caps the
 handoff card. Undeclared means nothing is injected — the correct degrade,
 since a project without the record has nothing to say. `wss-reset-records.sh`
 blanks it on publication: the record's structure ships, its values are one
 machine's.
+
+**`WSS.record.toggles` is the toggle registry — every available toggle with
+its current state, plus what flipping it triggers** — extracted from the
+setup record so it is read on demand rather than injected (the decision
+log's `2026-08-19 (sixty-fifth)` entry). Its reader is
+`wss/scripts/wss-toggle.sh`, and **absent means off everywhere**: no row, no
+file and no declaration all read the same, so no consumer tells them apart.
+Blanked on publication like the setup record — the structure ships, the
+states are one machine's.
 
 **`WSS.record.reference` is an array, not a sub-object.** Skills describing "the
 reference doc (overview)" or "(data model)" are naming *which file in that array*
@@ -150,8 +160,8 @@ team already living in an issue tracker can adopt the workflow, and nobody files
 "might be worth looking at" as an issue.
 
 **`WSS.record.stocktake` has no conventional fallback**, because no filename for
-it is conventional. `--wss-stocktake` asks once on a first pass and then creates one;
-see that skill's no-manifest section. **Frozen records spell this role's former
+it is conventional. `--wss-health-check --deep`'s TODO resort asks once on a first
+pass and then creates one. **Frozen records spell this role's former
 key, `WSS.record.audits`, throughout** — that key now names the index below, and
 the decision log carries the split.
 
@@ -271,7 +281,7 @@ one is a migration.
 | `WSS.commands.typecheck` | shell command | — |
 | `WSS.commands.test` | shell command | The **full** suite with coverage, not a bare test run |
 | `WSS.commands.indexRegen` | shell command | **Rewrites** `WSS.record.decisionsIndex`. For the owners that append to the decision log |
-| `WSS.commands.indexCheck` | shell command | **Verifies** the index is current, without writing. For `--wss-check`, which writes nothing — usually the same script with a `--check` flag |
+| `WSS.commands.indexCheck` | shell command | **Verifies** the index is current, without writing. For `--wss-health-check`, which writes nothing itself — usually the same script with a `--check` flag |
 | `WSS.commands.testConsentEnv` | env var **name** | Where the suite is gated behind a token only the user can supply |
 | `WSS.commands.ci` | object | `{ "tool": "gh", "workflow": "<name>" }`, or a shell command returning run status |
 
@@ -323,7 +333,7 @@ Read it in lane mode — a selector present, or `WSS.lanes.named` declared — a
 when **deciding whether to adopt lanes at all**: that reader has no selector
 yet, so no gate can detect it, and it follows the pointer anyway.
 
-### `audit` — scope control for `--wss-stocktake`
+### `audit` — scope control for `--wss-health-check --deep`'s TODO resort
 
 | Key | Type | Notes |
 |---|---|---|
@@ -379,7 +389,7 @@ table is the target, not a description of the current run. The rulings are the
 decision log's `2026-08-19 (thirty-fifth)`–`(thirty-eighth)` entries.
 
 **The QA/staging tier is deliberately NOT a manifest key.** It is the
-`staging-branch` toggle in `WSS.record.setup`, which is its single source. A
+`staging-branch` toggle in `WSS.record.toggles`, which is its single source. A
 staging key in a manifest would be a second source for one fact, and
 `wss-doctor.sh` fails a manifest that carries one.
 

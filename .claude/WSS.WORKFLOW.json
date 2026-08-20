@@ -19,6 +19,7 @@
       "changelog": "wss/logs/WSS.CHANGELOG.md",
       "handoff": "wss/records/WSS.HANDOFF.md",
       "setup": "wss/records/WSS.SETUP.md",
+      "toggles": "wss/records/WSS.TOGGLES.md",
       "decisions": "wss/logs/WSS.DECISIONS.md",
       "decisionsIndex": "wss/generated/WSS.DECISIONS-INDEX.md",
       "openDecisions": "wss/records/WSS.OPEN-DECISIONS.md",
@@ -26,7 +27,8 @@
       "audits": "wss/logs/WSS.AUDITS.md",
       "reference": [
         "README.md",
-        "wss/records/WSS.HARNESS.md"
+        "wss/records/WSS.HARNESS.md",
+        "wss/records/WSS.CONVENTIONS.md"
       ],
       "tooling": {
         "catalog": ".claude/WSS.TOOLING.md",
@@ -55,6 +57,7 @@
       },
       "handoff": "register",
       "setup": "register",
+      "toggles": "register",
       "decisions": "log",
       "decisionsIndex": "generated",
       "openDecisions": "register",
@@ -79,6 +82,9 @@
         "tool": "gh",
         "workflow": "Verify"
       }
+    },
+    "docs": {
+      "root": "wss/docs"
     },
     "sweeps": ".claude/WSS.SWEEPS.json",
     "agents": {

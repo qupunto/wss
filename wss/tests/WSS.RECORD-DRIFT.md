@@ -1,10 +1,11 @@
 # Record drift — what to look for
 
-> **A shared method, not a skill.** See [`WSS.CHECKS.md`](WSS.CHECKS.md). The runners that
-> borrow it are `--wss-check` (incremental, records only), `--wss-full-check` (full scope,
-> records + docs + tooling) and `--wss-stocktake` (the record dimension of a whole-project
-> audit). Each supplies its own scope and decides what to do with a finding; this file
-> is only the taxonomy of what counts as one.
+> **A shared method, not a skill.** See [`WSS.CHECKS.md`](WSS.CHECKS.md). The runner that
+> borrows it is `--wss-health-check` — the bare default (incremental, records only), `--deep`
+> (full scope, records + docs + tooling), and its ask-gated TODO resort, which runs
+> this as the record dimension of a whole-project audit. Each mode supplies its own
+> scope and decides what to do with a finding; this file is only the taxonomy of
+> what counts as one.
 
 ## What to look for
 
@@ -55,11 +56,11 @@ its record last did is a finding — **a candidate, not a defect**, since the
 change may genuinely not have been observable.
 
 **This method needs a file, and `WSS.record.todo` may not be one.** A provider-backed
-TODO list has no git history in this repository, so there is no "last time it
-changed" to compare against and the comparison is simply unavailable — read the
-open issues in full and judge them on their content instead, per
-[`providers/WSS.GITHUB-ISSUES.md`](../workflow/providers/WSS.GITHUB-ISSUES.md). Do not report the
-absence as drift; it is the declared shape, not a fault.
+TODO list is outside this drift method's read set: it is read only on demand,
+in a person's triage pass, never swept for drift, per
+[`providers/WSS.GITHUB-ISSUES.md`](../workflow/providers/WSS.GITHUB-ISSUES.md#what-the-sweeps-do-with-it).
+Report it `not-covered`, not drift; the absence of a comparison is the
+declared shape, not a fault.
 
 ### 3. Mutable claims in the tooling files
 

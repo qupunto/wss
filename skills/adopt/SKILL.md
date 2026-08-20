@@ -144,11 +144,9 @@ Read it out at the end of an adoption. It is a selection, not an inventory — s
 | Settling how the system behaves | `--wss-describe` |
 | Settling what the project *is* — stack, data model, a convention | `--wss-reference` |
 | Finishing a unit of work, or before `/clear` | `--wss-wrap` |
-| Weekly, or after a refactor | `--wss-check` |
+| Weekly, or after a refactor | `--wss-health-check` |
 | The suite moved under this project, or the doctor names a pre-rename manifest | `--wss-update` |
-| Before a release, or when you stop trusting the record | `--wss-full-check` |
-| Monthly, or when picking the project back up | `--wss-stocktake` |
-| After editing any skill or agent file | `--wss-tidy` then `--wss-catalog` |
+| Before a release, monthly, when picking the project back up, or after editing any skill or agent file | `--wss-health-check --deep` |
 
 **Name the three that pay on day one — `--wss-track`, `--wss-todo`, `--wss-wrap` — and say
 the rest pay back over weeks.**

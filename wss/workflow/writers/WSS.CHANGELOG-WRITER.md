@@ -84,9 +84,9 @@ asked.
 | Called by | Write |
 |---|---|
 | `--wss-release` | The entry for the version being cut, under the version and date the caller supplies |
-| `--wss-check` | The one drift finding it dispatched — re-verified first — usually marking an entry unreleased |
+| `--wss-health-check` | The one drift finding it dispatched — re-verified first — usually marking an entry unreleased |
 
-**A caller with no row gets the `--wss-check` row**: write the findings you were
+**A caller with no row gets the `--wss-health-check` row**: write the findings you were
 handed and stop. Say in one line that the caller was not listed, so the row can
 be added rather than guessed at again.
 
@@ -104,7 +104,7 @@ that wanted a release would have run `--wss-release`.
   supplies none and the release list names none, ask rather than deriving one.
 - **It does not tag, commit or push.** Tags are `--wss-release`'s and nothing else
   in this workflow writes one. The caller commits under the caller's grant; this
-  skill confers nothing, so dispatched from `--wss-check` it writes the file and
+  skill confers nothing, so dispatched from `--wss-health-check` it writes the file and
   stops there.
 - **It does not write any other record.** Reasoning goes to `WSS.record.decisions`
   via `--wss-log`; a milestone's completion is `--wss-plan`'s mark.

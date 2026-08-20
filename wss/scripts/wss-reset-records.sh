@@ -55,6 +55,7 @@ releases|# Release list
 changelog|# Changelog
 handoff|# Handoff
 setup|# Setup
+toggles|# Toggles
 decisions|# Decision log
 decisionsIndex|# Decisions index
 openDecisions|# Open decisions

@@ -70,6 +70,12 @@
 # accident that pair is powerful enough to cause.
 wss/flags/
 
+# ...and except `wss/.unscoped/`, the drafting surface — design artifacts and
+# scout notes that are deliberately never committed (owner's move of
+# 2026-08-20, previously `~/wss-unscoped/`). Same trap as
+# `wss/flags/`: without this line the `!wss/**` pair re-includes every draft.
+wss/.unscoped/
+
 # Without a LICENSE a repo is all rights reserved, which would make the skills
 # unusable by anyone who finds them.
 !LICENSE

@@ -175,8 +175,8 @@ A PID cannot be mapped back to a session id — the process environment does not
 carry it — which is exactly why the trailer exists.
 
 **Never force-push, and never rewrite a commit this session did not make.** The
-flag hook blocks that reach this procedure (`--wss-wrap`, `--wss-release`,
-`--wss-stocktake`) already state why — a rejection usually means another session
+flag hook blocks that reach this procedure (`--wss-wrap`, `--wss-release`)
+already state why — a rejection usually means another session
 pushed first, and that is a merge decision for the caller, not something to
 resolve here — so this file does not restate the reasoning as a second copy. The
 script enforces the refspec shape; obtaining the caller's OK before overriding
@@ -205,6 +205,14 @@ fetched it, deleting it locally changes nothing.
 
 - **It does not decide to commit or push.** No judgement about whether the work
   is ready, whether the milestone is done, or whether now is the moment.
+**`--refs` is optional and is a transcription, never a lookup.** Where the
+caller already knows what the commit is work on — the cycle heading a shard is
+working from, a tracker id — pass it and it lands as a `Refs:` footer. **Do not
+go and find one.** The field exists so a later check can derive which commits
+closed which cycle without anyone keeping a second list of them; a value
+guessed at commit time would be exactly the drifting copy that design rejected.
+Absent is a correct answer and writes no footer.
+
 - **It does not write any record file.** Not the changelog, not the roadmap,
   not the handoff — those have their own owners, and a commit is not a licence
   to adjust what is in it.
