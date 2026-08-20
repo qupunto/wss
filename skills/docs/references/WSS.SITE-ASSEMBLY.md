@@ -11,7 +11,7 @@ is `WSS.SITE-SETUP.md`'s. This file is about which pages exist and how they are 
 
 **Which profile a project is, and the signals behind it, are
 [`WSS.PROJECT-SHAPE.md`](../../../wss/workflow/WSS.PROJECT-SHAPE.md)'s** — one detector, so
-this skill and `--wss-stocktake` cannot reach different conclusions about the same repo.
+this skill and `--wss-health-check`'s TODO resort cannot reach different conclusions about the same repo.
 What a profile *implies for documentation* is this table's, and stays here.
 
 | Profile | Tiers, minimum viable set |

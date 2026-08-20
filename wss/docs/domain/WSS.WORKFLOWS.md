@@ -123,9 +123,11 @@ Critical-marked items first, then section order, minus everything ineligible —
 deferred, blocked, production-touching, credential-needing.
 
 `skills/start/SKILL.md::Phase 2 — Choose the batch`. Two properties are
-easy to miss. TODO list order is only meaningful when the TODO list is a *file*:
-under a provider the list arrives newest-first, which is close to the inverse
-of the intended ordering, so rank must be read out of item bodies
+easy to miss. A github-issues-provider `WSS.record.todo` contributes nothing
+to this phase: the decision log's `2026-08-19 (sixty-ninth)` entry rules that
+issues are read only on demand, in a person's triage pass, never as part of
+routine batch selection, so a project on the provider draws its batch from the
+file records and, failing those, the roadmap
 (`wss/workflow/providers/WSS.GITHUB-ISSUES.md`). And when the TODO list yields
 nothing, the fallback is not improvisation — the roadmap's first open block
 goes to `--wss-plan` (`skills/plan/SKILL.md`) to become concrete items,
@@ -193,8 +195,9 @@ full consented run whose result was read. Refused consent, a run that died
 part-way, or a subset all mean no stamp at all — a red result is stamped, as
 red.
 
-The asymmetry has a cause: `--wss-stocktake` skips its own suite run on the
-strength of this entry, so a stamp no run earned is worse than no stamp.
+The asymmetry has a cause: `--wss-health-check --deep`'s TODO resort skips its
+own suite run on the strength of this entry, so a stamp no run earned is worse
+than no stamp.
 
 ### 9 — Recording, one owner at a time
 
@@ -235,5 +238,5 @@ acquires it by succeeding.
   its own page once written rather than as branches inside this one.
 - **What each record may hold.** `wss/workflow/WSS.RECORD-CONTRACT.md` owns that.
   This page asserts the order and the gates; the rules stay where they live.
-- **The cadence flags.** `--wss-check`, `--wss-stocktake` and `--wss-full-check`
-  are separate journeys that read what this one wrote.
+- **The cadence flags.** `--wss-health-check`, at any depth, is a separate
+  journey that reads what this one wrote.

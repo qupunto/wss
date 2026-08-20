@@ -7,7 +7,7 @@ Not optional. Before anything reaches the user, personally re-check:
 - **every `critical` and `high` finding**, by reading the cited lines yourself;
 - **every negative claim** ("nothing does X"), by running the grep that would
   *disprove* it —
-  [`WSS.RECORD-CONTRACT.md`](../../../wss/workflow/WSS.RECORD-CONTRACT.md#negative-claims);
+  [`WSS.RECORD-CONTRACT.md`](../../wss/workflow/WSS.RECORD-CONTRACT.md#negative-claims);
 - **every count** — tests, routes, migrations, rows;
 - **anything contradicting `WSS.record.decisions`.** The decision is usually right
   and the auditor usually missed it.
@@ -16,7 +16,7 @@ Not optional. Before anything reaches the user, personally re-check:
 running the grep that settles a negative claim, is reading rather than
 judgement — the **Survey** rung, on the key that the brief names the read set
 and pins the verdict format. Send it to
-[`wss-survey`](../../../agents/wss-survey.md) with the citation and have it return
+[`wss-survey`](../../agents/wss-survey.md) with the citation and have it return
 a verdict plus evidence.
 
 **Do `critical` and `high` yourself.** Those are the ones that reach the user as
@@ -49,7 +49,7 @@ not new: fold it into the carry-over count rather than listing it twice.
 ### Then run the suite — once, and read CI
 
 **The mechanics are
-[`wss/tests/WSS.MECHANICAL-GAUNTLET.md`](../../../wss/tests/WSS.MECHANICAL-GAUNTLET.md)**
+[`wss/tests/WSS.MECHANICAL-GAUNTLET.md`](../../wss/tests/WSS.MECHANICAL-GAUNTLET.md)**
 — the doctor-first sequence, the full-suite-with-coverage rule, the consent
 budget, the `test-run` carry-forward, and CI's four outcomes on the audited
 SHA, all of them in the report. Run the project's schema-validation and

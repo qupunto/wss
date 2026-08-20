@@ -9,6 +9,6 @@ scripts, a Makefile, a task runner's config, CI workflow steps — and propose:
 - `WSS.commands.ci` where a pipeline is configured
 
 If the project has no test command, say so plainly and leave the key out.
-`--wss-stocktake` treats an absent suite as a standing finding; that is the correct
+`--wss-health-check --deep`'s TODO resort treats an absent suite as a standing finding; that is the correct
 outcome and it depends on the key being genuinely absent rather than wrong.
 

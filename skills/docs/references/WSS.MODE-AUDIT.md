@@ -11,7 +11,7 @@ could not be borrowed by a caller that wants a different one.
 Sections 1–7 are shell. They run over the whole site in seconds and there is nothing to
 save by narrowing them — **always run them in full.** Section 8's second half is the
 expensive one: re-reading source files page by page. That is what the checkpoint is for,
-and `--wss-full-check` is what forces every page to be re-read.
+and `--wss-health-check --deep` is what forces every page to be re-read.
 
 Ask `sweep-tracker` to resolve the entry `docs`, with two scopes:
 

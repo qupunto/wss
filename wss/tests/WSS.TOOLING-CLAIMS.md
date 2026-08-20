@@ -1,9 +1,10 @@
 # Stale claims inside the tooling files
 
-> **A shared method, not a skill.** See [`WSS.CHECKS.md`](WSS.CHECKS.md). `--wss-tidy` runs it
-> over whatever it just edited; `--wss-full-check` runs it over every file in
-> `WSS.record.tooling.sources`. `--wss-tidy`'s prune job finds a neighbouring class — prose that changes
-> nothing — proposing its cuts first, then applying them under this method.
+> **A shared method, not a skill.** See [`WSS.CHECKS.md`](WSS.CHECKS.md). `--wss-health-check`
+> runs it over whatever changed since the checkpoint; `--deep` runs it over every
+> file in `WSS.record.tooling.sources`. Its prune lens finds a neighbouring
+> class — prose that changes nothing — proposing its cuts first, then applying
+> them under this method.
 
 **The rule is
 [`WSS.RECORD-CONTRACT.md`](../workflow/WSS.RECORD-CONTRACT.md#the-mutable-claim-rule),

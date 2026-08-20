@@ -69,6 +69,34 @@ declares `WSS.lanes.named`. Where it is, read
 [`references/WSS.LANES.md`](references/WSS.LANES.md) now and follow it. Where
 it is off, skip the file entirely and say nothing.
 
+**Step 0.5 — consume the relay, where the pairing is on.** Check
+`→WSS.script.wss-toggle.sh --on paired-sessions`; off or absent means skip
+this step and say nothing. While it is on, the loop consumes
+`.claude/WSS/RELAY/` at each boundary — this step, no ask, no hold, no
+notifications; the protocol's one source is
+[`skills/pair/SKILL.md`](../pair/SKILL.md). For each item file, in
+filename order:
+
+1. **Apply the body verbatim through the skill its `target:` names** —
+   `--wss-log`, `--wss-todo`, `--wss-plan`. Placement, ordinals, format and
+   the index stay theirs; the relay moves content, never authority over
+   where content goes.
+2. **Add a line naming the relay item and the authoring session** to every
+   applied entry — mandatory, because an applied entry carries this
+   session's trailer and nothing else distinguishes relayed content from
+   authored content.
+3. **Delete the item immediately after confirming its own apply succeeded**,
+   in the same pass — deleting late is the double-apply window, deleting
+   before confirming is the lost-apply one, and never both halves in one
+   shell command, which is how an item was once deleted unapplied.
+4. **Bounce a malformed item untouched** — report it to the designer, never
+   repair it; repairing silently makes this session the author of content
+   the header attributes to someone else.
+
+Items are consumed as whole files from the one directory `WSS.pair.relay`
+names, never read out of a shared live file and never from a second path —
+filename identity is an accident, not a double-apply guard.
+
 1. **Reconcile the task list.** Run `TaskList`. Mark anything genuinely
    finished as `completed` via `TaskUpdate`; delete anything stale,
    duplicated, or superseded during the work rather than leaving it
@@ -137,11 +165,12 @@ it is off, skip the file entirely and say nothing.
    forbids writing one into a record, but the reply is read once, by someone
    about to decide whether to stop.
 
-   Where a record reads `?(...)` — undeclared, missing, or (for a
-   provider-managed `WSS.record.todo`, counted client-side rather than with
-   `--label`: [`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md#after-writing-in-the-same-session-do-not-read-with---label))
-   unreachable — say that in place of a count. A bare `0` would claim a fact
-   ("nothing left") the read never established.
+   Where a record reads `?(...)` — undeclared, missing, or unreachable — say
+   that in place of a count. A provider-managed `WSS.record.todo` is not
+   fetched here at all: report "TODO list is a github-issues provider
+   (on-demand triage)" instead of a count, per
+   [`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md#what-the-sweeps-do-with-it).
+   A bare `0` would claim a fact ("nothing left") the read never established.
 
    **Read `milestones=N`'s parenthetical, not the bare integer.**
    `milestones=0` alone means no milestones remain; `milestones=0

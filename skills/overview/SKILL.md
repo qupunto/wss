@@ -53,11 +53,11 @@ contract, and say so in one line.
 The probe stops where mechanics stop. On top of its output:
 
 - **Finish the lines it marks "not counted here" or "not checked".** A
-  provider-backed TODO list is counted through
-  [`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md#after-writing-in-the-same-session-do-not-read-with---label)
-  — mind its read-after-write rule — or reported *not checked* when `gh`,
-  the network, or the provider is unreachable. Never dropped: an absent line
-  reads as clean.
+  provider-backed TODO list is not fetched here at all: report the line as
+  "TODO list is a github-issues provider (on-demand triage)" rather than a
+  count, per
+  [`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md#what-the-sweeps-do-with-it).
+  Never dropped: an absent line reads as clean.
 - **Interpret both positions, and keep them apart.** The roadmap's is *what
   this area is working toward* — in a lane worktree, that lane's, and say
   which lane. The release list's is *what ships next*: name the first
@@ -74,8 +74,8 @@ The probe stops where mechanics stop. On top of its output:
 - **Keep the probe's distinct states distinct.** "Undeclared", "missing" and
   "0 open" are three different facts — "no TODO list is declared" and "the
   TODO list is empty" must never render as the same bare `0`.
-- **Report, never repair.** Stale sweep → name `--wss-check`. Untriaged inbox
-  → name `--wss-full-check`. A milestone that looks complete → name
+- **Report, never repair.** Stale sweep → name `--wss-health-check`. Untriaged
+  inbox → name `triage`. A milestone that looks complete → name
   `--wss-plan`. One line each; acting on them is those flags' work, under
   their grants.
 
@@ -84,7 +84,7 @@ The probe stops where mechanics stop. On top of its output:
 - **It does not stamp anything.** Reading records is not a sweep and earns no
   checkpoint — `sweep-tracker` never hears from it, and the probe is as
   read-only as the skill.
-- **It does not verify claims.** Drift detection is `--wss-check`'s method;
+- **It does not verify claims.** Drift detection is `--wss-health-check`'s method;
   this skill counts what the records say, not whether they are right.
 - **It does not rebuild or reorder anything** — TODO list is `--wss-todo`'s,
-  roadmap is `--wss-plan`'s, and a full reckoning is `--wss-stocktake`'s.
+  roadmap is `--wss-plan`'s, and a full reckoning is `--wss-health-check --deep`'s TODO resort.

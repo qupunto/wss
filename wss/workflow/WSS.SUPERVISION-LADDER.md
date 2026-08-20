@@ -59,7 +59,8 @@ three cells the proposing session flagged least-certain; `behaviour`,
 | `roadmap` | prompted for goals and blocks; evidence-gated for progress | evidence-gated | prompted |
 | `releases` | prompted | the completion mark prompted, which was already the procedure; otherwise evidence-gated | prompted |
 | `handoff` — the `## State` section | free — wiped wholesale by design | free | free |
-| `setup` | prompted — a row is a permanent per-session cost, like the card; a row in the `## Toggles` table implementing a toggle the owner has already accepted is evidence-gated, the acceptance's decision entry being the citation (owner's ruling, `2026-08-19 (twenty-third)`) | evidence-gated — a stale row is updated with the proof cited, or reported to the user | prompted — removal reverses an owner-approved admission |
+| `setup` | prompted — a row is a permanent per-session cost, like the card | evidence-gated — a stale row is updated with the proof cited, or reported to the user | prompted — removal reverses an owner-approved admission |
+| `toggles` | a row implementing a toggle the owner has already accepted is evidence-gated, the acceptance's decision entry being the citation (owner's ruling, `2026-08-19 (twenty-third)`, homed here by the `(sixty-fifth)`); any other row is prompted | evidence-gated — a state flip cites the flip that caused it, and a row with a Triggers mechanic fires that mechanic in the same act | prompted — removal withdraws an owner-accepted toggle |
 | `handoff` — the card, and its overflow `wss/records/WSS.HAZARDS.md` | prompted | prompted | prompted |
 | `reference` — every member | evidence-gated — the settling conversation is the evidence | evidence-gated | evidence-gated |
 | `decisions`, `changelog`, `stocktake`, `audits` | free — recording is not deciding | forbidden, except the factually-false correction, which is prompted | forbidden |

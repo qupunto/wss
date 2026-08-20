@@ -8,7 +8,7 @@
 # commands and prints a `== verdict ==` block.
 #
 # Under wss/scripts/ because more than one skill invokes the gauntlet
-# (full-check, stocktake) — no single skill owns it, the same basis
+# (wss-full-check, wss-stocktake) — no single skill owns it, the same basis
 # wss-tools-inventory.sh has a root row on per wss/workflow/WSS.OWNERSHIP.md.
 #
 #   wss-mechanical-gauntlet.sh [--test-consent] [--carry-forward REASON]

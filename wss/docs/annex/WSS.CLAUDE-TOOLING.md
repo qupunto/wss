@@ -7,7 +7,7 @@ other.
 **Source.** This page is derived from `.claude/WSS.TOOLING.md`, which `--wss-catalog`
 owns and hands over. That file is the source of fact; this page is its
 adaptation into the site. If the two disagree, the catalog is right and this
-page is stale — which is a finding for `--wss-check`, not something to fix by
+page is stale — which is a finding for `--wss-health-check`, not something to fix by
 editing here. For the guide to *how* the tiers work, see
 [WSS.OVERVIEW.md](../WSS.OVERVIEW.md).
 
@@ -44,11 +44,10 @@ reader.
    ┌────────────────────────────────────────────────────────────────┐
    │  ORCHESTRATORS — own the session, write no record              │
    │                                                                │
-   │    --wss-start      --wss-check      --wss-full-check          │
-   │    --wss-release    --wss-wrap       --wss-pr                  │
-   │    --wss-stocktake  --wss-report     --wss-docs                │
-   │    --wss-adopt      --wss-overview   --wss-diagram             │
-   │    --wss-update                                                │
+   │    --wss-start          --wss-health-check      --wss-release  │
+   │    --wss-wrap           --wss-pr                --wss-report   │
+   │    --wss-docs           --wss-adopt             --wss-overview │
+   │    --wss-diagram        --wss-update            --wss-triage   │
    │                                                                │
    │    flagless:     lane-record-sync   retire             │
    │                  skill-toggle       (all slash only)       │
@@ -60,7 +59,7 @@ reader.
    │  PRIMITIVES — a record, the history, or a rule                 │
    │                                                                │
    │    with a flag:  --wss-track    --wss-todo / --wss-log         │
-   │                  --wss-plan     --wss-catalog  --wss-tidy      │
+   │                  --wss-plan     --wss-catalog                  │
    │                  --wss-scout                                   │
    │                  --wss-describe --wss-reference                │
    │                                                                │
@@ -85,7 +84,7 @@ rule holding unchanged where the brief says nothing about committing at all. The
 rule itself, why the trace stops at that boundary and the cost it accepts are
 `wss/workflow/writers/WSS.GIT-WRITER.md`'s, under "The grant is the caller's,
 always". The qualifier earns its place on this page because the table below
-lists `git-writer` among what `--wss-catalog` and `--wss-tidy` reach: a reader taking the picture
+lists `git-writer` among what `--wss-catalog` and `--wss-health-check` reach: a reader taking the picture
 at face value would read that row as a lane's own authorization to commit, and a
 lane is exactly the case where it is not.
 
@@ -132,24 +131,22 @@ be one the catalog carries.
 |---|---|---|
 | `--wss-adopt` | `manifest-writer`, `--wss-docs`, `git-writer`, `wss-export-records.sh --import`, `update` | writing the manifest it decided on; scaffolding a project that has no documentation; committing; restoring an archive when its up-front question — y/N, default no — gets a yes, before any record is seeded. Amending one key in an existing manifest reaches `manifest-writer` without the detection phase, which is what the split was for. A stale-convention tree — pre-rename filename, v1 schema — routes to `update`'s migration mode behind its own gate; a finished adoption stamps `WSS.suite` through `manifest-writer` |
 | `--wss-update` | `wss-export-records.sh --all`, `manifest-writer`, `git-writer`, `--wss-plan` | the snapshot before the first write; the `WSS.suite` stamp and any manifest key move, only over a passing doctor; one mend per commit; content surgery that lands in a planning record — extracting embedded milestones into the release list — goes through the record's owner, not directly |
-| `--wss-start` | `wss-orient.sh`, `--wss-track`, `--wss-todo` / `--wss-log`, `--wss-plan`, `--wss-tidy`, `--wss-catalog`, `--wss-docs`, `behaviour-writer`, `reference-writer`, `handoff-writer`, `git-writer`, `sweep-tracker` | building the task list before the batch; recording what a batch produced, committing it, and stamping the suite run so the next audit need not repeat it — `--wss-docs` only where a change also earns a page. Its closing handoffs run **serialized**: every record writer re-verifies against the other records, so each one's read set is all of them |
-| `--wss-check` | the owner of each finding, and `sweep-tracker` | it writes nothing itself — dispatch is the whole design |
-| `--wss-full-check` | the same owners at full scope, plus `--wss-track`, `--wss-catalog` (the catalog) and `--wss-tidy` (the prune), `sweep-tracker`, `wss-survey` as each of its three readers, `wss-mechanical-gauntlet.sh` — which is how it reaches the doctor, the typecheck and the project's own test command, rather than running any of them directly — and `wss-docs-audit.sh` for the docs dimension's mechanical half | building the task list before the run, then ignoring every checkpoint. It resolves the suite carry-forward at the start and deliberately never stamps it at the end, since its later steps always run against a tree it has already edited |
-| `--wss-stocktake` | `--wss-track`, the manifest's `WSS.agents.audit` — one subagent per dimension, routing to its rung's own agent `wss-survey` rather than to `general-purpose` where the role is undeclared — `wss-survey` for its three whole-record reads above the spawn floor and for re-checking a `medium` or `low` finding, `--wss-todo` / `--wss-log`, `--wss-plan`, `--wss-tidy`, `--wss-release`, `--wss-wrap`, `audit-writer`, `handoff-writer`, `git-writer`, `sweep-tracker`, `wss-mechanical-gauntlet.sh` for the doctor/typecheck/test/CI pass, and the project's own code-analysis skill where one exists | the task list before its fan-out; the dimension fan-out itself; the dispositions — a finding about a version or a tag dispatched to `--wss-release`, which decides — its audit entry, and a dispatched close-out. It runs the record dimension itself from `wss/tests/WSS.RECORD-DRIFT.md` — the hook drops `--wss-check` when either stocktake flag is typed |
-| `--wss-release` | the manifest's `WSS.agents.release`, `--wss-full-check`, `changelog-writer`, `git-writer`, `--wss-plan` | the reading — release list, cited roadmaps, changelog, TODO list, audit log, git history — returned as a proposal; everything being in order before a tag — drift included, since that is one of its dimensions — then the entry and the tag, a resumed release re-checking the entry through `changelog-writer` and not just the tag. A milestone that looks complete but is unmarked is handed to `--wss-plan`: it reads that mark and never writes it |
+| `--wss-start` | `wss-orient.sh`, `--wss-track`, `--wss-todo` / `--wss-log`, `--wss-plan`, `--wss-health-check`, `--wss-catalog`, `--wss-docs`, `behaviour-writer`, `reference-writer`, `handoff-writer`, `git-writer`, `sweep-tracker` | building the task list before the batch; recording what a batch produced, committing it, and stamping the suite run so the next audit need not repeat it — `--wss-docs` only where a change also earns a page. Its closing handoffs run **serialized**: every record writer re-verifies against the other records, so each one's read set is all of them |
+| `--wss-health-check` | `wss-survey` for the file-sharded read fan-out, `wss-duplication.sh`, `wss-mechanical-gauntlet.sh`, the owner of each record finding, `--wss-todo`, `--wss-log`, `--wss-catalog`, `wss-tools-inventory.sh`, `git-writer`, `sweep-tracker` — plus the project's own publish assembly under `--publish` where it has one — this suite's assembler does not travel — and, `--deep`'s TODO resort once taken, the manifest's `WSS.agents.audit` fan-out, `--wss-plan`, `--wss-release`, `--wss-wrap`, `audit-writer`, `handoff-writer` | one skill, four mutually exclusive modes, where `--wss-check`, `--wss-full-check`, `--wss-stocktake` / `--wss-full-stocktake` and `--wss-tidy` used to be four flags on five skills. Reads the mode's scope, runs the mechanical floor, dispatches and applies record and tooling findings itself, regenerates the catalog and the inventory after any restructuring, commits by concept, and stamps a checkpoint only for a scope that came back healthy |
+| `triage` | `WSS.INBOX-TRIAGE.md`'s method, the finding's own owner once classified | works the suite's own defect inbox. **User-invocable only**: no `--wss-health-check` mode runs it |
+| `--wss-release` | the manifest's `WSS.agents.release`, `--wss-health-check --deep`, `changelog-writer`, `git-writer`, `--wss-plan` | the reading — release list, cited roadmaps, changelog, TODO list, audit log, git history — returned as a proposal; everything being in order before a tag — drift included, since that is one of its dimensions — then the entry and the tag, a resumed release re-checking the entry through `changelog-writer` and not just the tag. A milestone that looks complete but is unmarked is handed to `--wss-plan`: it reads that mark and never writes it |
 | `--wss-plan` | the manifest's `WSS.agents.roadmap`, `--wss-todo` | the reading — roadmaps, release list, TODO list, decision index, audit log, git history — delegated so only a proposal returns, while the asking stays here; and a task breakdown that surfaces mid-planning, which is `--wss-todo`'s file rather than a roadmap block. It *names* `--wss-release` as the next step after a mark and never invokes it |
 | `lane-record-sync` | `git-writer`, `audit-writer`, `--wss-log`, `--wss-wrap` | step 0's landing, step 5's return leg and step 6's close-out — each lane's branch fast-forwarded onto `WSS.branch.integration` locally, then each lane worktree brought back onto it once the run has finished writing into them; divergence reported and never resolved, and a dirty lane worktree skipped; the run's audit entry — which reports what it promoted out of the conflict inbox and what it deleted as not reproducing — and the declined derivations as one decision entry so a later run does not re-ask them. Every finding it keeps reaches a lane through that lane's transfer queue, never by writing its records. Having no flag it passes no grant down, so the wrap it dispatches asks the user for its own commit in that turn and never offers the push — step 0's local landings would otherwise reach the remote as a side effect of tidying up; step 6 runs even where step 5 skipped every lane |
 | `--wss-wrap` | `handoff-writer`, `--wss-plan`, `git-writer` | the handoff, the milestone question — **from the main checkout only**, since a mark is a checkpoint for the whole project — the commits. It *names* `--wss-pr` where the pushed branch is ahead of `WSS.branch.publish`, and never invokes it — a session ending and work being ready to merge are two different facts |
 | `--wss-pr` | `git-writer`, `--wss-todo` | the merge, once the user confirms in that turn; and the review threads nobody resolved, which the merge is about to hide — proposed to the user, never filed automatically, because a meaningful share of unresolved threads is chatter. It drafts the body and holds the gate, and writes nothing itself |
 | `--wss-catalog` | `docs-writer`, `--wss-docs`, `git-writer`, `wss-tools-inventory.sh` | running the collector before it renders, then handing the catalog over to the writer — `--wss-docs` only where the annex page does not exist yet and its placement has to be decided. It draws the diagram above itself. It holds no numbers: every measured fact is `WSS.record.tooling.inventory`'s, and a row here points at that entry rather than repeating it |
-| `--wss-tidy` | `wss-tools-inventory.sh`, `--wss-catalog`, `--wss-todo`, `--wss-log`, `manifest-writer`, `sweep-tracker`, `git-writer`, `wss-doctor.sh`, `wss/tests/WSS.TOOLING-CLAIMS.md`, `wss/tests/WSS.PROSE-PRUNE.md`, `wss/tests/WSS.TOKEN-ECONOMY.md`, `wss/tests/WSS.ROT-RESISTANCE.md`, `wss/tests/WSS.ROUTING-HEALTH.md` | the five sweeps, and stamping each one. Job 2 runs the claims method, Job 3 the prune method, Job 4 the token-economy method — what could be a script, a cheaper subagent, a gated reference or a cache hit — Job 5 the rot-resistance method, which finds the structure that will produce tomorrow's Job 2 finding, and Job 6 the routing method, the only one of them able to argue a description longer. After any edit that restructures a file it runs the collector and then `--wss-catalog`, or the catalog describes the pre-tidy tree. Durable reasoning a cut relocates goes through `--wss-log`; a tooling *task* it uncovers goes to `--wss-todo`; a `WSS.record.tooling.sources` glob that leaves tooling files undeclared goes to `manifest-writer`, since it never sweeps an undeclared file on its own authority |
 | `--wss-docs` | `docs-writer`, `wss-docs-audit.sh`, `--wss-todo`, `--wss-track`, `sweep-tracker`, `behaviour-writer`, `reference-writer` | every write to the site, which it decides and never performs; parking a page set larger than one session, since it stores no state of its own; narrowing its next audit; and handing over a subject that turns out to be a runtime rule or reference material rather than a page, which it never writes itself |
 | `--wss-scout` | `--wss-log` | the reasoning entry an adoption earns, at the moment the user adopts — the registry row stays lean and points at it |
 | `retire` | `wss-retire-workflow.sh` (`--dir`, then `--suite`), `wss-export-records.sh --all`, `wss-reset-records.sh`, and `claude plugin uninstall` for the user to run | the tidy exit, sequenced: a dry run, one checkbox dialog, then the checked actions in dependency order — the snapshot before any deletion, a wipe before the machinery delete that removes the manifest it reads, the installation last in either form, since it removes the skills the walkthrough runs on |
 | `skill-toggle` | `wss-skill-levels.sh` | step 1's level table in one deterministic call — the two settings reads, the two tree enumerations, the merge — rather than a re-derivation each invocation |
 
-`--wss-check` and `--wss-full-check` appear as callers and never as callees of a write:
-an inspector that writes is a second writer on every file it touches.
+`--wss-health-check` appears as a caller and never as a callee of a write: an
+inspector that writes is a second writer on every file it touches.
 
 ## Global skills
 
@@ -160,27 +157,26 @@ In `skills/`, loaded in every project.
 | `adopt` | `--wss-adopt` | Brings a project under this workflow — detects its shape, maps files it already has, decides what its `.claude/WSS.WORKFLOW.json` should say and hands that to `manifest-writer`, proposes `permissions.ask` gating for the destructive commands it finds, and hands a project with no documentation to `--wss-docs`. The detection and the asking are what stay here: a primitive has no channel to reach the user. A tree carrying a *previous* suite convention is recognized before the adoption/amendment verdict and routed to `update`'s migration mode |
 | `update` | `--wss-update` | Updates the suite install (checkout pull `--ff-only`, or plugin update), then detects what conventions the adopted tree actually carries and migrates it to the newest — detection is the authority, the `WSS.suite` stamp and the release list's `- migrate:` lines only set the starting point. Its own consent gate shows the full plan of mends; the snapshot precedes the first write; one mend per commit, a partial migration never exits clean, append-only records are never rewritten, and the stamp lands last, only over a passing doctor |
 | `docs` | `--wss-docs` `--wss-diagram` | Decides what this documentation site holds — whether a subject belongs on it at all, which page, and which tier it lands in — then hands the target to `docs-writer`, which writes it. Owns the workflow-page shape: an end-to-end flow as a diagram plus stages citing the behaviour record and the code. `--wss-diagram` is the ad-hoc entry: one diagram, placed here and drawn by the writer under the style guide's three rules, landed as an annex page. The behaviour and reference records are `behaviour-writer`'s and `reference-writer`'s |
-| `full-check` | `--wss-full-check` | Asks whether a project's records, docs and tooling are in order — runs its mechanical checks, re-verifies all three at full scope ignoring every checkpoint, triages the defect inbox filed from other projects, orders the prune, has the catalog refreshed, then leaves fresh checkpoints. `--wss-release` runs it before a tag. It reaches `--wss-catalog` and Job 3 of `--wss-tidy` and not the other four sweeps — Job 2's method it runs itself, in its own readers — so "in order" is these three records rather than everything the suite can check |
+| `health-check` | `--wss-health-check` | Asks whether the project is healthy — the mechanical floor, then every declared record and tooling file, read for drift and staleness. **One skill, four mutually exclusive modes**: `--shallow` reads and reports and applies nothing; the bare run adds dispatch-and-apply; `--deep` ignores every checkpoint and ask-gates a TODO resort; `--publish` narrows to the shipping set with the publish gates in its floor. `--wss-release` runs `--deep` before a tag. It stamps a checkpoint **only for a healthy scope**. Reports the inbox's open count at hand-off and never triages it |
+| `triage` | `--wss-triage` | Works the suite's own defect inbox — which filed defects reproduce, which went stale, which were never true. **User-invocable only**: no `health-check` mode runs it |
 | `pr` | `--wss-pr` | Moves work from the integration branch onto the publish branch through a pull request — drafts the body from the branch range rather than from memory, opens it, watches its CI, and merges behind a fresh confirmation. The only thing in the suite that moves work between the two branches |
 | `record` | `--wss-todo`, `--wss-log` | Parks work that is not being built now, and records decisions already made |
 | `describe` | `--wss-describe` | Gets a runtime rule settled in conversation into `WSS.record.behaviour`, which every other route reaches only as a side effect of a check or a build. Dispatches to `behaviour-writer` and writes nothing itself; its own work is turning away the three things handed to it by mistake — reasoning and decided-but-unbuilt behaviour, both `--wss-log`'s, and stack or architecture, which is `--wss-reference`'s |
 | `reference` | `--wss-reference` | Gets a fact about what the project *is* — stack, architecture, data model, a convention — into `WSS.record.reference`, the same shape as `describe` one record over. Dispatches to `reference-writer` and writes nothing itself; it names the exact file the fact resolved to before anything is written, because a manifest may map the project's `README.md` into the reference array and the flag then reaches a public landing page |
 | `scout` | `--wss-scout` | Consults the project's toolbelt registry before any capability gets hand-built, searches the stack's public registries when the registry has no answer, and explains the candidates — advises, never implements. Sole writer of `WSS.record.toolbelt`; the reasoning behind each row goes through `--wss-log` |
-| `stocktake` | `--wss-stocktake`, `--wss-full-stocktake` | Where is this project — record, conventions, public surface, safety nets — then rebuilds the TODO list around the answer. Invokes the project's own code-analysis skill where one exists |
-| `check` | `--wss-check` | Asks whether a project's records still match reality, including whether the documents claim a version no tag resolves; reports and dispatches, writes nothing itself |
 | `report` | `--wss-report` | Files a finding about this suite upstream — appends it to the machine-local inbox, then opens a GitHub issue on the public repository behind a preview, a redaction of the project context, and a fresh OK. Can bundle every open inbox entry under the same rules; hazards are referenced by group name, never quoted |
 | `release` | `--wss-release` | Decides that a version ships — once `WSS.record.releases` marks a milestone done, or once it has declared an end to milestones and the release is maintenance on evidence — and asks before anything is published |
 | `plan` | `--wss-plan` | Sets the next goal in `WSS.record.roadmap` — which splits by lane — and keeps `WSS.record.releases`, the release list, where the milestones, their versions and their marks live. A roadmap carries neither |
-| `overview` | `--wss-overview` | Reports where a project stands at a glance — branch and lane, per-record counts, sweep freshness, pending warnings, the nearest milestones — read fresh at invocation, writing nothing at all. Every mechanical number comes from its probe script in one call; the model adds only the judgment lines. The read-only sibling of `--wss-check`: it counts what the records say and never verifies them |
+| `overview` | `--wss-overview` | Reports where a project stands at a glance — branch and lane, per-record counts, sweep freshness, pending warnings, the nearest milestones — read fresh at invocation, writing nothing at all. Every mechanical number comes from its probe script in one call; the model adds only the judgment lines. The read-only sibling of `--wss-health-check`: it counts what the records say and never verifies them |
 | `start` | `--wss-start` | Picks up pending work and does it, in parallel lanes partitioned so they cannot collide |
 | `catalog` | `--wss-catalog` | Keeps this catalog current and draws the diagram above — what each tool is *for*, in one human sentence per row, and who invokes whom. Hands it to `docs-writer` where a site exists. It contains no numbers by construction: the measured half is `.claude/WSS.TOOLS.json` |
-| `tidy` | `--wss-tidy` | Runs the five sweeps over every file `WSS.record.tooling.sources` reaches — skills and their references, agents, the writer and check procedures, the command wrappers, and the `wss/workflow/` contracts where the globs reach them: stale claims deleted rather than corrected, the prose prune, the token-economy sweep, the rot-resistance sweep and the routing sweep. A contract file there is subject to the mutable-claim rule like any other; what the sweep never touches is the *rules* those files state. It re-opens the catalog through `--wss-catalog` whenever it restructures anything |
 | `track` | `--wss-track` | Builds the visible task list for multi-step work and keeps it honest as the work moves |
 | `retire` | — | Retires the workflow from a project — the reverse of `--wss-adopt`. Shows what would go, then one checkbox dialog: a full snapshot (`WSS.RETIREMENT-PLAN.tar.gz`, restorable at re-adoption) asked first, then the actions to run — delete the machinery, delete the records, wipe the records, uninstall the plugin — executed in dependency order, a wipe skipped as redundant beside a records delete. Slash-invoked only, and its frontmatter blocks model invocation, so a deletion never fires from a phrase |
 | `lane-record-sync` | — | Reconciles every lane's records at once, from the main checkout: conflicts between lanes are mediated with the user, work one lane's plans imply for another is presented for an explicit ruling — accept, accept as critical, defer or decline, the last two differing in whether the next run asks again, and what is approved is appended to the addressed lane's **transfer queue** — never to its records. Expensive, and slash-invoked only so it can never fire from a phrase or a batch. See [Lane synching](WSS.LANE-SYNCHING.md) |
 | `contracts` | — | States how the suite is wired: that the skills are global, that project facts come from `.claude/WSS.WORKFLOW.json`, what a project without a manifest falls back to, and where the contracts resolve in a checkout against a plugin install. It exists because a plugin root's `CLAUDE.md` is never loaded as project context, so an adopter who installs rather than clones would otherwise see none of it |
 | `skill-toggle` | — | Toggles what each skill costs at session start: shows every skill's current `skillOverrides` level, then sets `on`, `name-only`, `user-invocable-only` or `off` in the user's `settings.json` — refusing a level that would break a skill another skill dispatches to, and warning when a change silences a flag. Slash-invoked only, its frontmatter blocks model invocation, and it is the checkout form's lever: the harness ignores overrides for plugin skills |
 | `wrap` | `--wss-wrap` | Closes out a session — task list, a handoff that `handoff-writer` rewrites wholesale from what the session knows rather than reading the old one, commits, the milestone question, and from a lane worktree syncs that lane forward before reporting, then lands it on `WSS.branch.integration` by fast-forward — both refused rather than forced, and the landing withheld entirely when the wrap fired on an unfinished session. Its mechanical readout — dirty files, unpushed commits, record counts, open decisions, the roadmap's next block, sweep freshness — comes from one call to its status script, so only the judgment lines are the model's. A readout of where the project stands, and whether it is safe to clear |
+| `audit` | `/wss:audit` only — no flag, model invocation blocked | Runs an independent audit pass over the suite and files the frozen report into `wss/logs/audits/`. Refuses to run in a session that prepared the tree it would be judging |
 
 
 ## The record procedures
@@ -194,7 +190,7 @@ unchanged — `wss/workflow/WSS.OWNERSHIP.md` remains the authority, and `wss/wo
 
 | Procedure | Sole writer of | What it does |
 |---|---|---|
-| `audit-writer` | `WSS.record.stocktake`, `WSS.record.audits` | Writes the stocktake log entry — what a stocktake examined, against which tree, and what it found, with its coverage block — plus the one-field `Outcome` update when remediation lands, which is why it is not part of `--wss-stocktake`. Also appends the index row in `WSS.record.audits` when an independent audit pass lands |
+| `audit-writer` | `WSS.record.stocktake`, `WSS.record.audits` | Writes the stocktake log entry — what a stocktake examined, against which tree, and what it found, with its coverage block — plus the one-field `Outcome` update when remediation lands, which is why it is not part of `--wss-health-check`. Also appends the index row in `WSS.record.audits` when an independent audit pass lands |
 | `behaviour-writer` | `WSS.record.behaviour` | Writes the record of what the system does at runtime, by topic. Never *why* it does it, which is `--wss-log`'s. Reached by dispatch from a check or a build, or directly through `--wss-describe` |
 | `changelog-writer` | `WSS.record.changelog` | Writes the changelog entry for a version, and marks an entry unreleased when the documents claim more than the tags do |
 | `docs-writer` | the documentation site | Writes every page and annex page of this site, their `_sidebar.md` and `index.md` rows, the translation mirrors, and the diagrams inside them — re-rendering a diagram a caller hands over rather than reshaping it. It decides nothing: whether a subject earns a page, which page, and which tier are `--wss-docs`' calls, settled before it is invoked |
@@ -221,15 +217,15 @@ carries.
 
 | Method | What it finds | Run by |
 |---|---|---|
-| `WSS.RECORD-DRIFT.md` | the classes of drift in a record, and the things that look like drift and are not | `--wss-check`, `--wss-full-check`, `--wss-stocktake` |
-| `WSS.DOCS-AUDIT.md` | a docs site's internal correctness — paths, links, anchors, enumerations, page-level accuracy against source | `--wss-docs`, `--wss-full-check` |
-| `WSS.TOOLING-CLAIMS.md` | mutable claims inside the tooling files, which are deleted rather than corrected | `--wss-tidy`, `--wss-full-check` |
-| `WSS.MECHANICAL-GAUNTLET.md` | a non-green result from the project's own verifications — doctor, typecheck, suite, CI — and what each outcome means | `--wss-full-check`, `--wss-stocktake` |
-| `WSS.PROSE-PRUNE.md` | prose in a skill, agent or tooling file whose removal changes nothing about what Claude does | `--wss-tidy`; `--wss-full-check` orders that job rather than reading this file |
+| `WSS.RECORD-DRIFT.md` | the classes of drift in a record, and the things that look like drift and are not | `--wss-health-check`, at any depth |
+| `WSS.DOCS-AUDIT.md` | a docs site's internal correctness — paths, links, anchors, enumerations, page-level accuracy against source | `--wss-docs`, `--wss-health-check --deep` |
+| `WSS.TOOLING-CLAIMS.md` | mutable claims inside the tooling files, which are deleted rather than corrected | `--wss-health-check`, at any depth |
+| `WSS.MECHANICAL-GAUNTLET.md` | a non-green result from the project's own verifications — doctor, typecheck, suite, CI — and what each outcome means | `--wss-health-check`, at any depth, and its `--deep` TODO resort |
+| `WSS.PROSE-PRUNE.md` | prose in a skill, agent or tooling file whose removal changes nothing about what Claude does | `--wss-health-check` |
 | `WSS.AUDIT-PASS.md` | what an independent audit pass must carry — the cumulative rubric, and how focuses rotate | the audit ritual, on the owner's ask; no flag |
-| `WSS.TOKEN-ECONOMY.md` | a skill, agent or tooling file paying more context than its job needs — each lens with a proven in-tree example and the drawback to outweigh | `--wss-tidy` |
-| `WSS.ROT-RESISTANCE.md` | writing that is true today and structured to go false — an uncompared copy, a file with two writers, a claim nothing can test, a drift nothing would report | `--wss-tidy` |
-| `WSS.ROUTING-HEALTH.md` | a skill that will not be reached when it should be, or will be when it should not — the one check that can push a description longer | `--wss-tidy` |
+| `WSS.TOKEN-ECONOMY.md` | a skill, agent or tooling file paying more context than its job needs — each lens with a proven in-tree example and the drawback to outweigh | `--wss-health-check` |
+| `WSS.ROT-RESISTANCE.md` | writing that is true today and structured to go false — an uncompared copy, a file with two writers, a claim nothing can test, a drift nothing would report | `--wss-health-check` |
+| `WSS.ROUTING-HEALTH.md` | a skill that will not be reached when it should be, or will be when it should not — the one check that can push a description longer | `--wss-health-check` |
 
 A method says what counts as a finding; a runner decides scope, disposition and
 owner. `wss/tests/WSS.CHECKS.md` holds that line, and material that drifts to the wrong side of it stops being borrowable.
@@ -267,7 +263,7 @@ without it belongs to somebody else.
 
 **Every skill that touches the TODO list goes through the provider, not just
 `--wss-todo`** — `--wss-adopt` offers the choice and `manifest-writer` validates it,
-`--wss-start`, `--wss-check` and `--wss-full-check` read it, `--wss-wrap` counts it. None of them
+`--wss-start` and `--wss-health-check` read it, `--wss-wrap` counts it. None of them
 may write a local `WSS.TODO.md` when the remote is unreachable: a project that
 declared a provider and finds a stray markdown TODO list appearing has the two
 TODO lists this exists to prevent. They say what could not be reached and write
@@ -285,11 +281,27 @@ narrows a file sweep.** A file's staleness is a diff against a baseline commit;
 an issue's leaves no trace in the repository's history at all, so an issue
 TODO list is always read in full.
 
+## The audit ritual
+
+`audit` **ships** — the ruling is the decision log's `2026-08-19
+(eighty-first)` entry. It is the second half of a pair: `--wss-health-check
+--publish` prepares the tree — the mechanical floor, the publish gates, every
+lens over the tooling files and the records, bounded fixes applied, derived
+artifacts regenerated, the resulting commit pinned — and this skill judges it,
+in a deliberately separate run, because a session that spent the morning fixing
+cannot audit its own work.
+
+**Slash-only — no flag, model invocation blocked** — so the command is the whole
+route by design. The frozen reports land in an `audits/` directory beside the
+index `WSS.record.audits` names; where that key is undeclared the skill says so
+and stops, rather than filing reports somewhere nothing indexes them.
+
 ## Command wrappers
 
 In `commands/`, one file per verb flag of a multi-verb skill — a flag whose
 name differs from its skill's for a reason other than a scope-variant prefix
-(`--wss-full-stocktake` gets none). The wrapper's filename **is** the flag, so
+(no currently-shipped flag uses one; the pattern's last example,
+`--wss-full-stocktake`, retired into `--wss-health-check --deep`). The wrapper's filename **is** the flag, so
 the `/` menu autocompletes it and its body fires the flag with `$ARGUMENTS`
 appended. The `UserPromptSubmit` hook
 does not fire on a wrapper's expanded body — routing rides the flag token plus

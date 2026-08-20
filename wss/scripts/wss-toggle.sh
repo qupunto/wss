@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Read the project's toggles out of `WSS.record.setup`'s `## Toggles` table.
+# Read the project's toggles out of `WSS.record.toggles`' `## Toggles` table.
 #
 #   ./wss-toggle.sh                 # every toggle, as `name<TAB>value`
 #   ./wss-toggle.sh <name>          # one value; exit 1 if the toggle has no row
@@ -28,16 +28,19 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 DIR="${WSS_TOGGLE_DIR:-$PWD}"
 MANIFEST="$DIR/.claude/WSS.WORKFLOW.json"
 
-setup_path_() {
+toggles_path_() {
   if [ -f "$MANIFEST" ] && command -v jq >/dev/null 2>&1; then
-    jq -r '.WSS.record.setup // empty' "$MANIFEST" 2>/dev/null
+    jq -r '.WSS.record.toggles // empty' "$MANIFEST" 2>/dev/null
   fi
 }
 
-rel=$(setup_path_)
-[ -n "$rel" ] || rel="wss/records/WSS.SETUP.md"
+rel=$(toggles_path_)
+[ -n "$rel" ] || rel="wss/records/WSS.TOGGLES.md"
 file="$DIR/$rel"
-[ -f "$file" ] || file="$ROOT/$rel"
+# NO CROSS-TREE FALLBACK. Toggle state is per-tree by construction, so a tree
+# with no registry of its own reads every toggle as off — the suite-wide
+# absent-means-off rule — rather than silently reading the suite install's own
+# rows. The decision log's `2026-08-19 (ninety-first)` entry.
 
 # Rows live between the `## Toggles` heading and the next `## `, and inside the
 # region markers where those are present. A header row and its separator are not

@@ -132,9 +132,16 @@ done
 
 head_ "Every block states an authorization"
 
+# The five retired flags (--wss-check, --wss-full-check, --wss-tidy,
+# --wss-stocktake, --wss-full-stocktake) share one deliberate exception: their
+# combined stub grants nothing at all — it redirects to `--wss-health-check`
+# rather than authorizing anything itself — so it carries no Authorization
+# line by design. Requiring one there would mean inventing a grant the stub
+# never makes.
 for f in $FLAGS; do
   out=$(run "$f")
   case $out in
+    *"That flag is RETIRED"*) ok "$f is the retired stub — states no grant by design" ;;
     *"Authorization:"*) ok "$f states its grant" ;;
     "") bad "$f injected nothing even with its skill present" ;;
     *) bad "$f injects a block with no Authorization line" ;;
@@ -144,17 +151,22 @@ done
 head_ "The filing template resolves end-to-end, not just in a static fence"
 
 # bugtpl_() in the hook reads wss/workflow/WSS.OWNERSHIP.md's `## [open]` fence at
-# RUNTIME, and only the two arms that call it (--wss-tidy, --wss-catalog) ever
-# emit it. A static check that the fence merely EXISTS is a proxy: it proves
-# awk would find something, not that the running hook actually emitted it — a
-# SUITE_ROOT resolution failure (a moved suite root, a broken install layout)
-# would pass a static fence check clean while every real invocation quietly
-# fails closed to the fallback pointer instead. Only running the hook for real
-# catches that class. The other failure class -- a THIRD block hardcoding the
-# template instead of calling bugtpl_() -- is not this test's job: a hardcoded
-# block still emits `## [open]` and passes this end-to-end grep clean.
+# RUNTIME, and only the one arm that calls it (--wss-catalog) ever emits it.
+# --wss-tidy used to be a second caller, but it is one of the five retired
+# flags now (2026-08-19, eighty-second decision): it serves the shared
+# RETIRED stub and no longer touches bugtpl_() at all, so it dropped out of
+# this loop — testing it here would only prove the stub, which the
+# Authorization-line section above already covers. A static check that the
+# fence merely EXISTS is a proxy: it proves awk would find something, not
+# that the running hook actually emitted it — a SUITE_ROOT resolution failure
+# (a moved suite root, a broken install layout) would pass a static fence
+# check clean while every real invocation quietly fails closed to the
+# fallback pointer instead. Only running the hook for real catches that
+# class. The other failure class -- a THIRD block hardcoding the template
+# instead of calling bugtpl_() -- is not this test's job: a hardcoded block
+# still emits `## [open]` and passes this end-to-end grep clean.
 # wss-doctor.sh's own static call-site check covers that one instead.
-for tf in --wss-tidy --wss-catalog; do
+for tf in --wss-catalog; do
   out=$(run "$tf")
   case $out in
     *"## [open]"*)
@@ -186,7 +198,7 @@ else
   sed "${tplbroken_line}s#.*#SUITE_ROOT=\"$tplbroken_dir\"#" "$HOOK" > "$tplbroken_hook"
   chmod +x "$tplbroken_hook"
   oldhook="$HOOK"; HOOK="$tplbroken_hook"
-  bout=$(run "--wss-tidy")
+  bout=$(run "--wss-catalog")
   HOOK="$oldhook"
   case $bout in
     *"entry format could not be read"*)
@@ -240,13 +252,22 @@ fi
 
 head_ "A record sweep does not run twice"
 
-# stocktake runs --wss-check's method over --wss-check's files as its record
+# wss-stocktake runs --wss-check's method over --wss-check's files as its record
 # dimension: "invoke one or the other, never both". Firing both sweeps the
 # record twice, and the second reports the first one's writes as fresh drift.
+#
+# --wss-stocktake, --wss-full-stocktake and --wss-check are all retired now
+# and share one identical combined stub, which no longer says "included the
+# `X` flag" per flag — that phrasing belonged to the individual skill blocks
+# the retirement deleted. The absorption signal that survives is structural:
+# with absorption working, only one of the two flags stays in `claimed`, so
+# the stub is emitted exactly once and no multi-flag preamble appears; with
+# absorption broken, both flags would survive into `claimed` and the
+# identical stub would print twice back to back.
 for wide in --wss-stocktake --wss-full-stocktake; do
   out=$(run "$wide --wss-check")
-  if printf '%s' "$out" | grep -q -- "included the \`$wide\` flag" && \
-     ! printf '%s' "$out" | grep -q -- "included the \`--wss-check\` flag"; then
+  n=$(printf '%s' "$out" | grep -c "That flag is RETIRED")
+  if [ "$n" = 1 ] && ! printf '%s' "$out" | grep -q "included several flags"; then
     ok "$wide absorbs --wss-check"
   else
     bad "--wss-check was not absorbed by $wide"
@@ -264,9 +285,12 @@ else
 fi
 
 # Suppressed since the pair was introduced, never covered until now.
+# Same structural signal as the loop above — both flags are retired and share
+# the one combined stub, so "included the `X` flag" no longer distinguishes
+# them.
 out=$(run "--wss-full-check --wss-check")
-if printf '%s' "$out" | grep -q -- "included the \`--wss-full-check\` flag" && \
-   ! printf '%s' "$out" | grep -q -- "included the \`--wss-check\` flag"; then
+n=$(printf '%s' "$out" | grep -c "That flag is RETIRED")
+if [ "$n" = 1 ] && ! printf '%s' "$out" | grep -q "included several flags"; then
   ok "--wss-full-check absorbs --wss-check"
 else
   bad "--wss-check was not absorbed by --wss-full-check"
@@ -373,43 +397,24 @@ overrides project ""
 
 # ------------------------------------------------ absorption behind the gates
 
-head_ "A gated-out absorber does not eat the flag it absorbs"
-
-# Absorption used to run at parse time, before the resolve/disabled gates, so
-# an absorber that could never fire still took its absorbee down with it: a
-# settings-disabled `--wss-stocktake` swallowed a live `--wss-check` and the
-# pair injected nothing, with no error anywhere (audit pass 14 F1). Absorption
-# now runs behind the same gates as emission; both directions are pinned here.
-
-stocktake_override() { # level — write one entry, or remove the file when empty
-  mkdir -p "$TMP/home/.claude"
-  if [ -z "$1" ]; then
-    rm -f "$TMP/home/.claude/settings.json"
-  else
-    jq -nc --arg l "$1" '{skillOverrides:{"stocktake":$l}}' \
-      > "$TMP/home/.claude/settings.json"
-  fi
-}
-
-for wide in --wss-stocktake --wss-full-stocktake; do
-  stocktake_override user-invocable-only
-  out=$(run "$wide --wss-check")
-  printf '%s' "$out" | grep -q -- 'included the `--wss-check` flag' \
-    && ok "--wss-check survives a disabled $wide" \
-    || bad "--wss-check was eaten by $wide, which cannot fire"
-done
-
-# The other direction must not regress: an absorber that DOES fire still
-# absorbs, which the earlier absorption tests assert only with no overrides
-# file present — this one pins it immediately after the disabled runs.
-stocktake_override ""
-out=$(run "--wss-stocktake --wss-check")
-if printf '%s' "$out" | grep -q -- "--wss-stocktake" && \
-   ! printf '%s' "$out" | grep -q -- 'included the `--wss-check` flag'; then
-  ok "an enabled --wss-stocktake still absorbs --wss-check"
-else
-  bad "absorption regressed for an enabled absorber"
-fi
+# "A gated-out absorber does not eat the flag it absorbs" (audit pass 14 F1)
+# lived here: a settings-disabled `--wss-stocktake` used to swallow a live
+# `--wss-check`, absorbing before the resolve/disabled gates ran. That whole
+# scenario is now unreachable rather than merely untested, so the section is
+# deleted rather than rewritten. flag_fires() is called from exactly three
+# sites in the hook — the --wss-full-stocktake, --wss-full-check and
+# --wss-stocktake absorption arms — and skill_for() maps all three of those
+# flags to `-` since the eighty-second decision retired them. flag_fires()
+# short-circuits `[ "$fs" = "-" ] && return 0` before it ever reaches the
+# skill_exists/skill_disabled calls the old defect lived in, so a
+# skillOverrides entry for "wss-stocktake" (or any absorber) can no longer
+# gate these flags at all: there is no live call site left where the
+# disabled-check branch of flag_fires() executes. Nothing succeeds this
+# coverage because nothing can currently trigger the code path it guarded.
+# The "enabled absorber still absorbs" half that followed it is not rewritten
+# either — the rewritten absorption tests above (search "A record sweep does
+# not run twice") already pin that same invariant, more robustly, with no
+# overrides file involved.
 
 # ---------------------------------------------------- task-notification guard
 
@@ -439,6 +444,36 @@ fires "--wss-wrap --wss-start" "--wss-wrap"
 # a user pasting a transcript that merely contains the banner mid-message is
 # still a user asking for the flag they typed.
 fires "here is the transcript: <task-notification> fired earlier --wss-wrap" "--wss-wrap"
+
+# ------------------------------------------------ cross-session-message guard
+
+head_ "A peer session is not the user"
+
+# The second ingress into UserPromptSubmit: a peer session's message arrives as
+# `.prompt`, prose banner at position 0 and `<cross-session-message ...>` on the
+# line after it. On 2026-08-20 a peer's boundary report naming `--wss-tidy` in
+# prose fired that flag's whole block, COMMIT authority included, with no user
+# input. Same both-directions shape as the notification guard above.
+
+peer=$'Another Claude session sent a message:\n<cross-session-message from="uds:/run/user/1000/cc-socks/0000.sock" from-name="claude-t0" from-mode="prompting">\nBoundary report: three live pointers route findings to --wss-tidy, a flag that is retiring, and --wss-start is the runner.\n</cross-session-message>\n\nThis came from another Claude session — not typed by your user.'
+out=$(run "$peer")
+if [ -z "$out" ]; then
+  ok "peer-message payload quoting flags injects nothing"
+else
+  bad "a cross-session message fired flags: injected $(printf '%s' "$out" | wc -c) bytes on text no user wrote"
+fi
+
+# A harness that ever drops the prose line must not reopen the ingress.
+out=$(run $'<cross-session-message from-name="claude-t0">\nroute findings to --wss-tidy\n</cross-session-message>')
+if [ -z "$out" ]; then
+  ok "bare open tag at position 0 injects nothing"
+else
+  bad "a bare <cross-session-message payload fired flags"
+fi
+
+# And the guard stays start-anchored: a user quoting a peer's message inside a
+# prompt of their own is still a user asking for the flag they typed.
+fires "the peer said <cross-session-message> route to --wss-tidy </cross-session-message> — do it: --wss-wrap" "--wss-wrap"
 
 # ------------------------------------------------------------- session-check
 
@@ -796,8 +831,8 @@ else
     *"WSS.TODO.md"*) ok "nudges on a backlog untouched for 80 commits" ;;
     *) bad "backlog untouched through 80 commits of work and nothing was said" ;;
   esac
-  printf '%s' "$out" | grep -q -- '--wss-stocktake' \
-    && ok "the backlog nudge names --wss-stocktake" \
+  printf '%s' "$out" | grep -q -- '--wss-health-check' \
+    && ok "the backlog nudge names --wss-health-check" \
     || bad "backlog nudge names no flag"
 
   (cd "$rec" && CLAUDE_CONFIG_DIR="$TMP/bare" bash "$CHECK" </dev/null >/dev/null 2>&1)
@@ -3882,14 +3917,20 @@ esac
 
 # Since 2026-08-07 the index is `WSS.record.audits`, resolved from the tree's
 # own manifest; every fixture above declares no key and exercises the
-# `audits/README.md` fallback. A declared key must MOVE the check — the row is
-# required in the declared file, and a missing row names that file, not the
-# fallback.
-mkdir -p "$ax/.claude" "$ax/docs"
+# `audits/README.md` fallback. A declared key must MOVE the check — BOTH halves
+# of it. The row is required in the declared file, a missing row names that file
+# rather than the fallback, and THE REPORTS ARE LOOKED FOR BESIDE THAT INDEX, in
+# an `audits/` directory alongside it, rather than at this repo's own
+# `wss/logs/audits/`. That last half is what makes the check work in a tree that
+# is not this one: `skills/audit/SKILL.md` states the same rule in words, and
+# a hardcoded reports path would leave every adopter's audits unchecked while
+# still reporting a confident pass here.
+mkdir -p "$ax/.claude" "$ax/docs/audits"
 printf '{"WSS":{"manifest":"workflow/v2","record":{"audits":"docs/WSS.AUDITS.md"}}}\n' \
   > "$ax/.claude/WSS.WORKFLOW.json"
 printf '# Audit index\n\n| `2026-01-01-pass1.md` | first | ok | tree |\n' \
   > "$ax/docs/WSS.AUDITS.md"
+printf '# Report one\n' > "$ax/docs/audits/2026-01-01-pass1.md"
 printf '# Index moved\n' > "$ax/wss/logs/audits/README.md"
 out=$(CLAUDE_DIR="$ax" CLAUDE_CONFIG_DIR="$ax" bash "$DOCTOR" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
 case $out in
@@ -3897,14 +3938,25 @@ case $out in
     ok "a declared WSS.record.audits is where the row is looked for" ;;
   *) bad "the index check ignored a declared WSS.record.audits" ;;
 esac
-printf '# Report two\n' > "$ax/wss/logs/audits/2026-01-02-pass2.md"
+printf '# Report two\n' > "$ax/docs/audits/2026-01-02-pass2.md"
 out=$(CLAUDE_DIR="$ax" CLAUDE_CONFIG_DIR="$ax" bash "$DOCTOR" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
 case $out in
   *"docs/WSS.AUDITS.md has no index row for 2026-01-02-pass2.md"*)
     ok "a missing row names the declared index, not the fallback" ;;
   *) bad "a report with no row in the declared index went unreported" ;;
 esac
-rm -f "$ax/wss/logs/audits/2026-01-02-pass2.md"
+rm -f "$ax/docs/audits/2026-01-02-pass2.md"
+# A report left at THIS repo's hardcoded path must now be invisible to a tree
+# that declared its index elsewhere — the discriminator for the derivation, and
+# the assertion that fails if the old hardcoded glob ever comes back.
+printf '# Stray\n' > "$ax/wss/logs/audits/2026-01-03-pass3.md"
+out=$(CLAUDE_DIR="$ax" CLAUDE_CONFIG_DIR="$ax" bash "$DOCTOR" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
+case $out in
+  *"no index row for 2026-01-03-pass3.md"*)
+    bad "the reports path is still hardcoded — a stray report outside the declared index's directory was read" ;;
+  *) ok "reports are read beside the declared index, not from this repo's own path" ;;
+esac
+rm -f "$ax/wss/logs/audits/2026-01-03-pass3.md"
 
 head_ "wss-reset-records.sh cannot write outside the project"
 
@@ -5001,7 +5053,12 @@ else
     cp "$PUB" "$d/wss-publish.sh"
   }
   pubrun() { # fixture-dir, outdir — combined output; exit status is publish's
-    bash "$1/wss-publish.sh" "$2" </dev/null 2>&1
+    # WSS_PUBLISH_FIXTURE declares these synthetic trees for what they are.
+    # Gate 4 compares the shipping set against a tracked lock that only the
+    # real repository has; without this the gate fails every fixture, and
+    # inferring "fixture" from the lock's absence would make a real repo that
+    # never seeded one indistinguishable from a test.
+    WSS_PUBLISH_FIXTURE=1 bash "$1/wss-publish.sh" "$2" </dev/null 2>&1
   }
 
   # Green first: gates that pass on a clean assembly are what make every
@@ -6551,7 +6608,7 @@ dl_break() { local b; b="$dl/broke-$RANDOM$RANDOM"; cp -R "$dl/real" "$b"; "$1" 
 
 LADDER_REL="wss/workflow/WSS.DISPATCH-LADDER.md"
 START_REL="skills/start/SKILL.md"
-STOCKTAKE_REL="skills/stocktake/SKILL.md"
+HEALTHCHECK_REL="skills/health-check/SKILL.md"
 AUDITPASS_REL="wss/tests/WSS.AUDIT-PASS.md"
 TOKENECON_REL="wss/tests/WSS.TOKEN-ECONOMY.md"
 
@@ -6668,15 +6725,15 @@ broke=$(dl_break mut_drop_one_start_citation)
   && ok "deleting one of start's ladder citations in a COPY is caught" \
   || bad "deleting one of start's ladder citations in a COPY was not caught"
 
-surface_cites_ladder "$dl/real" "$STOCKTAKE_REL" \
-  && ok "skills/stocktake/SKILL.md cites the ladder with a link that resolves" \
-  || bad "skills/stocktake/SKILL.md's ladder citation is missing or dead"
+surface_cites_ladder "$dl/real" "$HEALTHCHECK_REL" \
+  && ok "skills/health-check/SKILL.md cites the ladder with a link that resolves" \
+  || bad "skills/health-check/SKILL.md's ladder citation is missing or dead"
 
-mut_delete_stocktake_citation() { sed -i '/dispatch ladder.*DISPATCH-LADDER\.md/d' "$1/$STOCKTAKE_REL"; }
-broke=$(dl_break mut_delete_stocktake_citation)
-surface_cites_ladder "$broke" "$STOCKTAKE_REL" \
-  && bad "deleting stocktake's ladder citation in a COPY was not caught" \
-  || ok "deleting stocktake's ladder citation in a COPY is caught"
+mut_delete_healthcheck_citation() { sed -i '/dispatch ladder.*DISPATCH-LADDER\.md/d' "$1/$HEALTHCHECK_REL"; }
+broke=$(dl_break mut_delete_healthcheck_citation)
+surface_cites_ladder "$broke" "$HEALTHCHECK_REL" \
+  && bad "deleting health-check's ladder citation in a COPY was not caught" \
+  || ok "deleting health-check's ladder citation in a COPY is caught"
 
 surface_cites_ladder "$dl/real" "$AUDITPASS_REL" \
   && ok "wss/tests/WSS.AUDIT-PASS.md cites the ladder with a link that resolves" \
@@ -6730,31 +6787,35 @@ surface_regrowth_free "$broke" "$START_REL" \
   && bad "regrowing 'highest model tier' in a COPY of start was not caught" \
   || ok "regrowing 'highest model tier' in a COPY of start is caught"
 
-surface_regrowth_free "$dl/real" "$STOCKTAKE_REL" \
-  && ok "skills/stocktake/SKILL.md states no tier rule of its own" \
-  || bad "skills/stocktake/SKILL.md has a tier-rule phrase outside the ladder"
+surface_regrowth_free "$dl/real" "$HEALTHCHECK_REL" \
+  && ok "skills/health-check/SKILL.md states no tier rule of its own" \
+  || bad "skills/health-check/SKILL.md has a tier-rule phrase outside the ladder"
 
-mut_regrow_stocktake() {
-  printf '\n\nThe smallest capable model tier runs each auditor.\n' >> "$1/$STOCKTAKE_REL"
+mut_regrow_healthcheck() {
+  printf '\n\nThe smallest capable model tier runs each auditor.\n' >> "$1/$HEALTHCHECK_REL"
 }
-broke=$(dl_break mut_regrow_stocktake)
+broke=$(dl_break mut_regrow_healthcheck)
 
-# Check that regrowth in SKILL.md or references is caught
-st_regrowth_free=0
-for st_c in "$broke/skills/stocktake/SKILL.md" "$broke/skills/stocktake"/references/*.md; do
-  [ -f "$st_c" ] || continue
-  content=$(cat "$st_c" 2>/dev/null)
+# Check that regrowth in SKILL.md or references is caught. wss-stocktake had
+# a references/ dir (the audit lenses); health-check, its successor, does
+# not as of the retirement (2026-08-19, eighty-second decision) — the glob
+# below matches nothing there and the loop's `[ -f ]` guard skips it, same as
+# it always did for a skill with no references/ dir.
+hc_regrowth_free=0
+for hc_c in "$broke/skills/health-check/SKILL.md" "$broke/skills/health-check"/references/*.md; do
+  [ -f "$hc_c" ] || continue
+  content=$(cat "$hc_c" 2>/dev/null)
   if printf '%s' "$content" | grep -qF \
     -e "highest model tier" -e "smallest capable model tier" \
     -e "standard tier is the default" -e "model: 'haiku'" -e "model: 'sonnet'"; then
-    st_regrowth_free=1
+    hc_regrowth_free=1
     break
   fi
 done
 
-[ "$st_regrowth_free" -eq 0 ] \
-  && bad "regrowing 'smallest capable model tier' in a COPY of stocktake was not caught" \
-  || ok "regrowing 'smallest capable model tier' in a COPY of stocktake is caught"
+[ "$hc_regrowth_free" -eq 0 ] \
+  && bad "regrowing 'smallest capable model tier' in a COPY of health-check was not caught" \
+  || ok "regrowing 'smallest capable model tier' in a COPY of health-check is caught"
 
 surface_regrowth_free "$dl/real" "$AUDITPASS_REL" \
   && ok "wss/tests/WSS.AUDIT-PASS.md states no tier rule of its own" \

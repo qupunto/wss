@@ -1,6 +1,6 @@
 # The audit-coverage block
 
-**The format `--wss-stocktake` writes into every entry of `WSS.record.stocktake`, and reads back
+**The format `--wss-health-check --deep`'s TODO resort writes into every entry of `WSS.record.stocktake`, and reads back
 on the next run to decide what it may skip.** One copy, here, because a format
 defined only inside a project's own audit record does not exist until that
 project's first audit invents it — and the first audit is exactly the one with no
@@ -34,7 +34,7 @@ audit-coverage:
 one the manifest's `WSS.audit.dimensions` declared. Stability is the point: coverage
 accounting across audits is a join on this string.
 
-**Which is why the names above are real ones** — drawn from `--wss-stocktake`'s
+**Which is why the names above are real ones** — drawn from the TODO resort's
 own dimension library; its Phase 0 is the authority on which dimensions run
 when, and `WSS.audit.dimensions` is how a project adds its own. This block
 is what a project's first audit copies, and a copied name that no dimension ever
@@ -45,7 +45,7 @@ and silently treats that scope as never covered.
 
 **They are not audit-specific.** Every sweep in this workflow narrows itself the
 same way, so the rules are stated once, in
-[`WSS.SWEEP-CHECKPOINT.md`](WSS.SWEEP-CHECKPOINT.md#four-rules-and-they-are-the-whole-value).
+[`WSS.SWEEP-CHECKPOINT.md`](WSS.SWEEP-CHECKPOINT.md#five-rules-and-they-are-the-whole-value).
 
 What they mean **here**, where the reader of a report is an auditor rather than a
 script:

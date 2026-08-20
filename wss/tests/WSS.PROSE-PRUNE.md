@@ -10,7 +10,7 @@ changes nothing about what Claude does.
 in scope for this method the same way a skill is, and neither is swept because
 this file said so.
 
-It lives here so any orchestrator can borrow it; `--wss-tidy` remains its
+It lives here so any orchestrator can borrow it; `--wss-health-check` remains its
 standalone runner and keeps the runner's share — scope, stamping, and where
 relocated reasoning goes.
 

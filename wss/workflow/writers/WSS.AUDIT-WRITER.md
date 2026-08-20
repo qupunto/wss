@@ -27,12 +27,12 @@ does not breach append-only, and it is not a reason to re-audit anything.
 ## Two kinds of caller, and they want very different amounts
 
 This is why the record has its own primitive rather than living inside
-`--wss-stocktake` — [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md)'s split test, in its
+`--wss-health-check` — [`WSS.OWNERSHIP.md`](../WSS.OWNERSHIP.md)'s split test, in its
 starkest form:
 
 | Caller | Wants |
 |---|---|
-| `--wss-stocktake` Phase 4 | A whole new entry: the full field block plus the coverage block |
+| `--wss-health-check --deep`'s TODO resort, Phase 4 | A whole new entry: the full field block plus the coverage block |
 | Anything landing a remediation | **One field on an existing entry.** `Outcome`, and nothing else |
 
 The second must not have to invoke an audit procedure to get written.
@@ -46,8 +46,8 @@ and enforces what may go in.
 
 - **Tree** — the commit the audit ran against, and whether the working tree was
   clean. Not a date alone: a date does not resolve to a tree.
-- **Scope** — `--wss-stocktake` or `--wss-full-stocktake`, which dimensions, and whether
-  checkpoints were honoured or ignored.
+- **Scope** — the TODO resort, which dimensions, and whether checkpoints were
+  honoured or ignored.
 - **Method** — how the reading was done, and by what. **Where no code analysis
   ran, say so in those words.** An entry that lists mechanical checks passing
   reads as "the code was reviewed and found clean" unless it explicitly denies it.
@@ -89,6 +89,7 @@ means say so and stop.
 ## Authorization
 
 **None of its own.** Its grant is whatever the caller was granted, and it confers
-nothing. `--wss-stocktake` carries commit-and-push scoped to its own record, and this
-file is inside that scope — but the push is still the caller's act through
-`git-writer`, never this procedure's.
+nothing. `--wss-health-check --deep`'s TODO resort carries a commit grant
+scoped to its own record — never a push — and this file is inside that scope;
+the commit is still the caller's act through `git-writer`, never this
+procedure's.

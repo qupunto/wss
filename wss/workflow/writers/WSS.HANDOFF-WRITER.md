@@ -130,11 +130,10 @@ this section stands in for.
 |---|---|
 | `--wss-wrap` | Every section, composed fresh from what the session knows and spliced in with `wss-handoff-state.sh` — never by reading the existing file first |
 | `--wss-start` | What the batch changed, plus any `!important` it created or resolved |
-| `--wss-stocktake` | Only the `!important` warnings that audit created or resolved: one line each plus a pointer, resolved ones deleted |
-| `--wss-check` | The one stale claim it found, re-verified first |
-| `--wss-full-check` | Every finding it dispatched here, each re-verified first: resolved warnings still present, and pointers that no longer resolve |
+| `--wss-health-check --deep`'s TODO resort | Only the `!important` warnings that audit created or resolved: one line each plus a pointer, resolved ones deleted |
+| `--wss-health-check` | Every finding it dispatched here, each re-verified first: resolved warnings still present, and pointers that no longer resolve |
 
-**A caller with no row gets the `--wss-check` row**, not `--wss-wrap`'s: write
+**A caller with no row gets the `--wss-health-check` row**, not `--wss-wrap`'s: write
 the findings you were handed and stop, and say in one line that the caller
 was not listed, so the row can be added rather than guessed at again.
 

@@ -90,7 +90,7 @@ was skipped, and nothing downstream can tell them apart afterwards.
 
 ## 2. Check that everything is in order before releasing on top of it
 
-**Invoke `--wss-full-check`.** A tag is a claim that the tree it names is sound, and
+**Invoke `--wss-health-check --deep`.** A tag is a claim that the tree it names is sound, and
 this is the last point at which that claim is cheap to test. It runs the
 project's mechanical checks, re-reads every record, docs page and tooling file at
 full scope, and dispatches what it finds to the owner of each file.
@@ -100,9 +100,8 @@ Release drift is one of the dimensions it covers: what `WSS.record.releases` and
 locally and on the remote. Do not reimplement that comparison here — a second
 copy of a check is a second thing to keep true.
 
-`--wss-full-check` rather than `--wss-check`, deliberately — the incremental
-sweep's `covered` trust is exactly what a release should not extend, and it
-subsumes `--wss-check` anyway, so invoking both pays twice for the same answers.
+`--deep` rather than the bare default, deliberately — the incremental sweep's
+`covered` trust is exactly what a release should not extend.
 
 It does
 spend the session's one consented test run where the project gates its suite
@@ -146,6 +145,14 @@ number and the user-visible framing are the two things worth your own eyes.
 Semantic versioning. Below `1.0.0` the leading zero is doing real work:
 **deployed** is not **stable**, and a pre-1.0 project may still change its data
 model or API incompatibly.
+
+**Nothing downstream of the version may exist before this section runs.**
+The release branch's name embeds the version, so `release/v<version>` is
+cut only once the tier is confirmed here — never earlier on an assumed
+number, and never renamed afterwards, because a rename lands under
+everyone who already fetched it. The decision log's
+`2026-08-19 (seventieth)` entry; `--wss-pr`'s assemble step carries the
+same rule from the other side.
 
 **Decide the tier from the triggers below, never from how big the range feels.**
 A diff's size is not a compatibility claim. Momentum is the failure mode here:

@@ -42,7 +42,7 @@ line about what some skill is in the middle of — no; those are ordinary mutabl
 claims and get deleted rather than corrected.
 
 The carve-out holds only because something re-derives this file on a schedule:
-`--wss-catalog` rebuilds it whenever a skill or agent changes, or `--wss-tidy`
+`--wss-catalog` rebuilds it whenever a skill or agent changes, or `--wss-health-check`
 edits one, and a repo whose maintenance skill refreshes it on every run keeps it
 honest. An inventory nothing re-derives drifts silently and is worse than no
 inventory, because it reads as current.

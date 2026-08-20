@@ -24,7 +24,7 @@ commit is worse than no stamp (`wss/workflow/WSS.MANIFEST.md`'s `WSS.suite` row)
 **Then measure it.** Run `bash wss/scripts/wss-tools-inventory.sh`, resolved the same way as
 the doctor above, so `.claude/WSS.TOOLS.json` — `WSS.record.tooling.inventory` —
 exists from the moment adoption ends, rather than leaving its first measurement
-to whoever happens to run `--wss-tidy` or `--wss-catalog` next. It runs last, for
+to whoever happens to run `--wss-health-check` or `--wss-catalog` next. It runs last, for
 the same reason the stamp does: a derived artifact is only worth writing once
 the tree it derives from has already been proven sound.
 

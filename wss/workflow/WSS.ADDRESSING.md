@@ -102,6 +102,10 @@ fragment and fails an unresolvable one; `wss/scripts/wss-resolve.sh --check`
 walks the bare `KEY#fragment` form, which is not a markdown link and which
 nothing saw before it.
 
+**Where the target file carries a `wss:` region id (§5), the fragment resolves
+to it first** and the heading may then move freely; the slug path above is the
+fallback, and the only behaviour in files no migration has reached yet.
+
 **What is still not detected is a bare key with no fragment**, and the reason is
 that **nothing in this scheme separates a citation from a mention.** Prose names
 manifest keys constantly and correctly — `WSS.record.tooling.sources` is a glob
@@ -156,8 +160,18 @@ why their spelling is fixed here rather than left to each writer.
 | `[later → <why>]` | deferred, where there is no `## Later` section to put it in | the body's first line, provider form only |
 | `Parked (owner ruled)` | a ruling exists and must not be reversed | the entry's closing line |
 | `Parked (session judgment)` | a question addressed to the next `--wss-start`, which is the gate it waits for | the entry's closing line |
+| `[defer → <target>]` | an obligation that falls due when `<target>` exists — "when this target exists, this is owed" | the line carrying the link the obligation rides on |
+| `[pending → <target>]` | the same obligation, already owed and waiting on `<target>` to be actionable | the line carrying the link the obligation rides on |
 
 **The arrow is `→`, not `->`.** Consumers match the character.
+
+**The last two are the obligation markers, and nothing scans for them yet.**
+They are canon — the decision log's `(eighty-fifth)` entry — because the niche none of the other five covers is a link that *carries an
+obligation* rather than a state. `--open-loops`, the mode that would report every
+`[defer → …]` whose target now exists, stays **unbuilt until instances
+accumulate**: writing starts first, so that the check has a history to run
+against rather than reporting nothing until someone begins. **Write them; do not
+wait for the mode.**
 
 **`[critical → …]` is the only priority marker.** There is one grade and no
 others; [`WSS.RECORD-CONTRACT.md`](WSS.RECORD-CONTRACT.md) holds why.
@@ -171,6 +185,75 @@ parks because the label invited it.
 **An unpark is written, not implied.** Lifting a park adds a line naming who
 lifted it and citing the entry that did; the original reasoning stays where it
 was written and is not rewritten.
+
+## 5. The imprint — one marker carries boundary, anchor and provenance
+
+**Adopted by the owner — the decision log's `2026-08-19 (sixty-first)`
+entry — and the grammar ruled as drafted in its `2026-08-19 (sixty-third)`**,
+the draft being `wss-imprint-grammar.md`. The imprint unifies the region
+boundary, the anchor and the provenance into one marker family. **Enforcement
+arrives with its validator and per-class migrations** — `WSS.record.todo`'s
+imprint cycles — and until a record class is migrated, the fallbacks in this
+file are its live behaviour: structure before enforcement, per class.
+
+**The file imprint, line 1 of a record, is the whole cost of the common
+case** — the file is thereby one boundary, and every byte in it is inside a
+boundary:
+
+```text
+<!-- wss v=1 f=WSS.record.todo w=record -->
+```
+
+Regions subdivide it only where a block needs its own anchor, its own writer,
+or an entry form:
+
+```text
+<!-- wss:pending-outward-acts -->
+…
+<!-- /wss:pending-outward-acts -->
+```
+
+**Fields, all short keys.** The anchor is not a field: it is the token after
+the colon, because it is the one thing every region has and the citation
+scheme resolves against it. Fields absent on a region inherit from the file
+imprint.
+
+| Key | Meaning | Values |
+|---|---|---|
+| `v` | grammar version | `1`; file imprint only |
+| `f` | the record key this file answers to | a manifest key; file imprint only, and it must match the key that resolves to this path |
+| `w` | writer — who MAY write | a writer the ownership matrix names; regions carry it only to override the file's |
+| `by` | author — who DID write | `owner` · `session:<8-hex>` · absent, which means unknown |
+| `at` | when it was written | ISO 8601, date (`2026-08-19`) or instant (`2026-08-19T14:31:02Z`) · absent, which means unknown |
+| `via` | the applying session, where it differs from the author | `session:<8-hex>` — the relay case |
+| `e` | entry form of a repeating region | `table-row`, … |
+
+**Closes are named and nesting stops at one level.** `<!-- /wss:<id> -->`
+repeats the id, so a dropped or duplicated boundary in a file two writers
+touch fails pairing with an exact message; regions sit at most one level under
+the file imprint, never inside each other.
+
+**Provenance's core is who and when** — the owner's ruling, the decision
+log's `2026-08-19 (sixty-seventh)` entry: wherever provenance is written,
+`by=` and `at=` travel together, the `at=` in ISO form. Git-borne provenance
+already carries its when in the commit; the imprint's fields are for
+provenance the file itself must hold.
+
+**Provenance is never invented.** `by=` appears only where the entry's own
+text names its author, and `at=` only where the entry's own text dates the
+write; absent means unknown and stays that way. Mechanical
+entry ids — `e2026-08-19-47`, the date plus that date's ordinal — are
+structure rather than provenance, so a migration may stamp them on historical
+entries; `by=` and `at=` it may not.
+
+**Markers count at column 0, outside fenced code blocks.** An example in the
+docs or the test suite indents or spells a variant — the same rule the
+model-override check already applies to forbidden shapes the suite must spell.
+
+**What replaces what.** `<!-- wss:region entry=table-row -->` …
+`<!-- wss:region-end -->` is the pre-imprint spelling of a boundary; the
+registers migration converts it — `entry=` becomes `e=`, and the close gains
+its name. Both spellings are live only until that migration completes.
 
 ## What this file does not do
 

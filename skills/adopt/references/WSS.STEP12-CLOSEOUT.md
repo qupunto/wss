@@ -7,7 +7,7 @@ Say, briefly:
 - what `permissions.ask` now gates, or that nothing the project declares
   needed it;
 - the doctor result;
-- the one next step — usually `--wss-check` to see what the record already gets
+- the one next step — usually `--wss-health-check` to see what the record already gets
   wrong, or `--wss-plan` if the project has no roadmap yet.
 
 **Then the cadence card**, which is [`SKILL.md`](../SKILL.md)'s "The cadence

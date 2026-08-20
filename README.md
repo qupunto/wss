@@ -194,19 +194,21 @@ above can only ever arrive as documentation, paste it into your own
 special: `name-only` for a skill no flag reaches (dispatch-only, so its
 frontmatter description is the only cost anyone pays for it) and
 `user-invocable-only` for a heavyweight meant to be reached by name alone.
-`wss-doctor.sh`'s "Dispatch-only skills" section is what keeps this set from
-drifting — it warns on any dispatch-only skill with no entry here — so it is
-the set to copy rather than one to work out from scratch:
+`wss-doctor.sh`'s "Dispatch-only skills" section catches only ONE direction of
+drift here — it warns on a dispatch-only skill with no entry, and is blind both
+to a stale entry and to one present in `settings.json` but missing below. This
+block had drifted four ways before that was noticed, so treat it as a set to
+copy **and then verify**, not one the doctor keeps true for you:
 
 ```json
 "skillOverrides": {
   "adopt": "name-only",
+  "audit": "user-invocable-only",
   "contracts": "name-only",
-  "full-check": "name-only",
   "lane-record-sync": "name-only",
+  "pair": "name-only",
   "retire": "name-only",
   "skill-toggle": "user-invocable-only",
-  "stocktake": "user-invocable-only",
   "track": "name-only"
 }
 ```
@@ -233,7 +235,7 @@ and a fresh clone has to pass its own health check.
 **Read that emptiness as a decision, not an omission.** Shipping the populated
 originals as a worked example was the obvious alternative and was rejected: a
 session in your clone would read that TODO list and *believe* it — `--wss-start` would
-pick work off someone else's project, and `--wss-check` would verify those claims
+pick work off someone else's project, and `--wss-health-check` would verify those claims
 against the wrong repository. `--wss-adopt`'s own rule applies, that the owning skill
 writes the first real line so that it is a true one.
 
@@ -425,28 +427,27 @@ often — and it is the only part of this section that a machine does not genera
 
 ### Which flag do I want?
 
-Five of them ask a similar-sounding question and are routinely confused. The
+Three of them ask a similar-sounding question and are routinely confused. The
 difference is **what they read**, not how hard they try:
 
 <!-- wss:region entry=table-row -->
 | You want to know | Flag | Reads | Writes |
 |---|---|---|---|
 | Where do we stand, at a glance? | `--wss-overview` | branch and lane, record counts, sweep freshness, nearest milestones — fresh, never from memory | nothing at all — the report is the reply |
-| Is what we wrote down still true? | `--wss-check` | the records only, and only those whose code moved | nothing — dispatches to each record's owner |
-| Is the whole configuration sound? | `--wss-full-check` | records + the docs site + the tooling files, every one, ignoring checkpoints | nothing with an owner; fixes unowned files directly |
-| Where is this project? | `--wss-stocktake` | all of the above plus conventions, public surface, safety nets, and the code via the project's own analysis skill | rebuilds the TODO list, writes an audit entry |
+| Is what we wrote down still true? | `--wss-health-check` | the records only, and only those whose code moved | dispatches each finding to the record's owner, and fixes unowned files directly |
+| Is the whole configuration sound? | `--wss-health-check --deep` | records + the docs site + the tooling files, every one, ignoring checkpoints; can also ask to rebuild the TODO list around where the project stands | the same, at full scope |
 | Is this document true and well-formed? | `--wss-docs` | one docs site — paths, links, anchors, claims against source | the pages it fixes |
 <!-- wss:region-end -->
 
-`--wss-full-check` is **not** a bigger `--wss-check`. It is `--wss-check` plus five unrelated
-jobs — the docs site, the tooling files, the defect inbox, the prune, the
-catalog refresh. Reach for it when you distrust the configuration, not when you
-want a thorough record sweep.
+`--deep` is **not** just a bigger default run. It is the default plus the docs
+site, the tooling files' prune and other lenses, the defect inbox's count, and
+an ask-gated TODO rebuild. Reach for it when you distrust the configuration,
+not when you want a thorough record sweep.
 
-Running two of them against one request pays twice for the same answers, so the
-hook drops the narrower flag when a wider one is present: `--wss-full-check` absorbs
-`--wss-check`, and either stocktake absorbs it too. `--wss-docs`, `--wss-catalog` and
-`--wss-tidy` are never dropped, because each carries a job that is a *write*
+Running the same check twice against one request pays twice for the same
+answers, so the four modes are mutually exclusive and never combine — a request
+resolves to one. `--wss-docs` and `--wss-catalog` are never dropped even where
+`--wss-health-check` also runs, because each carries a job that is a *write*
 request and silently skipping one to save a read is the wrong way to be wrong.
 
 ### How often
@@ -470,11 +471,9 @@ cannot rewrite this file, so a drift it reports is corrected here by hand.
 | Settling how the system behaves | `--wss-describe` | the rule goes to the behaviour record while it is still checkable against the code; `--wss-log` takes the reasoning, and the two are routinely conflated into one entry that ages badly |
 | Settling what the project *is* — stack, data model, a convention | `--wss-reference` | the reference record is what a later reader trusts instead of checking, so write it while the claim is still checkable; where the manifest maps `README.md` into it, this reaches the landing page and the writer's consent rules apply |
 | Finishing a unit of work, or before `/clear` | `--wss-wrap` | the handoff is what the next session inherits |
-| Every week or so, or after a refactor | `--wss-check` | cheap, incremental, and catches the records the code just falsified |
+| Every week or so, or after a refactor | `--wss-health-check` | cheap, incremental, and catches the records the code just falsified |
 | The suite moved under an adopted project — or the doctor names a pre-rename manifest | `--wss-update` | updates the install, then detects what conventions the tree actually carries and migrates it behind its own gate; the `WSS.suite` stamp only accelerates, detection decides |
-| Before a release, or when you stop trusting the record | `--wss-full-check` | the expensive one; earns its cost when the answer might be "no" |
-| Every month or so, or when picking a project back up | `--wss-stocktake` | rebuilds the TODO list around where things actually are |
-| After editing any skill or agent file | `--wss-tidy` then `--wss-catalog` | immediately, before ending the turn — it is the one with a deadline |
+| Before a release, monthly, when picking a project back up, or after editing any skill or agent file | `--wss-health-check --deep` | the expensive one; earns its cost when the answer might be "no", when rebuilding the TODO list around where things actually are, or after touching a tooling file — it also re-opens the catalog through `--wss-catalog` |
 <!-- wss:region-end -->
 
 **If you only ever use three, use `--wss-track`, `--wss-todo` and `--wss-wrap`.** They are
@@ -486,7 +485,7 @@ nothing left over:
 
 ```
 --wss-wrap                            invoke
---wss-stocktake--wss-release--wss-wrap            invoke all three, in that order
+--wss-health-check--wss-release--wss-wrap         invoke all three, in that order
 that's everything --wss-docs          invoke
 commit it, then --wss-todo the rest    invoke — position does not matter
 git branch --track origin/dev     does NOT invoke — --track is not a wss- flag
@@ -537,13 +536,11 @@ rather than by a flag of its own (below).
 | `--wss-log` | `record` | primitive |
 | `--wss-plan` | `plan` | primitive |
 | `--wss-catalog` | `catalog` | primitive |
-| `--wss-tidy` | `tidy` | primitive |
-| `--wss-check` | `check` | orchestrator — writes nothing; dispatches |
-| `--wss-full-check` | `full-check` | orchestrator — writes no record; dispatches. `--wss-release` runs it before a tag |
+| `--wss-health-check` | `health-check` | orchestrator — one skill, four exclusive modes: `--shallow` reports only, bare adds dispatch-and-apply, `--deep` ignores checkpoints, `--publish` narrows to the shipping set. Stamps only a healthy scope |
+| `--wss-triage` | `triage` | user-invocable only — works the suite's defect inbox; no health-check mode runs it |
 | `--wss-docs` | `docs` | orchestrator |
 | `--wss-diagram` | `docs` | orchestrator — one ad-hoc diagram, drawn under the style guide's rules and landed as an annex page |
 | `--wss-start` | `start` | orchestrator |
-| `--wss-stocktake` / `--wss-full-stocktake` | `stocktake` | orchestrator |
 | `--wss-pr` | `pr` | orchestrator |
 | `--wss-release` | `release` | orchestrator |
 | `--wss-wrap` | `wrap` | orchestrator |
@@ -574,19 +571,17 @@ history: no flag may be a prefix of another — a token would decompose into the
 shorter flag plus junk, and `wss-doctor.sh` fails the list on it — and `--wss-pr`
 sat inside the old prune flag, which was renamed and later retired when its
 skill merged into what was then `wss-tools` — itself since split into
-`--wss-tidy` and `--wss-catalog`, so the name is history rather than something
-to look up. The invariant held throughout; the neighbours moved.
+`--wss-catalog` and the tooling sweeps that now live inside `--wss-health-check`,
+so the name is history rather than something to look up. The invariant held
+throughout; the neighbours moved.
 
 Two flags reach one skill where that skill does two jobs: `--wss-todo` parks an idea
 and `--wss-log` records a decision, both through `record`.
 
-Two pairs are one job at two scopes, and the wider one wins when both are typed:
-`--wss-stocktake` / `--wss-full-stocktake`, and `--wss-check` / `--wss-full-check`.
-
-A third suppression is absorption rather than scope: either stocktake flag drops
-`--wss-check`, because `stocktake` runs that sweep as its own record
-dimension. `--wss-full-check` survives alongside a stocktake, since it also covers
-the docs site and the tooling files that no stocktake reads.
+One flag now carries what a pair of flags used to be at two scopes: `--wss-health-check`
+takes `--deep` to widen it past every checkpoint, or `--publish` to narrow it to
+the shipping set instead. The four modes are mutually exclusive rather than
+suppressing one another — a request resolves to one mode, never a combination.
 
 **Some primitives have no flag**, deliberately, and are invoked by other skills
 rather than by you. Nobody wants to "record a baseline", "write the handoff" or
@@ -609,10 +604,10 @@ one's record; four are worth knowing by name:
   [`wss/workflow/WSS.SWEEP-CHECKPOINT.md`](wss/workflow/WSS.SWEEP-CHECKPOINT.md).
 - **`handoff-writer`** owns `WSS.record.handoff`, the compressed state a fresh
   session inherits. `--wss-wrap` calls it for a full currency pass, `--wss-start` for
-  what a batch changed, `--wss-stocktake` for the warnings an audit created or
-  resolved, and `--wss-check` for a single stale claim.
+  what a batch changed, `--wss-health-check --deep`'s TODO resort for the warnings
+  an audit created or resolved, and `--wss-health-check` for a single stale claim.
 - **`changelog-writer`** owns `WSS.record.changelog`. `--wss-release` calls it for the
-  entry that goes with a version, and `--wss-check` when the changelog claims a
+  entry that goes with a version, and `--wss-health-check` when the changelog claims a
   version no tag resolves.
 - **`git-writer`** owns the git history — commits, tags, and the merge
   `--wss-pr` asks for. Every skill that may commit calls it, which is what
@@ -647,8 +642,8 @@ cannot edit.
 
 The rule holds with no exceptions today, and the one it once had was resolved
 the right way round — by generalising the skill rather than dropping its flag.
-`tidy`'s prune reads `WSS.record.tooling.sources` from whatever project it runs in,
-so it is global like the rest.
+`health-check`'s prune lens reads `WSS.record.tooling.sources` from whatever
+project it runs in, so it is global like the rest.
 
 ## Finding a bug in this suite from another project
 
@@ -659,7 +654,7 @@ justification at the next `/clear`. Installed as a plugin it is worse: the write
 succeeds and is destroyed at the next plugin update, silently.
 
 This does **not** restrict your project's own skills and agents. Those are what
-`WSS.record.tooling.sources` globs and what `--wss-tidy` and `--wss-catalog`
+`WSS.record.tooling.sources` globs and what `--wss-health-check` and `--wss-catalog`
 exist to maintain. The rule draws the line at the installation, not around
 skill files in general.
 

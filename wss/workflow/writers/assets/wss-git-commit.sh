@@ -66,6 +66,12 @@ Usage: wss-git-commit.sh --files PATH [--files PATH ...] --message MSG \
                     run. Never hardcode a model name here or in the caller.
   --trailer-key K  The trailer name — read it from the calling project's
                     manifest (`WSS.commitTrailer`), never assumed here.
+  --refs VALUE     Optional. What this commit is work on — a tracker id, or
+                    this suite's own `Cycle-N`. Emitted as a `Refs:` footer
+                    beside the session trailer, per the commit profile that
+                    adopted the field. A TRANSCRIPTION of something the caller
+                    already has in hand, never a second list to keep: absent
+                    means absent, and no empty footer is written.
   --writer NAME    The primitive or skill whose authority this commit's
                     record writes are made under, verbatim as the ownership
                     matrix spells it (record, writers/WSS.HANDOFF-WRITER.md).
@@ -102,6 +108,7 @@ session=
 coauthor=
 trailer_key=
 writer=
+refs=
 push_refspec=
 do_push=0
 push_only_refspec=
@@ -137,6 +144,11 @@ while [ $# -gt 0 ]; do
     --writer)
       [ $# -ge 2 ] || usage
       writer=$2
+      shift 2
+      ;;
+    --refs)
+      [ $# -ge 2 ] || usage
+      refs=$2
       shift 2
       ;;
     --push)
@@ -243,6 +255,7 @@ trap 'rm -f "$tmp_msg"; [ "$committed" -eq 1 ] || git reset -q -- "${files[@]}" 
 {
   printf '%s\n' "$message"
   printf '\n'
+  [ -n "$refs" ] && printf 'Refs: %s\n' "$refs"
   printf '%s: %s\n' "$trailer_key" "$session"
   printf 'Co-Authored-By: %s\n' "$coauthor"
 } >"$tmp_msg"

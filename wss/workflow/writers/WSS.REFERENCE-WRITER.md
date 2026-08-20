@@ -75,7 +75,7 @@ fact, one named file and section.
 
 ### A dispatched one-line correction
 
-From `--wss-check`, `--wss-full-check`, `--wss-start` or `--wss-stocktake`. Scope is **the section
+From `--wss-health-check`, at any depth, or `--wss-start`. Scope is **the section
 the finding names, and nothing else.**
 
 1. **Re-verify against source before writing.** A dispatched finding is a

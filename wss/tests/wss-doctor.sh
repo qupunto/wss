@@ -924,7 +924,7 @@ head_ "Trigger phrases a session would hit by accident"
 # A description is how the MODEL decides to invoke a skill, so a trigger listed
 # there is a claim about ordinary language. `wrap` listed `"done"` and
 # `release` listed `"ship it"` — both hold a push grant, so "ok that's done"
-# could commit and push work nobody asked to publish. `stocktake`
+# could commit and push work nobody asked to publish. `wss-stocktake`
 # listed `"where are we"`, the most expensive skill in the suite answering a
 # question a sentence would.
 #
@@ -2500,7 +2500,7 @@ fi
     #   "use"             grep -n 'that will use `--wss-start`' skills/adopt/references/WSS.STEP7-ASK.md
     #                      — describes what an ADOPTED PROJECT does later, not
     #                      what --wss-adopt itself invokes.
-    #   "that is"/"thats" grep -n 'that is `--wss-full-stocktake`' skills/full-check/SKILL.md
+    #   "that is"/"thats" grep -n 'that is `--wss-adopt`'\''s ground' skills/update/SKILL.md
     #                      — this suite's own idiom for a BOUNDARY statement
     #                      ("that is X's [job]"), the opposite of a dispatch:
     #                      it says a neighbour owns something so THIS skill
@@ -2916,11 +2916,24 @@ head_ "Audit reports"
 #    2026-08-02 — nothing compared rows against the directory until this did.
 a_idx_rel=$(jq -r '.WSS.record.audits // empty | if type == "string" then . else empty end' \
   "$CLAUDE_DIR/.claude/WSS.WORKFLOW.json" 2>/dev/null || true)
-[ -n "$a_idx_rel" ] || a_idx_rel="wss/logs/audits/README.md"
+[ -n "$a_idx_rel" ] || { a_idx_rel="wss/logs/audits/README.md"; a_idx_legacy=1; }
 a_idx="$CLAUDE_DIR/$a_idx_rel"
+# WHERE THE REPORTS LIVE, derived rather than hardcoded — `skills/audit/SKILL.md`
+# states the same rule in words, and this is the check side of it. The reports sit
+# in an `audits/` directory ALONGSIDE the index file, so a declared index at
+# `wss/logs/WSS.AUDITS.md` puts them in `wss/logs/audits/`. The undeclared fallback
+# is the one case that must NOT compose: it already points inside `audits/`, so
+# appending a second `audits/` would nest one inside the other and the loop would
+# silently iterate nothing — a check measuring an empty directory passes while
+# proving nothing, which is the failure this whole section exists to prevent.
+if [ "${a_idx_legacy:-0}" = 1 ]; then
+  a_dir=$(dirname "$a_idx")
+else
+  a_dir="$(dirname "$a_idx")/audits"
+fi
 if [ -f "$a_idx" ]; then
   a_missing=0 a_total=0
-  for a_f in "$CLAUDE_DIR"/wss/logs/audits/*.md; do
+  for a_f in "$a_dir"/*.md; do
     [ -e "$a_f" ] || continue
     a_b=$(basename "$a_f")
     [ "$a_b" = "README.md" ] && continue
@@ -2939,7 +2952,7 @@ if [ -f "$a_idx" ]; then
   fi
 else
   a_orphans=0
-  for a_f in "$CLAUDE_DIR"/wss/logs/audits/*.md; do
+  for a_f in "$a_dir"/*.md; do
     [ -e "$a_f" ] || continue
     [ "$(basename "$a_f")" = "README.md" ] && continue
     a_orphans=$((a_orphans + 1))
@@ -3093,7 +3106,7 @@ WSS.docs WSS.docs.root WSS.docs.languages WSS.docs.devCommand
 WSS.branch.integration WSS.branch.publish WSS.branch.mergeMethod WSS.branch.release
 WSS.record.todo WSS.record.roadmap WSS.record.releases WSS.record.changelog WSS.record.handoff WSS.record.decisions
 WSS.record.decisionsIndex WSS.record.openDecisions WSS.record.behaviour WSS.record.reference WSS.record.backlog
-WSS.record.stocktake WSS.record.audits WSS.record.toolbelt WSS.record.tooling WSS.record.setup
+WSS.record.stocktake WSS.record.audits WSS.record.toolbelt WSS.record.tooling WSS.record.setup WSS.record.toggles
 WSS.record.tooling.catalog WSS.record.tooling.inventory WSS.record.tooling.sources
 WSS.commands.typecheck WSS.commands.test WSS.commands.indexRegen WSS.commands.indexCheck
 WSS.commands.testConsentEnv WSS.commands.ci
@@ -3216,9 +3229,13 @@ WSS.gate.coverage'
         role, so its presence is not read as a pairing that is not there."
     else
       pass "the pair claims file parses ($pc_n claim(s), roles recognised)"
-      [ -z "$pc_stale" ] || notice "stale pair claim(s), socket gone: $pc_stale
-        A claim is live while its socket exists, and sockets die with their
-        session. The line may be taken by a new session of that role."
+      [ -z "$pc_stale" ] || notice "pair claim(s) whose socket is gone: $pc_stale
+        The socket is named after the PROCESS, so its absence means that
+        process is gone and nothing can be delivered there. Its PRESENCE proves
+        only deliverability — one process hosts many sessions in turn, so a
+        live socket does not mean the claiming session still exists. Liveness
+        comes from a session rewriting its own claim at start, never from
+        reading this file."
     fi
   fi
 
@@ -4536,11 +4553,13 @@ else
         manifest fault rather than a transient one — fix it through --wss-adopt in
         amendment mode."
   else
-    if [ -z "$prov_label" ]; then
-      warn "WSS.record.todo is github-issues on '$prov_repo' with NO label, so the
-        backlog is every open issue in the repository — including bug reports
-        filed by users. Declare a label unless that is genuinely meant."
-    else
+    # A labelless provider is not checked further: the repository's issues are
+    # read on demand into a triage queue, never implicitly as the TODO list, so
+    # there is no silent-widening hole for an absent label to guard against
+    # (owner's ruling, decision log's `2026-08-19 (sixty-ninth)` entry). Only a
+    # DECLARED label that does not exist gets checked below, because that one
+    # still guards a real silent-empty failure.
+    if [ -n "$prov_label" ]; then
       # A label that does not exist is not an error to gh — the list comes back
       # empty and every reader concludes the backlog is empty. Nothing else in
       # the suite can tell that apart from a genuinely finished backlog, so it
@@ -4570,7 +4589,7 @@ fi
 
 head_ "Sweep checkpoint"
 
-# The cache that lets --wss-check, --wss-docs and --wss-tidy re-read only what moved. It is
+# The cache that lets --wss-health-check and --wss-docs re-read only what moved. It is
 # the one file here whose being WRONG is silent by construction: a bad baseline
 # or a covered glob nobody earned produces a clean report on files nothing read,
 # and every incremental sweep after it inherits that. Shape and rules:
@@ -5099,11 +5118,12 @@ fi
 
 head_ "Dispatch table vs the ownership matrix"
 
-# skills/check/SKILL.md carries a table mapping "finding lives in" to the
-# owner it dispatches to, directly under prose calling WSS.OWNERSHIP.md "the
-# table". So the two ARE a copy-set, and WSS.ROT-RESISTANCE.md lens 3 asks what
-# makes a second copy agree with the first. Until this check, nothing did:
-# whoever edited one remembered the other, which that lens rates as nothing.
+# wss/workflow/WSS.FINDING-DISPATCH.md carries a table mapping "finding lives
+# in" to the owner it dispatches to, directly under prose calling
+# WSS.OWNERSHIP.md "the table". So the two ARE a copy-set, and
+# WSS.ROT-RESISTANCE.md lens 3 asks what makes a second copy agree with the
+# first. Until this check, nothing did: whoever edited one remembered the
+# other, which that lens rates as nothing.
 #
 # Compared on the one identity both sides address the same way — the
 # `WSS.record.*` manifest keys. Not on the owner names beside them: the
@@ -5113,28 +5133,38 @@ head_ "Dispatch table vs the ownership matrix"
 # the same reason the catalog check above leaves "writer" out.
 #
 # BOTH directions fail, because both are real defects:
-#   1. A key check dispatches on that the matrix assigns to nobody is a
+#   1. A key the dispatch table names that the matrix assigns to nobody is a
 #      route to a non-owner — the exact failure the copy exists to prevent.
-#   2. A key the matrix gives an owner but check has no row for is a
-#      record that gained an owner without gaining a dispatch route, so an
+#   2. A key the matrix gives an owner but the dispatch table has no row for is
+#      a record that gained an owner without gaining a dispatch route, so an
 #      inspector finding drift there has nowhere to send it.
 #
-# Three keys are excluded from direction 2 by name, because --wss-check inspects
-# none of them and a row for any would be dead: `WSS.record.backlog` and
-# `WSS.record.tooling.inventory` appear nowhere in skills/check/SKILL.md.
-# `WSS.record.rules` joins them 2026-08-18 — the rulebook ships no rows yet,
-# its writer (agents/wss-rules-writer.md) only applies rows already decided
-# elsewhere, and nothing today generates the staleness finding a dispatch row
-# would receive; add the row once --wss-check (or its Fourth-block successor)
-# actually inspects rule content.
+# Three keys are excluded from direction 2 by name, because --wss-health-check
+# inspects none of them and a row for any would be dead: `WSS.record.backlog`
+# and `WSS.record.tooling.inventory` appear nowhere in
+# wss/workflow/WSS.FINDING-DISPATCH.md. `WSS.record.rules` joins them
+# 2026-08-18 — the rulebook ships no rows yet, its writer
+# (agents/wss-rules-writer.md) only applies rows already decided elsewhere,
+# and nothing today generates the staleness finding a dispatch row would
+# receive; add the row once --wss-health-check actually inspects rule content.
 # A FOURTH divergence is not excluded and fails, which is the whole point.
-dm_chk="$CLAUDE_DIR/skills/check/SKILL.md"
+dm_chk="$CLAUDE_DIR/wss/workflow/WSS.FINDING-DISPATCH.md"
 dm_own="$CLAUDE_DIR/wss/workflow/WSS.OWNERSHIP.md"
 dm_keys_() { grep -oE 'WSS\.record\.[a-zA-Z]+(\.[a-zA-Z]+)*' | sed 's/\.$//' | sort -u; }
 if [ ! -f "$dm_chk" ] || [ ! -f "$dm_own" ]; then
   notice "dispatch-table check skipped — an adopted tree need not carry
-      skills/check/SKILL.md or wss/workflow/WSS.OWNERSHIP.md"
+      wss/workflow/WSS.FINDING-DISPATCH.md or wss/workflow/WSS.OWNERSHIP.md"
 else
+  # NAMED EXCLUSIONS, each with its reason — an unexplained name here is a gap
+  # pretending to be a decision. `backlog` and `rules` have owners but no drift
+  # class to dispatch; `tooling.inventory` is generated, so a finding against it
+  # is a finding against its generator. `tooling.sources` joined them when the
+  # five check skills retired: its files used to dispatch to `--wss-tidy`, and
+  # the successor that would receive them, `--wss-health-check`, is the very
+  # runner already reading them. Dispatching a finding to yourself is not a
+  # dispatch, and the table's own invariant is that no target is an orchestrator
+  # whose whole procedure would have to run. It disposes of them in place
+  # instead — that skill's step 4.
   # Anchored on each table's header row, never on line numbers: both files are
   # edited often, and a line-numbered slice would silently start reading the
   # wrong rows rather than failing.
@@ -5146,27 +5176,27 @@ else
                     f{exit}' "$dm_own" | dm_keys_)
   dm_only_chk=$(comm -23 <(printf '%s\n' "$dm_a") <(printf '%s\n' "$dm_b") | tr -d ' ')
   dm_only_own=$(comm -13 <(printf '%s\n' "$dm_a") <(printf '%s\n' "$dm_b") \
-                | grep -vxE 'WSS\.record\.(backlog|tooling\.inventory|rules)' | tr -d ' ')
+                | grep -vxE 'WSS\.record\.(backlog|tooling\.inventory|rules|tooling\.sources)' | tr -d ' ')
   if [ -z "$dm_a" ] || [ -z "$dm_b" ]; then
     fail "the dispatch table or the ownership matrix parsed to no record keys —
         a header row was renamed and this comparison read nothing. Re-anchor
         the awk in this section on the new heading."
   else
     if [ -n "$dm_only_chk" ]; then
-      fail "check dispatches on a record the ownership matrix gives no owner:
+      fail "the dispatch table names a record the ownership matrix gives no owner:
         $(printf '%s' "$dm_only_chk" | tr '\n' ' ')
         Either add the row to WSS.OWNERSHIP.md's matrix, or drop it from the
-        dispatch table in skills/check/SKILL.md."
+        dispatch table in wss/workflow/WSS.FINDING-DISPATCH.md."
     fi
     if [ -n "$dm_only_own" ]; then
-      fail "the ownership matrix names an owner for a record check cannot
-        dispatch on: $(printf '%s' "$dm_only_own" | tr '\n' ' ')
-        Add a row to the dispatch table in skills/check/SKILL.md, or — if
-        --wss-check genuinely never inspects it — add it to this check's named
-        exclusions with the reason."
+      fail "the ownership matrix names an owner for a record the dispatch table
+        cannot dispatch on: $(printf '%s' "$dm_only_own" | tr '\n' ' ')
+        Add a row to the dispatch table in wss/workflow/WSS.FINDING-DISPATCH.md,
+        or — if --wss-health-check genuinely never inspects it — add it to this
+        check's named exclusions with the reason."
     fi
     [ -z "$dm_only_chk" ] && [ -z "$dm_only_own" ] &&
-      pass "every record key in check's dispatch table has an owner in the
+      pass "every record key in the dispatch table has an owner in the
         matrix, and every owned record has a dispatch row ($(printf '%s\n' "$dm_a" | grep -c . ) checked, 3 known-uninspected excluded)"
   fi
 fi
@@ -5221,7 +5251,7 @@ head_ "Newest-tag route"
 # The route below is the one: it sorts by version and admits only release tags.
 #
 # THE PROSE SIDE IS NOT THIS CHECK'S. A record telling a session to run
-# `git describe` is a claim, and `--wss-check` owns stale claims; this check
+# `git describe` is a claim, and `--wss-health-check` owns stale claims; this check
 # reads executables, where the route is a call rather than an instruction.
 #
 # WARN-GRADE, and the condition it promotes to fail under: once no tracked

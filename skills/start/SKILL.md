@@ -200,32 +200,16 @@ top. There is one marker and no other grades;
 Then the rest from `WSS.record.todo`, in section order (it is severity- and
 dependency-ordered already). Not everything in it is eligible.
 
-**`WSS.record.todo` may be a provider rather than a file** — an object with a
+**When `WSS.record.todo` is declared as a provider** — an object with a
 `provider` key, per
-[`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md#reading-it). Read
-it through that contract, and mind its `--limit`: a list command that silently
-returns the first thirty of forty-five items hands this phase a batch chosen
-from a truncated TODO LIST, which looks exactly like a batch chosen from the whole
-one. When an item lands, closing it is `--wss-todo`'s, the same as deleting a line.
-
-**Then drop the section-order assumption above, because there are no sections.**
-An issue list comes back *newest first*, which is not the ordering this phase
-expects and is nearly its inverse. Two consequences, both of which pick the wrong
-batch rather than failing:
-
-- **Rank has to come from content, not position.** Read the items and judge
-  severity and dependency yourself. The first row is the most recent, and the
-  most recent is frequently the least urgent. **`[critical → why]` still
-  applies and is read out of the body**, exactly as `[blocked → …]` is — the
-  only ordering signal that survives here, which is the point of the placement
-  the contract above mandates.
-- **Deferral is a marker, not a place.** The "explicitly deferred" exclusion
-  below is written for a `## Later` section that does not exist here; under a
-  provider it is `[later → why]` on the first line of the body, alongside
-  `[blocked → …]`. Both must be read out of the body, and an item carrying
-  either is out of scope exactly as it would be in a file. An unmarked item
-  filed a minute ago by `--wss-todo` may well be one that was *just* deferred —
-  if the body says it was, treat it as deferred whatever the marker says.
+[`providers/WSS.GITHUB-ISSUES.md`](../../wss/workflow/providers/WSS.GITHUB-ISSUES.md) —
+Phase 2 does not read it. The decision log's `2026-08-19 (sixty-ninth)` entry
+rules that a repository's issues are read on demand only, by a person, and
+what that read produces is a triage queue rather than TODO entries — an issue
+never enters the TODO list mechanically. A project on this provider therefore
+contributes nothing to autonomous batch selection: the batch draws from the
+file records instead, and, finding nothing eligible there, falls through to
+the roadmap exactly as below.
 
 **Never autonomously in scope:**
 
@@ -412,7 +396,7 @@ In order, and none of these are optional:
    — the checkpoint has one writer, the same reason Phase 6 hands every record
    to its owner. **Only after a full consented run whose result you read.**
    Consent refused, a run that died part-way, or a subset of the suite means **no
-   stamp at all**: `--wss-stocktake` skips its own run on the strength of this entry,
+   stamp at all**: `--wss-health-check --deep`'s TODO resort skips its own run on the strength of this entry,
    so one no run earned is worse than none. A red result *is* stamped, as red —
    [`WSS.SWEEP-CHECKPOINT.md`](../../wss/workflow/WSS.SWEEP-CHECKPOINT.md) has the fields and
    the two things that void a carry-forward. Nothing here reads the entry back;
@@ -471,10 +455,11 @@ is the read/write race Phase 3 describes.
 5. **New open decisions.** A batch that surfaced a choice and settled it silently
    has done the thing Phase 1 exists to prevent. Route it through `--wss-todo`, to the
    open-decisions record if still open.
-6. **`--wss-tidy`, then `--wss-catalog`, in that order** if any shard touched a
-   skill or agent file — tidy's sweeps run `wss-tools-inventory.sh` and hand off
-   to catalog once they edit anything, but a shard that touched files without
-   tripping a sweep still owes the catalog a look for a row it never wrote.
+6. **`--wss-health-check`** if any shard touched a skill or agent file — its
+   default mode sweeps the changed tooling files, runs `wss-tools-inventory.sh`
+   and hands off to `--wss-catalog` itself once it restructures anything, but a
+   shard that touched files without tripping a sweep still owes the catalog a
+   look for a row it never wrote.
 7. **`handoff-writer`** — what the batch changed, plus any `!important` it
    created or resolved, so the next session inherits it. Not `--wss-wrap`: this skill
    grants commit and not push, and an invoked skill inherits the caller's grant,
@@ -488,6 +473,6 @@ is the read/write race Phase 3 describes.
   covers committing; publishing is the user's call. The commits themselves go
   through `git-writer`, which inherits this commit-only grant.
 - **It does not review existing code.** Finding what is wrong with what is already
-  there is `--wss-stocktake`; this skill builds what is not there yet.
+  there is `--wss-health-check`; this skill builds what is not there yet.
 - **It does not invent documents.** If nothing fits, say so rather than inventing
   structure — `WSS.RECORD-CONTRACT.md`'s standing rule, and it holds here.

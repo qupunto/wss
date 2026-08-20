@@ -5,7 +5,7 @@
    dirty, say so in one line and audit `HEAD` plus the dirty files, recording the
    entry as `<sha>+dirty` — don't ask the user to commit and don't stall.
 2. **Choose the dimensions from the project's shape.** Detect the shape per
-   [`WSS.PROJECT-SHAPE.md`](../../../wss/workflow/WSS.PROJECT-SHAPE.md), which owns the signals
+   [`WSS.PROJECT-SHAPE.md`](../../wss/workflow/WSS.PROJECT-SHAPE.md), which owns the signals
    and what evidence establishes each.
 
    **`record`, `consistency` and `safety-nets` apply to any repository.** One
@@ -41,14 +41,14 @@
    `git diff --name-only <baseline>..HEAD -- <globs>` is the slice. A path that
    appears only under `not-covered`, or in no block at all, has never been audited
    and is fully in scope, no diff. **Delegate this read to
-   [`wss-survey`](../../../agents/wss-survey.md)** — the floor comparison is
+   [`wss-survey`](../../agents/wss-survey.md)** — the floor comparison is
    against the floor divided by the turns the read is held, not the floor, and a
    whole-record read in an audit clears that (SKILL.md's floor paragraph) — brief:
    `WSS.record.stocktake`, named up front; verdict:
    one line per path, its governing baseline commit or `none`.
 
    The block's format, and the four rules constraining what you may skip, are
-   [`WSS.AUDIT-COVERAGE.md`](../../../wss/workflow/WSS.AUDIT-COVERAGE.md)'s.
+   [`WSS.AUDIT-COVERAGE.md`](../../wss/workflow/WSS.AUDIT-COVERAGE.md)'s.
 4. **Apply the blast radius, strictly.** A file being unchanged does not mean its
    *behaviour* is unchanged. If any of these changed since a dimension's
    baseline, that dimension's narrowing is void and it returns to full scope.
@@ -96,7 +96,7 @@
      dropped it and why.
 
    Give every auditor the slice of this list touching its dimension.
-   **Delegate this read to [`wss-survey`](../../../agents/wss-survey.md)**, on
+   **Delegate this read to [`wss-survey`](../../agents/wss-survey.md)**, on
    the same divided-floor comparison SKILL.md states — brief:
    `WSS.record.stocktake`, named up front; verdict: the three lists above, each
    line naming the finding, its dimension and, for still-open items, its repeat

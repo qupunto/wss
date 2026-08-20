@@ -118,8 +118,9 @@ it needs to be right *and* cheap. A lens with no hit is a result.
 10. **Does a door advertising exhaustiveness reach everything?** "End to end",
     "every", "full" are coverage claims, and the reader who walks through one
     stops looking; a door dispatching a subset errors on nothing — lens 1's
-    silence, one level up. Proven: `--wss-full-check`, whose door advertises the
-    whole while its dispatch reaches only part of `--wss-tidy`'s jobs.
+    silence, one level up. Proven: the retired `--wss-full-check`, whose door
+    advertised the whole while its dispatch reached only part of the retired
+    `--wss-tidy`'s jobs.
     Drawback: widening costs every caller, narrowing spends bytes against the
     cap; it is a ruling either way, never an edit made inside the sweep.
 

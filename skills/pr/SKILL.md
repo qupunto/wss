@@ -44,7 +44,15 @@ reversible.
 **The PR's head is a release branch, so it has to exist before §1 can measure a
 range.** Where the user names an existing one, use it and skip to §1.
 
-1. **Compose the name.** `WSS.branch.release` with `<version>` substituted —
+1. **Compose the name — and it cannot be composed before the tier is
+   confirmed.** The branch name embeds the version, and the version is
+   `--wss-release`'s §4 decision, so **a release branch is cut only after
+   that section has confirmed the tier — never earlier, and never renamed
+   afterwards.** A branch cut on a guessed version is either wrong or has
+   to be renamed under everyone who already fetched it, which is why the
+   order is a rule rather than a preference (the decision log's
+   `2026-08-19 (seventieth)` entry).
+   `WSS.branch.release` with `<version>` substituted —
    `release/v0.16.0`, not `release/0.16.0` or `release-v0.16.0`. **Naming is a
    rule and it is applied always**, alongside the conventional-commit title
    profile ([the decision log's `2026-08-19 (fortieth)` entry]). **A

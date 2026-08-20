@@ -7,7 +7,7 @@ one.
 
 The invariant this file exists to state:
 
-> **Every record file has exactly one writer.**
+> **Every region of a record file has exactly one accountable writer.**
 
 Shared ownership does not stay shared for long: two skills that both write a file
 end up each carrying a paragraph negotiating which one really owns it, deferring
@@ -28,17 +28,25 @@ owns the file.
 `--wss-start` is the one that writes source code, and it is the exception rather
 than the shape.
 
-**There are no carve-outs.** The matrix is the whole rule: no orchestrator owns
-a record, and every record reaches its file through the primitive that owns it.
-A carve-out is a second writer wearing a justification, and the matrix must not
-carry one.
+**There are no carve-outs, and the unit the rule binds is the responsibility,
+not the path.** Each writer has exactly one responsibility, and a
+responsibility may span multiple files and multiple surface forms —
+`git-writer` covers commits and PRs alike, the rules writer covers every
+rulebook surface: ladders, tables, freeform. Enforcement stays one-way: any
+given region of a file belongs to exactly one responsibility, so every byte
+still has exactly one accountable writer and provenance holds. Two writers
+touching the same region is a carve-out; two responsibilities holding disjoint
+regions of one file is the matrix working, not an exception to it.
+`README.md` is the instance: the body is the reference responsibility
+(`reference-writer`), the nav link is the docs responsibility (`docs-writer`)
+— see the decision log's `2026-08-19 (sixty-sixth)` entry.
 
 Apply the SPLIT test below against *owns the session*, never against *writes
 code*; read the matrix's "Sole writer of" column for what any given row actually
 writes, rather than inferring it from this row.
 
 **An orchestrator can be dispatched to, and a primitive can dispatch.** Neither
-is exotic: `--wss-release` invokes `--wss-full-check`, and the primitive `--wss-catalog` reaches
+is exotic: `--wss-release` invokes `--wss-health-check --deep`, and the primitive `--wss-catalog` reaches
 [`writers/WSS.DOCS-WRITER.md`](writers/WSS.DOCS-WRITER.md) directly for the
 documentation page derived from its catalog. The tier says what a skill *owns*,
 not who is allowed to call it.
@@ -118,7 +126,6 @@ owns the manifest proper and has not been asked to take this on.
 | order | `--wss-plan` | `plan` | primitive | `WSS.record.roadmap` — every lane's copy — **and** `WSS.record.releases`, the release list, which never splits | — |
 | scout | `--wss-scout` | `scout` | primitive | `WSS.record.toolbelt` — the registry of adopted capabilities; the reasoning behind each row goes through `--wss-log`, which is `record`'s file | — |
 | catalog | `--wss-catalog` | `catalog` | primitive | `WSS.record.tooling.catalog` | COMMIT, not push |
-| tidy | `--wss-tidy` | `tidy` | primitive | stale claims, the prose prune, the token-economy sweep, the rot-resistance sweep and the routing sweep inside `WSS.record.tooling.sources` | COMMIT, not push |
 | measure | — | `wss-tools-inventory.sh` | primitive | `WSS.record.tooling.inventory` | — |
 | fill rulebook rows | — | `agents/wss-rules-writer.md`, dispatched by whichever caller has already decided a row (none yet — planned under the roadmap's Fourth block) | primitive | `WSS.record.rules` — `wss/rules/`'s judge files and index (`.claude/WSS.LOCAL-RECORDS.json`, per `WSS.MANIFEST.md`'s "Not manifest keys": no other adopting project's global skill reads this project's own rulebook rows) | — |
 | build | `--wss-start` | `start` | orchestrator | source code | COMMIT as the work lands, not push |
@@ -130,14 +137,13 @@ owns the manifest proper and has not been asked to take this on.
 | note | — | [`writers/WSS.CHANGELOG-WRITER.md`](writers/WSS.CHANGELOG-WRITER.md) | primitive | `WSS.record.changelog` | — |
 | declare | — | [`writers/WSS.MANIFEST-WRITER.md`](writers/WSS.MANIFEST-WRITER.md) | primitive | `.claude/WSS.WORKFLOW.json` **and** `.claude/WSS.LOCAL-RECORDS.json` — its project-local sibling, same key-to-path shape, so one procedure writes both rather than a second one existing for a file that differs only in which keys it may hold | — |
 | describe | `--wss-describe` | `describe`, which dispatches to [`writers/WSS.BEHAVIOUR-WRITER.md`](writers/WSS.BEHAVIOUR-WRITER.md) | primitive | `WSS.record.behaviour` — the writer's; the skill is a route to it and writes nothing | — |
-| reference | `--wss-reference` | `reference`, which dispatches to [`writers/WSS.REFERENCE-WRITER.md`](writers/WSS.REFERENCE-WRITER.md) | primitive | `WSS.record.reference` and `WSS.record.setup` — the writer's; the skill is a route to them and writes nothing | — |
+| reference | `--wss-reference` | `reference`, which dispatches to [`writers/WSS.REFERENCE-WRITER.md`](writers/WSS.REFERENCE-WRITER.md) | primitive | `WSS.record.reference`, `WSS.record.setup` and `WSS.record.toggles` — the writer's; the skill is a route to them and writes nothing | — |
 | log an audit | — | [`writers/WSS.AUDIT-WRITER.md`](writers/WSS.AUDIT-WRITER.md) | primitive | `WSS.record.stocktake` — the stocktake log — plus `WSS.record.audits`, the index of independent passes, one row per report | — |
 | write a page | — | [`writers/WSS.DOCS-WRITER.md`](writers/WSS.DOCS-WRITER.md) | primitive | the documentation site — every page and annex page, their `_sidebar.md` and `index.md` rows, the translation mirrors, and the diagrams inside any of them | — |
 | commit | — | [`writers/WSS.GIT-WRITER.md`](writers/WSS.GIT-WRITER.md) | primitive | commits and tags | — |
-| inspect | `--wss-check` | `check` | orchestrator | **nothing** — dispatches to the owner | — |
 | overview | `--wss-overview` | `overview` | orchestrator | **nothing** — a read-only report; its counts go in the reply, which is not a record | — |
-| health-check | `--wss-full-check` | `full-check` | orchestrator | **nothing with an owner** — every write goes through the owner it invokes: the skill files through `--wss-tidy`, the catalog through `--wss-catalog`, the checkpoints through `sweep-tracker`. It edits the project's unowned files directly, the same as any ordinary work there | — |
-| take stock | `--wss-stocktake` `--wss-full-stocktake` | `stocktake` | orchestrator | **nothing** — the entry goes through `audit-writer` | COMMIT and PUSH, its OWN RECORD ONLY |
+| health-check | `--wss-health-check` | `health-check` | orchestrator | **nothing with an owner** — every write goes through the owner it invokes: the catalog through `--wss-catalog`, the checkpoints through `sweep-tracker`, and, its `--deep` TODO resort taken, the stocktake entry through `audit-writer`. A `WSS.record.tooling.sources` finding — stale claim, prose prune, token-economy, rot-resistance or routing — it disposes of itself, bounded fixes landing directly in the project's unowned files the same as any ordinary work there. `--shallow` writes nothing at all | COMMIT what the run repairs, not push |
+| triage | `--wss-triage` | `triage` | orchestrator | **nothing** — every surviving defect is filed through `--wss-todo` or `--wss-log` | none |
 | merge | `--wss-pr` | `pr` | orchestrator | **nothing** — the merge goes through `git-writer` | COMMIT and open the PR; push needs a fresh OK |
 | publish | `--wss-release` | `release` | orchestrator | **nothing** — the entry goes through `changelog-writer`, the tag through `git-writer` | COMMIT; push needs a fresh OK |
 | hand off | `--wss-wrap` | `wrap` | orchestrator | **nothing** — the handoff goes through `handoff-writer` | COMMIT and PUSH, the latter including fast-forwarding a lane worktree's branch onto `WSS.branch.integration` |
@@ -145,8 +151,7 @@ owns the manifest proper and has not been asked to take this on.
 | synch lanes | — | `lane-record-sync` | orchestrator | **nothing with an owner** — every finding is appended to the addressed lane's transfer queue, which has no single writer; it drains `WSS.lanes.conflicts`, the queue it is the sole consumer of; and the run's entry goes through `audit-writer` | none — **and it has no flag by design.** Slash-invoked only, so it can never fire from a phrase, a batch or another skill. A flagless row can confer no grant, because there is no hook block to state one and no flag for `git-writer` to trace back to; the user is present throughout a slash-only run, so asking costs one question. Its git work is **local and fast-forward-only, through `git-writer`** — nothing authored, nothing pushed — and **the push is never on offer**, since those local landings would otherwise reach the remote as a side effect of tidying up. Its close-out hands to `--wss-wrap`, which inherits that nothing and **asks for its own commit in that turn** — the same shape as `report upstream` above |
 | retire | — | `retire` | orchestrator | **nothing** — the retire and reset scripts delete, the export script archives, and a deletion is not a record write; the dirty tree it leaves is the user's to commit or restore | none — **and it has no flag by design.** Slash-invoked only, and its own frontmatter blocks model invocation, so a deletion can never fire from a phrase, a batch or another skill; each destructive action runs only where the user checked its box in that turn |
 | toggle | — | `skill-toggle` | orchestrator | **nothing with an owner** — it rewrites `skillOverrides` in the user's `settings.json`, which is settings rather than a record | none — **and it has no flag by design.** Slash-invoked only, and its frontmatter blocks model invocation, so a change to what sessions load can never fire from a phrase, a batch or another skill |
-| prepare for audit | — | `wss-preflight` *(repo-only; `.claude/skills/`)* | orchestrator | **nothing with an owner** — bounded fixes land in files the matrix does not claim (scripts, CI, the `wss/workflow/*.md` contracts); every record write goes through that record's own writer under this grant | commit, **not** push — an audit runs against a local tree, and publishing an unaudited change set of that size is what the audit exists to prevent. **No flag by design**, and its frontmatter blocks model invocation: a run that rewrites prose across the tooling files and commits must never fire from a phrase or a batch |
-| audit | — | `wss-audit` *(repo-only; `.claude/skills/`)* | orchestrator | **nothing with an owner** — the frozen report it files under `wss/logs/audits/` is not a declared record and so has no writer to be; the index row is emphatically not its own and goes through `audit-writer` | commit, **not** push. **No flag by design**, same frontmatter block. It applies no finding: the report is frozen when it lands, and remediation is a separate decision |
+| audit | — | `audit` *(repo-only; `.claude/skills/`)* | orchestrator | **nothing with an owner** — the frozen report it files under `wss/logs/audits/` is not a declared record and so has no writer to be; the index row is emphatically not its own and goes through `audit-writer` | commit, **not** push. **No flag by design**, same frontmatter block. It applies no finding: the report is frozen when it lands, and remediation is a separate decision |
 
 `WSS.record.*` keys resolve through the project's `.claude/WSS.WORKFLOW.json`. A project
 without one falls back to conventional names and skips what it cannot resolve.
@@ -173,7 +178,7 @@ work.** Most scripts, CI, harness settings and the `wss/workflow/*.md` contracts
 no row here, and a skill that edits one is not claiming ownership of it; it is
 doing what any session in that project does. The matrix constrains *records*,
 and a file that is not a record is constrained by nothing but review. This is
-what lets `--wss-full-check` fix a broken hook script it found without a row
+what lets `--wss-health-check` fix a broken hook script it found without a row
 licensing it.
 
 **The one exception is a script that is the sole writer of a declared record.**
@@ -228,7 +233,7 @@ accident.
 
 ## The inspector writes nothing
 
-`--wss-check` reads the whole record and reports. When it finds something, it
+`--wss-health-check` reads the whole record and reports. When it finds something, it
 **invokes the owning skill for that file**, and that owner re-verifies and writes
 under its own rules, in its own commit.
 
@@ -241,9 +246,9 @@ live one, and acting on it can mask a real instance of the same class one file
 away. So the owner re-verifies against the cited file before writing, and hands
 the disagreement back rather than writing a correction that is itself wrong.
 
-This applies to every finding that crosses skills, not only `--wss-check`'s — the
-same holds for `--wss-full-check`, `--wss-stocktake`, a filed bug report, or a proposed
-cut. The reporter hands over evidence, not a verdict.
+This applies to every finding that crosses skills, not only `--wss-health-check`'s
+default mode — the same holds for its `--deep` mode, its TODO resort, a filed
+bug report, or a proposed cut. The reporter hands over evidence, not a verdict.
 
 ## One writer, many readers — the sweep checkpoint
 
@@ -290,7 +295,8 @@ the distinction that file's own closing section draws.
 
 **A skill invoked by another skill inherits the caller's grant, never its own
 flag's.** This is the rule that keeps dispatch from being a privilege escalator:
-`--wss-check` grants nothing, so an owner it dispatches to may write its file and
+`--wss-health-check`'s commit grant is scoped to what it repairs itself, so a
+record owner it dispatches a finding to inherits nothing from that grant, may write its file and
 must not commit; `--wss-start` grants commit but not push, so the `handoff-writer` it
 invokes when a batch lands writes the file and nothing acquires push. Anything
 beyond the caller's grant needs the user's word in that turn. Without this rule
@@ -320,9 +326,9 @@ names the suite only in a checkout.**
 The config directory — `WSS.BUG-REPORTS.md`, `projects/`, `settings.json` — is
 `~/.claude` in both.
 
-This is not the ordinary one-writer rule. `--wss-tidy` genuinely owns those files;
+This is not the ordinary one-writer rule. `--wss-health-check` genuinely owns those files;
 the question is *which session* may act, and nothing above answers it. The
-project's `WSS.record.tooling.sources` globs are relative, so a `--wss-tidy` sweep in
+project's `WSS.record.tooling.sources` globs are relative, so a `--wss-health-check` sweep in
 another project correctly targets that project's own skills — but a defect
 noticed in the suite file you are *currently executing* falls outside those
 globs, and the instinct to fix what is demonstrably broken has nothing standing
@@ -333,7 +339,7 @@ Why the edit is worse than it looks, in a checkout:
 - **It lands in a different repository than the session is about.** It never
   appears in that project's diff, so the review that would catch it never sees
   it.
-- **`--wss-tidy` grants commit**, so it may not even wait as a dirty tree. A commit
+- **`--wss-health-check` grants commit**, so it may not even wait as a dirty tree. A commit
   can appear in the config repo authored during a session about something else.
 - **The justification is discarded.** The reasoning lives in a context about to
   be cleared, leaving a change nobody can reconstruct.
@@ -362,7 +368,7 @@ File: <path within the suite> · Detail: <what is wrong, what you expected>
 ```
 
 **This is the one statement of the entry format; every other site points here
-rather than restating it.** `hooks/wss-shorthand-flags.sh`'s `--wss-tidy` and
+rather than restating it.** `hooks/wss-shorthand-flags.sh`'s `--wss-health-check` and
 `--wss-catalog` blocks no longer copy it: both call `bugtpl_()`, which reads
 this fence at runtime and injects it, so the hook's text IS this fence and the
 two cannot disagree. One verbatim copy remains — `README.md`'s adopter
@@ -404,10 +410,9 @@ caller, rather than only the one whose file happens to state them.
 Three grants recur, and the distinction between them is deliberate:
 
 - **commit, not push.** Work should survive a compaction; publishing is a
-  separate decision. (`--wss-start`, `--wss-tidy`, `--wss-catalog`)
-- **commit and push.** The flag *is* the decision to publish. (`--wss-wrap`;
-  `--wss-stocktake`, but scoped to its own record — never to remediation code written
-  afterwards, which stays ordinary work.) **`--wss-wrap` from a lane worktree also
+  separate decision. (`--wss-start`, `--wss-health-check`, `--wss-catalog`)
+- **commit and push.** The flag *is* the decision to publish. (`--wss-wrap`.)
+  **`--wss-wrap` from a lane worktree also
   lands that lane on `WSS.branch.integration`**, and that stays inside this grant
   rather than needing a fresh OK for one reason: it is a fast-forward or a
   refusal, never a merge, so it publishes the lane's own commits and can destroy
@@ -472,7 +477,7 @@ The tiers above have no row for that, which is not an omission: the shape is a
 skill to be split rather than a third kind of thing.
 
 `--wss-release` is the worked example. It reads the milestone mark, invokes
-`--wss-full-check` for drift, confirms the version and holds the publish gate — and
+`--wss-health-check --deep` for drift, confirms the version and holds the publish gate — and
 writes nothing.
 The changelog entry goes to `changelog-writer` and the tag to `git-writer`.
 
@@ -489,14 +494,14 @@ Either of these is enough:
 - **The decision needs a conversation and the write does not.** Marking a
   milestone completed is a question for the user; writing the mark is not.
 - **The record has callers wanting different amounts of work.** A one-line
-  correction dispatched by `--wss-check` should not have to invoke a full release,
+  correction dispatched by `--wss-health-check` should not have to invoke a full release,
   audit or documentation procedure to get written. `WSS.record.handoff` is the
-  worked example: `--wss-wrap`'s full currency pass and `--wss-check`'s dispatched
+  worked example: `--wss-wrap`'s full currency pass and `--wss-health-check`'s dispatched
   one-line correction are the two ends of the range one primitive serves.
 
 ### When not to split
 
-**Do not separate a judgement a skill makes about its own file.** `--wss-tidy`
+**Do not separate a judgement a skill makes about its own file.** `--wss-health-check`
 decides what counts as a mutable claim and then deletes it; splitting that would
 produce a decision skill with nobody to ask. The test is whether the decision
 needs a conversation, not whether it is a decision.
@@ -521,8 +526,10 @@ independently.
    reference documentation — **through whichever skill owns that file.** Where
    the manifest maps a README into `WSS.record.reference`, editing it directly makes
    you its second writer, and this step is where that happens most often.
-   **The flag's name equals the skill's name** — a scope-variant prefix
-   (`--wss-full-stocktake` over `stocktake`) is the one sanctioned divergence.
+   **The flag's name equals the skill's name** — a scope-variant prefix is the
+   one sanctioned divergence, though no currently-shipped flag uses one: the
+   pattern's last example, `--wss-full-stocktake` over `wss-stocktake`, retired
+   into `--wss-health-check --deep`.
    Where one skill serves several verbs, each verb's flag gets a same-named
    wrapper in `commands/`, so the menu entry, the flag and the route stay one
    token; `wss-doctor.sh` asserts every wrapper fires the flag its name promises.

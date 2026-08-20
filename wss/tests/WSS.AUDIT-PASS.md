@@ -27,7 +27,7 @@ goes wherever audit coverage is currently thinnest.
   **Method is a named value, because the score is only comparable within one.**
   `warm` (in-session, the tree's own context), `cold` (a subagent or a cleared
   session with no memory of the work being judged), and
-  `cold-after-preflight` — cold, against a tree a preparation run has just swept
+  `cold-after-health-check` — cold, against a tree a preparation run has just swept
   and committed. The last one scores higher for reasons that are not
   improvement, so a pass carrying it argues its delta against the method change
   before arguing it against the previous number. Say inline whether the reading
@@ -246,7 +246,7 @@ history, never by editing the pass.
 **A finding that is a class rather than an instance names the sweep that owns
 it.** Where the pass finds context bloat, writing structured to go false, or a
 trigger that will misroute — and finds it across files rather than in one — the
-report says to run `tidy`'s token-economy, rot-resistance or routing job.
-That recommendation is one of those jobs' standing triggers, and it is what
+report says to run `--wss-health-check`'s token-economy, rot-resistance or
+routing lens. That recommendation is one of those lenses' standing triggers, and it is what
 stops a pass fixing one instance and leaving the class for the next pass to
 re-find.

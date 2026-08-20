@@ -2,7 +2,7 @@
 
 **What kind of project this is, decided once.** Several skills need the answer
 and they need the *same* answer: `--wss-docs` maps it to which pages a project owes,
-`--wss-stocktake` maps it to which dimensions to run. Detecting it twice means two
+`--wss-health-check --deep`'s TODO resort maps it to which dimensions to run. Detecting it twice means two
 detectors that agree until they don't, and nothing that notices when they stop.
 
 So detection lives here. **The mappings stay with the skills that own them** —
@@ -55,7 +55,7 @@ profile follows its signals.
 A repo describing itself as a library while shipping a server is a project with
 both signals, and possibly a finding.
 
-**Signal names are stable.** Skills key off them, and `--wss-stocktake` records
+**Signal names are stable.** Skills key off them, and the TODO resort records
 dimensions derived from them in a record that later audits join against — see
 [`WSS.AUDIT-COVERAGE.md`](WSS.AUDIT-COVERAGE.md).
 
@@ -68,7 +68,7 @@ silently omitting one is a gap nobody knows about.
 | Skill | Maps shape to |
 |---|---|
 | `--wss-docs` | Page sets, via its own tier taxonomy |
-| `--wss-stocktake` | Which dimensions run, in its Phase 0 |
+| `--wss-health-check --deep`'s TODO resort | Which dimensions run, in its Phase 0 |
 | `--wss-adopt` | Which records a project needs, and therefore which manifest keys to propose |
 
 A skill consuming this file states which signals it acted on, so a reader can
